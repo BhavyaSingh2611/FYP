@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chess-ml-framework"
+version = "0.1.0"
+description = "Training Chess Bots with Various Machine Learning Techniques"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "torch",
+    "chess",
+    "pyyaml",
+    "numpy",
+    "tqdm"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
