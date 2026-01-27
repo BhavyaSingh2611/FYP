@@ -1,0 +1,10 @@
+[Event "Benchmark: resnet vs Stockfish D3"]
+[Site "?"]
+[Date "2026.01.27"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_ResNet_10B_256C"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. c4 { [%eval 0.26] } 1... c6 { [%eval 0.57] } 2. e4 { [%eval 0.35] } 2... a6 { [%eval 0.76] } 3. Nc3 { [%eval 0.75] } 3... g6 { [%eval 1.03] } 4. d4 { [%eval 1.00] } 4... d5 { [%eval 1.76] } 5. cxd5 { [%eval 1.98] } 5... f6 { [%eval 3.40] } 6. Bc4 { [%eval 3.40] } 6... Bd7 { [%eval 4.26] } 7. Nf3 { [%eval 4.03] } 7... h6 { [%eval 5.85] } 8. O-O { [%eval 5.11] } 8... Be6 { [%eval 7.91] } 9. dxe6 { [%eval 7.92] } 9... Nd7 { [%eval 8.49] } 10. exd7+ { [%eval 8.31] } 10... Qxd7 { [%eval 8.18] } 11. e5 { [%eval 8.22] } 11... Rb8 { [%eval 8.98] } 12. h3 { [%eval 8.34] } 12... Qd5 { [%eval 10.03] } 13. Qe2 { [%eval 9.08] } 13... b5 { [%eval 10.22] } 14. Bb3 { [%eval 9.08] } 14... Qc4 { [%eval 10.55] } 15. Bxc4 { [%eval 10.47] } 15... c5 { [%eval 10.75] } 16. Bxb5+ { [%eval 10.26] } 16... axb5 { [%eval 10.46] } 17. dxc5 { [%eval 10.31] } 17... b4 { [%eval 10.89] } 18. Nb5 { [%eval 10.67] } 18... Bg7 { [%eval 10.86] } 19. Nd6+ { [%eval 10.49] } 19... exd6 { [%eval 11.23] } 20. exf6+ { [%eval 10.15] } 20... Kf8 { [%eval 10.39] } 21. cxd6 { [%eval 9.11] } 21... Ra8 { [%eval 11.09] } 22. fxg7+ { [%eval 11.16] } 22... Kf7 { [%eval 12.70] } 23. gxh8=Q { [%eval 99.60] } 23... h5 { [%eval 99.80] } 24. Ne5+ { [%eval 99.70] } 24... Ke6 { [%eval 99.70] } 25. Qc4+ { [%eval 99.80] } 25... Kf5 { [%eval 99.80] } 26. g4+ { [%eval 99.90] } 26... hxg4 { [%eval 99.90] } 27. hxg4# { [%eval #-0] } 1-0

@@ -1,0 +1,10 @@
+[Event "Benchmark: convnet vs Stockfish D3"]
+[Site "?"]
+[Date "2026.01.27"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_ConvNet_6L_256C"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. e4 { [%eval 0.37] } 1... e6 { [%eval 0.30] } 2. d4 { [%eval 0.33] } 2... Nf6 { [%eval 1.14] } 3. e5 { [%eval 1.09] } 3... c6 { [%eval 4.98] } 4. exf6 { [%eval 4.81] } 4... Qxf6 { [%eval 4.93] } 5. Nf3 { [%eval 4.89] } 5... a6 { [%eval 5.28] } 6. Nc3 { [%eval 4.92] } 6... Be7 { [%eval 5.78] } 7. Bg5 { [%eval 5.55] } 7... O-O { [%eval 7.60] } 8. h4 { [%eval 7.14] } 8... Rd8 { [%eval 7.77] } 9. Bd3 { [%eval 7.25] } 9... b5 { [%eval 7.67] } 10. Bxh7+ { [%eval 7.60] } 10... Kh8 { [%eval 8.92] } 11. Bd3 { [%eval 8.39] } 11... g6 { [%eval 8.88] } 12. Bxf6+ { [%eval 9.21] } 12... Bxf6 { [%eval 9.75] } 13. h5 { [%eval 9.61] } 13... c5 { [%eval 10.36] } 14. hxg6+ { [%eval 11.14] } 14... Bh4 { [%eval 99.10] } 15. Rxh4+ { [%eval 99.30] } 15... Kg8 { [%eval 99.50] } 16. gxf7+ { [%eval 99.40] } 16... Kf8 { [%eval 99.50] } 17. Ke2 { [%eval 10.41] } 17... Nc6 { [%eval 11.21] } 18. dxc5 { [%eval 11.07] } 18... Ke7 { [%eval 11.32] } 19. f8=Q+ { [%eval 10.72] } 19... Kxf8 { [%eval 99.30] } 20. Rf4+ { [%eval 99.30] } 20... Ke7 { [%eval 99.30] } 21. Nd5+ { [%eval 99.30] } 21... exd5 { [%eval 99.30] } 22. Rf7+ { [%eval 8.73] } 22... Ke6 { [%eval 99.70] } 23. Ng5+ { [%eval 99.80] } 23... Ke5 { [%eval 99.80] } 24. Rf5+ { [%eval 11.45] } 24... Kd4 { [%eval 98.30] } 25. Bxb5+ { [%eval 98.60] } 25... Kxc5 { [%eval 98.60] } 26. Rxd5+ { [%eval 8.08] } 26... Kb4 { [%eval 99.90] } 27. Qe1# { [%eval #-0] } 1-0
