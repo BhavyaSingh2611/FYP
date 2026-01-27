@@ -1,0 +1,10 @@
+[Event "Benchmark: convnet vs Stockfish D24"]
+[Site "?"]
+[Date "2026.01.27"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_ConvNet_6L_256C"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. e4 { [%eval 0.38] } 1... e6 { [%eval 0.59] } 2. d4 { [%eval 0.36] } 2... Nf6 { [%eval 1.14] } 3. e5 { [%eval 1.13] } 3... c6 { [%eval 4.75] } 4. exf6 { [%eval 4.82] } 4... Qxf6 { [%eval 4.98] } 5. Nf3 { [%eval 4.90] } 5... a6 { [%eval 5.44] } 6. Bg5 { [%eval 5.17] } 6... Be7 { [%eval 7.29] } 7. Bxf6 { [%eval 7.21] } 7... O-O { [%eval 9.91] } 8. Bxe7 { [%eval 9.85] } 8... Kh8 { [%eval 11.09] } 9. Ng5 { [%eval 11.53] } 9... Rd8 { [%eval 99.40] } 10. Qh5 { [%eval 99.50] } 10... g6 { [%eval 99.90] } 11. Qxh7# { [%eval #-0] } 1-0

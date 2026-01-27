@@ -1,0 +1,10 @@
+[Event "Benchmark: square_transformer vs Stockfish D24"]
+[Site "?"]
+[Date "2026.01.27"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_SquareTransformer_6L_256D"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.26] } 1... e6 { [%eval 0.42] } 2. e4 { [%eval 0.45] } 2... Nf6 { [%eval 1.05] } 3. e5 { [%eval 1.14] } 3... c6 { [%eval 4.83] } 4. exf6 { [%eval 4.94] } 4... Bc5 { [%eval 6.88] } 5. dxc5 { [%eval 6.87] } 5... h6 { [%eval 7.50] } 6. fxg7 { [%eval 7.55] } 6... d6 { [%eval 98.50] } 7. gxh8=Q+ { [%eval 98.60] } 7... Kd7 { [%eval 99.90] } 8. Qxd6# { [%eval #-0] } 1-0
