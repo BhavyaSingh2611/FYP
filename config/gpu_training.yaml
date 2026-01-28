@@ -1,0 +1,72 @@
+# Chess ML Framework Configuration - GPU Training (CUDA)
+
+# Hardware Settings
+hardware:
+  device: cuda  # Use NVIDIA GPU
+  num_workers: 8  # More workers for GPU training
+
+# External Engine Paths (not needed for training, but included for compatibility)
+engines:
+  stockfish:
+    path: /usr/bin/stockfish  # May need adjustment on remote
+    default_depth: 15
+    default_multipv: 4
+
+# Data Paths
+paths:
+  openings: config/openings.json
+  database: data/chess_dataset_new.db
+  checkpoints: checkpoints/
+
+# Model Configuration
+model:
+  # Backbone type: convnet, resnet, square_transformer, piece_transformer, gcn, gat
+  backbone: resnet
+  
+  # Output head: policy, value, dual
+  head: dual
+  
+  # CNN-specific settings
+  cnn:
+    num_blocks: 10  # For ResNet: 6, 10, or 20
+    channels: 256
+  
+  # Transformer-specific settings
+  transformer:
+    embed_dim: 256
+    num_heads: 8
+    num_layers: 6
+    dropout: 0.1
+  
+  # GNN-specific settings
+  gnn:
+    hidden_dim: 256
+    num_layers: 6
+    edge_type: hybrid
+    heads: 4
+
+# Training Configuration - Optimized for RTX A4000 16GB
+training:
+  batch_size: 512  # Increased for GPU (was 256)
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  epochs: 50
+  policy_loss_weight: 1.0
+  value_loss_weight: 1.0
+  lr_scheduler:
+    type: cosine
+    step_size: 10
+    gamma: 0.1
+
+# Data Generation Configuration (not used for training, kept for compatibility)
+data_generation:
+  num_games: 1000
+  max_moves_per_game: 200
+  temperature: 1.0
+  save_every: 5
+  skip_first_ply: 8
+  sample_rate: 2
+  white_depth: 16
+  black_depth: 12
+  adjudication_threshold: 10
+  adjudication_moves: 10

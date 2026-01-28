@@ -36,7 +36,12 @@ TRAINED_MODELS = ["convnet", "resnet", "square_transformer", "piece_transformer"
 EVAL_DEPTH = 18
 
 
-def load_model_agent(model_name: str, checkpoint_dir: Path, device: torch.device) -> LearningAgent:
+def load_model_agent(
+    model_name: str, 
+    checkpoint_dir: Path, 
+    device: torch.device,
+    checkpoint_path: Path = None,
+) -> LearningAgent:
     """Load a trained model and create a LearningAgent."""
     config = load_config("config/default.yaml")
     config.model.backbone = model_name
@@ -44,7 +49,9 @@ def load_model_agent(model_name: str, checkpoint_dir: Path, device: torch.device
     
     model = create_model(config.model)
     
-    checkpoint_path = checkpoint_dir / model_name / "final.pt"
+    if checkpoint_path is None:
+        checkpoint_path = checkpoint_dir / model_name / "final.pt"
+    
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
     
@@ -307,6 +314,8 @@ def run_detailed_benchmark(
     opponent_depth: int,
     num_games: int,
     output_dir: Path,
+    single_model: str = None,
+    single_checkpoint: Path = None,
 ):
     """Run detailed benchmark with full analysis."""
     device = get_device()
@@ -323,14 +332,18 @@ def run_detailed_benchmark(
     all_games = {}
     all_results = {}
     
+    # If single model specified, only benchmark that one
+    models_to_benchmark = [single_model] if single_model else TRAINED_MODELS
+    
     try:
-        for model_name in TRAINED_MODELS:
+        for model_name in models_to_benchmark:
             print(f"\n{'='*60}")
             print(f"Benchmarking: {model_name.upper()}")
             print(f"{'='*60}")
             
             try:
-                agent = load_model_agent(model_name, checkpoint_dir, device)
+                ckpt_path = single_checkpoint if single_model else None
+                agent = load_model_agent(model_name, checkpoint_dir, device, ckpt_path)
             except FileNotFoundError as e:
                 print(f"Skipping {model_name}: {e}")
                 continue
@@ -506,6 +519,10 @@ def generate_detailed_report(results: dict, games: dict, output_dir: Path, oppon
 def main():
     parser = argparse.ArgumentParser(description="Detailed benchmark with move analysis")
     parser.add_argument("--checkpoint-dir", type=str, default="training_results")
+    parser.add_argument("--checkpoint", type=str, default=None, help="Specific checkpoint file path")
+    parser.add_argument("--model", type=str, default=None, 
+                       choices=["convnet", "resnet", "square_transformer", "piece_transformer"],
+                       help="Single model to benchmark (required with --checkpoint)")
     parser.add_argument("--stockfish", type=str, default="/opt/homebrew/bin/stockfish")
     parser.add_argument("--opponent-depth", type=int, default=5, help="Stockfish opponent depth")
     parser.add_argument("--games", type=int, default=4, help="Games per model (even number)")
@@ -513,11 +530,19 @@ def main():
     
     args = parser.parse_args()
     
+    if args.checkpoint and not args.model:
+        parser.error("--model is required when using --checkpoint")
+    
     print("=" * 60)
     print("DETAILED CHESS MODEL BENCHMARK")
     print("=" * 60)
     print(f"Opponent: Stockfish depth {args.opponent_depth}")
     print(f"Evaluation: Stockfish depth {EVAL_DEPTH}")
+    if args.model:
+        print(f"Model: {args.model}")
+        print(f"Checkpoint: {args.checkpoint}")
+    else:
+        print(f"Models: All")
     print(f"Games per model: {args.games}")
     print("=" * 60)
     
@@ -527,6 +552,8 @@ def main():
         opponent_depth=args.opponent_depth,
         num_games=args.games,
         output_dir=Path(args.output_dir),
+        single_model=args.model,
+        single_checkpoint=Path(args.checkpoint) if args.checkpoint else None,
     )
     
     print("\n" + "=" * 60)
