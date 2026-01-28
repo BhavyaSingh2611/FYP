@@ -1,4 +1,7 @@
 .DS_Store
+.tmp*
+.db-shm
+.db-wal
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
