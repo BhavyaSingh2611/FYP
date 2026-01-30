@@ -1,7 +1,6 @@
 .DS_Store
 .tmp*
-*.db-shm
-*.db-wal
+*.parquet
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

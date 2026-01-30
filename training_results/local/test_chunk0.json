@@ -1,0 +1,18 @@
+{
+  "convnet": {
+    "test_loss": 4.511430825217295,
+    "test_accuracy": 0.09153333333333333
+  },
+  "resnet": {
+    "test_loss": 4.296607955027435,
+    "test_accuracy": 0.09473333333333334
+  },
+  "square_transformer": {
+    "test_loss": 4.402488599389287,
+    "test_accuracy": 0.08873333333333333
+  },
+  "piece_transformer": {
+    "test_loss": 4.053283796472065,
+    "test_accuracy": 0.09413333333333333
+  }
+}

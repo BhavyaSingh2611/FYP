@@ -1,0 +1,36 @@
+{
+  "convnet": {
+    "model_name": "convnet",
+    "best_val_loss": 4.578429656513666,
+    "final_accuracy": 0.0884,
+    "total_epochs": 15,
+    "time_minutes": 15.06983501513799
+  },
+  "resnet": {
+    "model_name": "resnet",
+    "best_val_loss": 4.343637569475982,
+    "final_accuracy": 0.094,
+    "total_epochs": 15,
+    "time_minutes": 47.966128933429715
+  },
+  "square_transformer": {
+    "model_name": "square_transformer",
+    "best_val_loss": 4.4205171233516625,
+    "final_accuracy": 0.08806666666666667,
+    "total_epochs": 15,
+    "time_minutes": 62.744095687071486
+  },
+  "piece_transformer": {
+    "model_name": "piece_transformer",
+    "best_val_loss": 4.10726811724194,
+    "final_accuracy": 0.092,
+    "total_epochs": 15,
+    "time_minutes": 31.305950752894084
+  },
+  "gcn": {
+    "error": "list indices must be integers or slices, not str"
+  },
+  "gat": {
+    "error": "list indices must be integers or slices, not str"
+  }
+}
