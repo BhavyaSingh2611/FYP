@@ -1,0 +1,10 @@
+[Event "Benchmark: square_transformer vs Stockfish D5"]
+[Site "?"]
+[Date "2026.01.30"]
+[Round "?"]
+[White "Learning_SquareTransformer_6L_256D"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.24] } 1... Nf6 { [%eval 0.21] } 2. c4 { [%eval 0.21] } 2... e6 { [%eval 0.24] } 3. Nc3 { [%eval 0.21] } 3... d5 { [%eval 0.31] } 4. Nf3 { [%eval 0.28] } 4... Be7 { [%eval 0.35] } 5. e3 { [%eval 0.07] } 5... c6 { [%eval 0.39] } 6. Be2 { [%eval 0.18] } 6... Nbd7 { [%eval 0.31] } 7. Qc2 { [%eval 0.17] } 7... dxc4 { [%eval 0.16] } 8. h3 { [%eval -0.77] } 8... b5 { [%eval -0.78] } 9. a3 { [%eval -1.41] } 9... Qc7 { [%eval -1.03] } 10. d5 { [%eval -3.49] } 10... exd5 { [%eval -3.66] } 11. Nd1 { [%eval -4.53] } 11... Nc5 { [%eval -4.56] } 12. Kf1 { [%eval -5.47] } 12... O-O { [%eval -5.27] } 13. Bd2 { [%eval -5.57] } 13... a5 { [%eval -5.09] } 14. Rc1 { [%eval -5.54] } 14... Nfe4 { [%eval -5.52] } 15. Nd4 { [%eval -5.74] } 15... Re8 { [%eval -5.40] } 16. Nxc6 { [%eval -6.64] } 16... Nxd2+ { [%eval -6.49] } 17. Qxd2 { [%eval -6.52] } 17... Qxc6 { [%eval -6.61] } 18. Bf3 { [%eval -6.71] } 18... Qg6 { [%eval -6.07] } 19. e4 { [%eval -7.30] } 19... dxe4 { [%eval -7.23] } 20. Qe2 { [%eval -8.61] } 20... exf3 { [%eval -8.75] } 21. Qe4 { [%eval -99.10] } 21... Qxg2+ { [%eval -99.20] } 22. Ke1 { [%eval -99.50] } 22... Nxe4 { [%eval -99.60] } 23. Rf1 { [%eval -99.60] } 23... Bb4+ { [%eval -99.60] } 24. Rc3 { [%eval -99.60] } 24... Bxc3+ { [%eval -99.60] } 25. bxc3 { [%eval -99.60] } 25... Qxh3 { [%eval -99.30] } 26. a4 { [%eval -99.60] } 26... Nxc3+ { [%eval -99.00] } 27. Kd2 { [%eval -99.50] } 27... Nxa4 { [%eval -99.20] } 28. Kc2 { [%eval -99.60] } 28... Ra6 { [%eval -12.50] } 29. Re1 { [%eval -99.50] } 29... Rd8 { [%eval -12.50] } 30. Nc3 { [%eval -99.40] } 30... Qh6 { [%eval -99.50] } 31. Re2 { [%eval -99.60] } 31... Ra7 { [%eval -99.50] } 32. Rd2 { [%eval -99.80] } 32... Bf5+ { [%eval -99.70] } 33. Rd3 { [%eval -99.70] } 33... Bxd3+ { [%eval -99.80] } 34. Kd1 { [%eval -99.80] } 34... Nb2+ { [%eval -99.80] } 35. Ke1 { [%eval -99.80] } 35... Qc1+ { [%eval -99.90] } 36. Nd1 { [%eval -99.90] } 36... Qxd1# { [%eval #-0] } 0-1

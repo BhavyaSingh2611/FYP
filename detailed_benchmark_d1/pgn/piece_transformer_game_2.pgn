@@ -1,0 +1,10 @@
+[Event "Benchmark: piece_transformer vs Stockfish D1"]
+[Site "?"]
+[Date "2026.01.30"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_PieceTransformer_6L_256D"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. Nf3 { [%eval 0.09] } 1... Nf6 { [%eval 0.12] } 2. g3 { [%eval 0.09] } 2... g6 { [%eval 0.02] } 3. d3 { [%eval -0.24] } 3... c5 { [%eval -0.20] } 4. Bg2 { [%eval -0.18] } 4... d5 { [%eval -0.13] } 5. c3 { [%eval -0.35] } 5... Bg7 { [%eval -0.27] } 6. a4 { [%eval -0.40] } 6... Nc6 { [%eval -0.36] } 7. Nbd2 { [%eval -0.35] } 7... Bf5 { [%eval -0.15] } 8. Nh4 { [%eval -0.47] } 8... e6 { [%eval 0.77] } 9. e4 { [%eval -0.12] } 9... Qb6 { [%eval 4.27] } 10. exf5 { [%eval 4.46] } 10... h5 { [%eval 5.34] } 11. a5 { [%eval 5.18] } 11... Nd8 { [%eval 8.27] } 12. Ndf3 { [%eval 6.09] } 12... c4 { [%eval 8.33] } 13. Qa4+ { [%eval 5.71] } 13... Nd7 { [%eval 8.24] } 14. O-O { [%eval 6.32] } 14... Bf6 { [%eval 8.32] } 15. Be3 { [%eval 6.34] } 15... Bd4 { [%eval 8.78] } 16. Bg5 { [%eval 7.30] } 16... Kf8 { [%eval 9.78] } 17. Kh1 { [%eval 7.39] } 17... e5 { [%eval 9.58] } 18. Qa2 { [%eval 7.83] } 18... f6 { [%eval 8.94] } 19. Bd2 { [%eval 8.02] } 19... Ke7 { [%eval 9.24] } 20. Qa3+ { [%eval 7.63] } 20... Kf7 { [%eval 9.84] } 21. fxg6+ { [%eval 9.81] } 21... Ke6 { [%eval 11.63] } 22. Ng5+ { [%eval 8.83] } 22... fxg5 { [%eval 8.82] } 23. Nf5 { [%eval 5.26] } 23... Nf8 { [%eval 9.76] } 24. dxc4 { [%eval 7.54] } 24... Nd7 { [%eval 9.85] } 25. Bxg5 { [%eval 8.29] } 25... Nf8 { [%eval 99.20] } 26. Ne3 { [%eval 9.80] } 26... Nd7 { [%eval 99.90] } 27. Bh3# { [%eval #-0] } 1-0

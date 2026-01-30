@@ -316,6 +316,7 @@ def run_detailed_benchmark(
     output_dir: Path,
     single_model: str = None,
     single_checkpoint: Path = None,
+    skill_level: int = None,
 ):
     """Run detailed benchmark with full analysis."""
     device = get_device()
@@ -349,7 +350,7 @@ def run_detailed_benchmark(
                 continue
             
             # Create opponent Stockfish
-            opponent = UCIAgent(stockfish_path, depth=opponent_depth)
+            opponent = UCIAgent(stockfish_path, depth=opponent_depth, skill_level=skill_level)
             
             model_games = []
             wins, draws, losses = 0, 0, 0
@@ -525,6 +526,7 @@ def main():
                        help="Single model to benchmark (required with --checkpoint)")
     parser.add_argument("--stockfish", type=str, default="/opt/homebrew/bin/stockfish")
     parser.add_argument("--opponent-depth", type=int, default=5, help="Stockfish opponent depth")
+    parser.add_argument("--skill-level", type=int, default=None, help="Stockfish skill level (0-20, None for full strength)")
     parser.add_argument("--games", type=int, default=4, help="Games per model (even number)")
     parser.add_argument("--output-dir", type=str, default="detailed_benchmark")
     
@@ -536,7 +538,7 @@ def main():
     print("=" * 60)
     print("DETAILED CHESS MODEL BENCHMARK")
     print("=" * 60)
-    print(f"Opponent: Stockfish depth {args.opponent_depth}")
+    print(f"Opponent: Stockfish depth {args.opponent_depth}" + (f", skill level {args.skill_level}" if args.skill_level is not None else ""))
     print(f"Evaluation: Stockfish depth {EVAL_DEPTH}")
     if args.model:
         print(f"Model: {args.model}")
@@ -554,6 +556,7 @@ def main():
         output_dir=Path(args.output_dir),
         single_model=args.model,
         single_checkpoint=Path(args.checkpoint) if args.checkpoint else None,
+        skill_level=args.skill_level,
     )
     
     print("\n" + "=" * 60)
