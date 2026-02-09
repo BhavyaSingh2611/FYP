@@ -33,6 +33,7 @@ class PathsConfig:
 class CNNConfig:
     num_blocks: int = 10
     channels: int = 256
+    input_channels: int = 18
 
 
 @dataclass
@@ -41,6 +42,8 @@ class TransformerConfig:
     num_heads: int = 8
     num_layers: int = 6
     dropout: float = 0.1
+    vocab_size: int = 13  # 13 for Square, 12 for Piece
+    max_len: int = 64     # 64 for Square, 32 for Piece
 
 
 @dataclass
@@ -49,6 +52,7 @@ class GNNConfig:
     num_layers: int = 6
     edge_type: str = "hybrid"  # static, dynamic, hybrid
     heads: int = 4  # For GAT only
+    input_dim: int = 18  # Node feature dim
 
 
 @dataclass

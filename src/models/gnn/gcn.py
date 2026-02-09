@@ -55,31 +55,18 @@ class GCN(ChessModel):
         - N GCN layers with residual connections
         - Global mean pooling over all nodes
         - Output dimension: hidden_dim
-    
-    Supports three edge types:
-        - static: King-move adjacency (fixed graph)
-        - dynamic: Legal moves as edges (changes each position)
-        - hybrid: Both edge types (requires two forward passes)
+        
+    Note: GCN uses the graph structure provided by the encoder (Adjacency).
     """
     
     def __init__(
         self,
-        input_dim: int = 12,
+        input_dim: int = 14,
         hidden_dim: int = 256,
         num_layers: int = 6,
-        edge_type: str = "hybrid",
+        edge_type: str = "hybrid", # Kept for compat
         dropout: float = 0.1,
     ):
-        """
-        Initialize GCN.
-        
-        Args:
-            input_dim: Node feature dimension (12 from GNNEncoder).
-            hidden_dim: Hidden dimension.
-            num_layers: Number of GCN layers.
-            edge_type: "static", "dynamic", or "hybrid".
-            dropout: Dropout rate.
-        """
         super().__init__()
         
         if not HAS_TORCH_GEOMETRIC:
@@ -87,7 +74,6 @@ class GCN(ChessModel):
         
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
-        self.edge_type = edge_type
         
         # Initial projection
         self.input_proj = nn.Linear(input_dim, hidden_dim)
@@ -97,15 +83,6 @@ class GCN(ChessModel):
             GCNLayer(hidden_dim, hidden_dim)
             for _ in range(num_layers)
         ])
-        
-        # For hybrid: separate GCN layers for legal move edges
-        if edge_type == "hybrid":
-            self.legal_gcn_layers = nn.ModuleList([
-                GCNLayer(hidden_dim, hidden_dim)
-                for _ in range(num_layers)
-            ])
-            # Fusion layer
-            self.fusion = nn.Linear(hidden_dim * 2, hidden_dim)
         
         # Side to move embedding
         self.side_embedding = nn.Embedding(2, hidden_dim)
@@ -121,7 +98,7 @@ class GCN(ChessModel):
     
     @property
     def name(self) -> str:
-        return f"GCN_{self.edge_type}_{self.num_layers}L_{self.hidden_dim}D"
+        return f"GCN_{self.num_layers}L_{self.hidden_dim}D"
     
     def get_backbone_output_dim(self) -> int:
         return self.output_dim
@@ -129,17 +106,6 @@ class GCN(ChessModel):
     def forward_backbone(self, x: dict) -> torch.Tensor:
         """
         Forward pass through the backbone.
-        
-        Args:
-            x: Dictionary with:
-                - 'x': Node features of shape (B*64, 12) or (B, 64, 12)
-                - 'edge_index': Edge indices (format depends on edge_type)
-                - 'batch': Batch indices for nodes (optional, computed if not provided)
-                - 'side_to_move': Side to move of shape (B,)
-                - 'castling': Castling rights of shape (B, 4)
-        
-        Returns:
-            Feature tensor of shape (B, hidden_dim).
         """
         node_features = x['x']
         edge_index = x['edge_index']
@@ -157,10 +123,7 @@ class GCN(ChessModel):
             batch = batch.unsqueeze(1).expand(-1, 64).reshape(-1)
             
             # Adjust edge indices for batching
-            if self.edge_type == "hybrid":
-                edge_index = self._batch_edge_indices_hybrid(edge_index, batch_size)
-            else:
-                edge_index = self._batch_edge_indices(edge_index, batch_size)
+            edge_index = self._batch_edge_indices(edge_index, batch_size)
         else:
             batch_size = 1
             batch = torch.zeros(node_features.size(0), dtype=torch.long, device=node_features.device)
@@ -169,24 +132,9 @@ class GCN(ChessModel):
         h = self.input_proj(node_features)  # (B*64, D)
         h = self.dropout(F.relu(h))
         
-        if self.edge_type == "hybrid":
-            # Process with spatial edges
-            h_spatial = h
-            for layer in self.gcn_layers:
-                h_spatial = layer(h_spatial, edge_index['spatial'])
-            
-            # Process with legal move edges
-            h_legal = h
-            for layer in self.legal_gcn_layers:
-                h_legal = layer(h_legal, edge_index['legal'])
-            
-            # Fuse both representations
-            h = self.fusion(torch.cat([h_spatial, h_legal], dim=-1))
-            h = F.relu(h)
-        else:
-            # Single edge type
-            for layer in self.gcn_layers:
-                h = layer(h, edge_index)
+        # GCN layers
+        for layer in self.gcn_layers:
+            h = layer(h, edge_index)
         
         # Global mean pooling
         output = global_mean_pool(h, batch)  # (B, D)
@@ -210,23 +158,13 @@ class GCN(ChessModel):
         batch_size: int,
     ) -> torch.Tensor:
         """Batch edge indices by offsetting node indices."""
-        device = edge_index.device
-        
         # Repeat edge_index for each graph in batch
         edge_indices = []
         for i in range(batch_size):
             offset = i * 64
             edge_indices.append(edge_index + offset)
         
+        if not edge_indices:
+             return torch.empty((2, 0), device=edge_index.device, dtype=torch.long)
+
         return torch.cat(edge_indices, dim=1)
-    
-    def _batch_edge_indices_hybrid(
-        self,
-        edge_index: dict,
-        batch_size: int,
-    ) -> dict:
-        """Batch hybrid edge indices."""
-        return {
-            'spatial': self._batch_edge_indices(edge_index['spatial'], batch_size),
-            'legal': self._batch_edge_indices(edge_index['legal'], batch_size),
-        }

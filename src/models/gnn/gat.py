@@ -17,18 +17,19 @@ except ImportError:
 class GATLayer(nn.Module):
     """Single GAT layer with multi-head attention and residual connection."""
     
-    def __init__(self, in_channels: int, out_channels: int, heads: int = 4):
+    def __init__(self, in_channels: int, out_channels: int, heads: int = 4, edge_dim: int = 3):
         super().__init__()
         if not HAS_TORCH_GEOMETRIC:
             raise ImportError("torch_geometric is required for GNN models")
         
-        # GAT with concatenated heads
+        # GAT with concatenated heads and edge features
         self.conv = GATConv(
             in_channels, 
             out_channels // heads,  # Each head outputs out_channels // heads
             heads=heads,
             concat=True,
             dropout=0.1,
+            edge_dim=edge_dim
         )
         self.bn = nn.BatchNorm1d(out_channels)
         
@@ -41,12 +42,13 @@ class GATLayer(nn.Module):
         self,
         x: torch.Tensor,
         edge_index: torch.Tensor,
+        edge_attr: torch.Tensor = None,
     ) -> torch.Tensor:
         residual = x
         if self.residual is not None:
             residual = self.residual(residual)
         
-        out = self.conv(x, edge_index)
+        out = self.conv(x, edge_index, edge_attr=edge_attr)
         out = self.bn(out)
         out = F.elu(out + residual)
         
@@ -55,43 +57,24 @@ class GATLayer(nn.Module):
 
 class GAT(ChessModel):
     """
-    Graph Attention Network for chess.
+    Graph Attention Network for chess with Edge Features.
     
     Architecture:
-        - Initial projection from node features to hidden dim
-        - N GAT layers with multi-head attention and residual connections
-        - Global mean pooling over all nodes
+        - Initial projection
+        - N GAT layers with edge attributes
+        - Global mean pooling
         - Output dimension: hidden_dim
-    
-    GAT uses attention mechanisms to learn which edges are more important,
-    making it particularly suitable for dynamic edge structures.
-    
-    Supports three edge types:
-        - static: King-move adjacency (fixed graph)
-        - dynamic: Legal moves as edges (changes each position)
-        - hybrid: Both edge types (dual-stream processing)
     """
     
     def __init__(
         self,
-        input_dim: int = 12,
+        input_dim: int = 14,
         hidden_dim: int = 256,
-        num_layers: int = 6,
-        edge_type: str = "hybrid",
+        num_layers: int = 5,
+        edge_type: str = "hybrid", # Kept for config compat, effectively unused
         heads: int = 4,
         dropout: float = 0.1,
     ):
-        """
-        Initialize GAT.
-        
-        Args:
-            input_dim: Node feature dimension (12 from GNNEncoder).
-            hidden_dim: Hidden dimension (must be divisible by heads).
-            num_layers: Number of GAT layers.
-            edge_type: "static", "dynamic", or "hybrid".
-            heads: Number of attention heads.
-            dropout: Dropout rate.
-        """
         super().__init__()
         
         if not HAS_TORCH_GEOMETRIC:
@@ -102,27 +85,16 @@ class GAT(ChessModel):
         
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
-        self.edge_type = edge_type
         self.heads = heads
         
         # Initial projection
         self.input_proj = nn.Linear(input_dim, hidden_dim)
         
-        # GAT layers for spatial edges
+        # GAT layers
         self.gat_layers = nn.ModuleList([
-            GATLayer(hidden_dim, hidden_dim, heads=heads)
+            GATLayer(hidden_dim, hidden_dim, heads=heads, edge_dim=3)
             for _ in range(num_layers)
         ])
-        
-        # For hybrid: separate GAT layers for legal move edges
-        if edge_type == "hybrid":
-            self.legal_gat_layers = nn.ModuleList([
-                GATLayer(hidden_dim, hidden_dim, heads=heads)
-                for _ in range(num_layers)
-            ])
-            # Attention-based fusion
-            self.fusion_attention = nn.Linear(hidden_dim * 2, 2)
-            self.fusion_proj = nn.Linear(hidden_dim, hidden_dim)
         
         # Side to move embedding
         self.side_embedding = nn.Embedding(2, hidden_dim)
@@ -142,7 +114,7 @@ class GAT(ChessModel):
     
     @property
     def name(self) -> str:
-        return f"GAT_{self.edge_type}_{self.num_layers}L_{self.heads}H_{self.hidden_dim}D"
+        return f"GAT_{self.num_layers}L_{self.heads}H_{self.hidden_dim}D"
     
     def get_backbone_output_dim(self) -> int:
         return self.output_dim
@@ -150,19 +122,10 @@ class GAT(ChessModel):
     def forward_backbone(self, x: dict) -> torch.Tensor:
         """
         Forward pass through the backbone.
-        
-        Args:
-            x: Dictionary with:
-                - 'x': Node features of shape (B*64, 12) or (B, 64, 12)
-                - 'edge_index': Edge indices (format depends on edge_type)
-                - 'side_to_move': Side to move of shape (B,)
-                - 'castling': Castling rights of shape (B, 4)
-        
-        Returns:
-            Feature tensor of shape (B, hidden_dim).
         """
         node_features = x['x']
         edge_index = x['edge_index']
+        edge_attr = x.get('edge_attr')
         side_to_move = x['side_to_move']
         castling = x['castling']
         
@@ -174,10 +137,8 @@ class GAT(ChessModel):
             batch = torch.arange(batch_size, device=node_features.device)
             batch = batch.unsqueeze(1).expand(-1, 64).reshape(-1)
             
-            if self.edge_type == "hybrid":
-                edge_index = self._batch_edge_indices_hybrid(edge_index, batch_size)
-            else:
-                edge_index = self._batch_edge_indices(edge_index, batch_size)
+            # Batch edges
+            edge_index, edge_attr = self._batch_edges(edge_index, edge_attr, batch_size)
         else:
             batch_size = 1
             batch = torch.zeros(node_features.size(0), dtype=torch.long, device=node_features.device)
@@ -186,25 +147,9 @@ class GAT(ChessModel):
         h = self.input_proj(node_features)
         h = self.dropout(F.relu(h))
         
-        if self.edge_type == "hybrid":
-            # Dual-stream processing with attention fusion
-            h_spatial = h
-            for layer in self.gat_layers:
-                h_spatial = layer(h_spatial, edge_index['spatial'])
-            
-            h_legal = h
-            for layer in self.legal_gat_layers:
-                h_legal = layer(h_legal, edge_index['legal'])
-            
-            # Attention-based fusion
-            combined = torch.cat([h_spatial, h_legal], dim=-1)
-            attention_weights = F.softmax(self.fusion_attention(combined), dim=-1)
-            
-            h = attention_weights[:, 0:1] * h_spatial + attention_weights[:, 1:2] * h_legal
-            h = self.fusion_proj(h)
-        else:
-            for layer in self.gat_layers:
-                h = layer(h, edge_index)
+        # GAT layers
+        for layer in self.gat_layers:
+            h = layer(h, edge_index, edge_attr)
         
         # Global mean pooling
         output = global_mean_pool(h, batch)
@@ -222,25 +167,29 @@ class GAT(ChessModel):
         
         return output
     
-    def _batch_edge_indices(
+    def _batch_edges(
         self,
         edge_index: torch.Tensor,
+        edge_attr: torch.Tensor,
         batch_size: int,
-    ) -> torch.Tensor:
-        """Batch edge indices by offsetting node indices."""
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Batch edge indices and attributes."""
         edge_indices = []
+        edge_attrs = []
+        
+        num_edges = edge_index.size(1)
+        
         for i in range(batch_size):
             offset = i * 64
+            # Edges are (2, E)
             edge_indices.append(edge_index + offset)
-        return torch.cat(edge_indices, dim=1)
-    
-    def _batch_edge_indices_hybrid(
-        self,
-        edge_index: dict,
-        batch_size: int,
-    ) -> dict:
-        """Batch hybrid edge indices."""
-        return {
-            'spatial': self._batch_edge_indices(edge_index['spatial'], batch_size),
-            'legal': self._batch_edge_indices(edge_index['legal'], batch_size),
-        }
+            # Attrs are (E, 3)
+            edge_attrs.append(edge_attr) # Features don't change, just repeat
+        
+        if not edge_indices:
+             return torch.empty((2, 0), device=edge_index.device, dtype=torch.long), torch.empty((0, 3), device=edge_index.device)
+
+        return torch.cat(edge_indices, dim=1), torch.cat(edge_attrs, dim=0)
+
+
+

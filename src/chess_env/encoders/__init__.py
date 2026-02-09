@@ -6,9 +6,4 @@ from .transformer_encoder import (
     SquareTokenizer,
     PieceTokenizer,
 )
-from .gnn_encoder import (
-    GNNEncoder,
-    StaticEdgeBuilder,
-    DynamicEdgeBuilder,
-    HybridEdgeBuilder,
-)
+from .gnn_encoder import GNNEncoder

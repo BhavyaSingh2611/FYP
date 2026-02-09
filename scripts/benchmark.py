@@ -30,7 +30,7 @@ from src.device import get_device
 
 
 # Models to benchmark
-TRAINED_MODELS = ["convnet", "resnet", "square_transformer", "piece_transformer"]
+TRAINED_MODELS = ["convnet", "resnet", "square_transformer", "piece_transformer", "gcn", "gat"]
 
 # Evaluation depth for centipawn tracking
 EVAL_DEPTH = 18
@@ -522,21 +522,28 @@ def main():
     parser.add_argument("--checkpoint-dir", type=str, default="training_results")
     parser.add_argument("--checkpoint", type=str, default=None, help="Specific checkpoint file path")
     parser.add_argument("--model", type=str, default=None, 
-                       choices=["convnet", "resnet", "square_transformer", "piece_transformer"],
+                       choices=TRAINED_MODELS,
                        help="Single model to benchmark (required with --checkpoint)")
     parser.add_argument("--stockfish", type=str, default="/opt/homebrew/bin/stockfish")
     parser.add_argument("--opponent-depth", type=int, default=5, help="Stockfish opponent depth")
     parser.add_argument("--skill-level", type=int, default=None, help="Stockfish skill level (0-20, None for full strength)")
     parser.add_argument("--games", type=int, default=4, help="Games per model (even number)")
     parser.add_argument("--output-dir", type=str, default="detailed_benchmark")
+    parser.add_argument("--name", type=str, default=None, help="Run name (saves to runs/<name>/benchmark/)")
     
     args = parser.parse_args()
+    
+    if args.name:
+        args.output_dir = f"runs/{args.name}/benchmark"
+        args.checkpoint_dir = f"runs/{args.name}/training"
     
     if args.checkpoint and not args.model:
         parser.error("--model is required when using --checkpoint")
     
     print("=" * 60)
     print("DETAILED CHESS MODEL BENCHMARK")
+    if args.name:
+        print(f"Run: {args.name}")
     print("=" * 60)
     print(f"Opponent: Stockfish depth {args.opponent_depth}" + (f", skill level {args.skill_level}" if args.skill_level is not None else ""))
     print(f"Evaluation: Stockfish depth {EVAL_DEPTH}")
