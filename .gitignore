@@ -1,6 +1,7 @@
 .DS_Store
 .tmp*
 *.parquet
+*.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
