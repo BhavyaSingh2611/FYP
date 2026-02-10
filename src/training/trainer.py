@@ -106,7 +106,8 @@ class Trainer:
         value_loss_sum = 0.0
         num_batches = 0
         
-        pbar = tqdm(dataloader, desc=f"Epoch {epoch}")
+        total = len(dataloader.dataset) // dataloader.batch_size if hasattr(dataloader.dataset, '__len__') else None
+        pbar = tqdm(dataloader, desc=f"Epoch {epoch}", total=total)
         
         for batch_idx, batch in enumerate(pbar):
             # Move data to device

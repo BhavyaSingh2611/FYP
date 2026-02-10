@@ -70,33 +70,43 @@ class ChessDataset(IterableDataset):
         import pyarrow.parquet as pq
         import numpy as np
 
+        worker_info = torch.utils.data.get_worker_info()
+
+        all_row_groups = []
+        for fi, p in enumerate(self.paths):
+            meta = pq.read_metadata(p)
+            for rg in range(meta.num_row_groups):
+                all_row_groups.append((fi, rg))
+
+        if worker_info is not None:
+            all_row_groups = all_row_groups[worker_info.id :: worker_info.num_workers]
+
+        if self.shuffle:
+            np.random.shuffle(all_row_groups)
+
+        per_worker_limit = None
+        if self.num_samples:
+            n_workers = worker_info.num_workers if worker_info else 1
+            per_worker_limit = self.num_samples // n_workers
+
         emitted = 0
 
-        file_order = list(range(len(self.paths)))
-        if self.shuffle:
-            np.random.shuffle(file_order)
-
-        for fi in file_order:
+        for fi, rg_idx in all_row_groups:
             pf = pq.ParquetFile(self.paths[fi])
-            rg_order = list(range(pf.metadata.num_row_groups))
+            table = pf.read_row_group(rg_idx)
+            df = table.to_pandas()
+
             if self.shuffle:
-                np.random.shuffle(rg_order)
+                df = df.sample(frac=1).reset_index(drop=True)
 
-            for rg_idx in rg_order:
-                table = pf.read_row_group(rg_idx)
-                df = table.to_pandas()
+            for _, row in df.iterrows():
+                if per_worker_limit and emitted >= per_worker_limit:
+                    return
 
-                if self.shuffle:
-                    df = df.sample(frac=1).reset_index(drop=True)
-
-                for _, row in df.iterrows():
-                    if self.num_samples and emitted >= self.num_samples:
-                        return
-
-                    example = self._row_to_example(row)
-                    if example is not None:
-                        emitted += 1
-                        yield example
+                example = self._row_to_example(row)
+                if example is not None:
+                    emitted += 1
+                    yield example
 
     def _row_to_example(self, row) -> dict | None:
         fen = row.get("fen") or row.get("FEN")
