@@ -151,7 +151,7 @@ def run_supervised(args):
         epochs=config.training.epochs,
         scheduler_type=config.training.lr_scheduler.type,
         save_best=True,
-        save_every=10,
+        save_every=5,
     )
 
     print("\nTraining complete!")
