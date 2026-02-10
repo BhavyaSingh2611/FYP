@@ -1,10 +1,9 @@
 """
 Configuration management module.
 """
-import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -24,9 +23,8 @@ class EngineConfig:
 
 @dataclass
 class PathsConfig:
-    openings: str = "config/openings.json"
-    database: str = "data/chess_dataset.db"
-    checkpoints: str = "checkpoints/"
+    database: str = "data"
+    checkpoints: str = "training_results/"
 
 
 @dataclass
@@ -83,30 +81,12 @@ class TrainingConfig:
 
 
 @dataclass
-class DataGenerationConfig:
-    num_games: int = 1000
-    max_moves_per_game: int = 200
-    temperature: float = 1.0
-    save_every: int = 100
-    # Storage optimization settings
-    skip_first_ply: int = 8
-    sample_rate: int = 2
-    # Asymmetric depth for game variety
-    white_depth: int = 15
-    black_depth: int = 10
-    # Draw adjudication settings
-    adjudication_threshold: int = 10
-    adjudication_moves: int = 10
-
-
-@dataclass
 class Config:
     hardware: HardwareConfig = field(default_factory=HardwareConfig)
     engines: dict = field(default_factory=lambda: {"stockfish": EngineConfig()})
     paths: PathsConfig = field(default_factory=PathsConfig)
     model: ModelConfig = field(default_factory=ModelConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
-    data_generation: DataGenerationConfig = field(default_factory=DataGenerationConfig)
 
 
 def _dict_to_dataclass(cls, data: dict) -> Any:
@@ -190,34 +170,7 @@ def load_config(config_path: str | Path) -> Config:
             lr_scheduler=lr_scheduler,
         )
     
-    if "data_generation" in raw_config:
-        config.data_generation = _dict_to_dataclass(
-            DataGenerationConfig, 
-            raw_config["data_generation"]
-        )
-    
     return config
-
-
-def load_openings(openings_path: str | Path) -> list[dict]:
-    """
-    Load opening positions from a JSON file.
-    
-    Args:
-        openings_path: Path to the JSON file containing openings.
-    
-    Returns:
-        List of opening dictionaries with 'name' and 'fen' keys.
-    """
-    openings_path = Path(openings_path)
-    
-    if not openings_path.exists():
-        raise FileNotFoundError(f"Openings file not found: {openings_path}")
-    
-    with open(openings_path, 'r') as f:
-        data = json.load(f)
-    
-    return data.get("openings", [])
 
 
 def get_config_value(config: Config, key_path: str) -> Any:

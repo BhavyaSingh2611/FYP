@@ -14,9 +14,8 @@ engines:
 
 # Data Paths
 paths:
-  openings: config/openings.json
-  database: data/chess_dataset.db
-  checkpoints: checkpoints/
+  database: data/
+  checkpoints: training_results/
 
 # Model Configuration
 model:
@@ -57,20 +56,3 @@ training:
     type: cosine  # step, cosine, none
     step_size: 10
     gamma: 0.1
-
-# Data Generation Configuration
-data_generation:
-  num_games: 1000
-  max_moves_per_game: 200
-  temperature: 1.0  # For move sampling
-  save_every: 5  # Save to DB every N games
-  # Storage optimization settings (reduces DB size by ~50%)
-  skip_first_ply: 8  # Skip opening theory positions
-  sample_rate: 2  # Store every Nth position (1=all, 2=every other)
-  # Asymmetric depth for game variety (prevents 95% draws)
-  white_depth: 16  # Higher depth = stronger play
-  black_depth: 12  # Lower depth = weaker, creates decisive games
-  # Draw adjudication (eliminates '*' results)
-  adjudication_threshold: 10  # Centipawns threshold
-  adjudication_moves: 10  # Consecutive moves within threshold
-
