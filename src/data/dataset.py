@@ -94,15 +94,18 @@ class ChessDataset(IterableDataset):
         for fi, rg_idx in all_row_groups:
             pf = pq.ParquetFile(self.paths[fi])
             table = pf.read_row_group(rg_idx)
-            df = table.to_pandas()
+            cols = {name: table.column(name).to_pylist() for name in table.schema.names}
+            n_rows = table.num_rows
 
+            indices = np.arange(n_rows)
             if self.shuffle:
-                df = df.sample(frac=1).reset_index(drop=True)
+                np.random.shuffle(indices)
 
-            for _, row in df.iterrows():
+            for i in indices:
                 if per_worker_limit and emitted >= per_worker_limit:
                     return
 
+                row = {k: v[i] for k, v in cols.items()}
                 example = self._row_to_example(row)
                 if example is not None:
                     emitted += 1
@@ -152,12 +155,12 @@ class ChessDataset(IterableDataset):
             for i in range(20):
                 uci_col = f"move_uci_{i}"
                 score_col = f"move_score_{i}"
+                uci_val = row.get(uci_col)
                 if (
-                    uci_col in row.index
-                    and row[uci_col] is not None
-                    and str(row[uci_col]) != "nan"
+                    uci_val is not None
+                    and str(uci_val) != "nan"
                 ):
-                    idx = UCI_MOVE_TO_INDEX.get(str(row[uci_col]), -1)
+                    idx = UCI_MOVE_TO_INDEX.get(str(uci_val), -1)
                     if idx >= 0:
                         indices.append(idx)
                         scores.append(float(row.get(score_col, 0)))

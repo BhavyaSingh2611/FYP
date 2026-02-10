@@ -28,6 +28,11 @@ runs/<name>/
   benchmark/          # benchmark results, PGNs, figures
 ```
 
+## Training Target
+- Primary training hardware: **NVIDIA GPU** (remote VM). Always default to CUDA-optimised paths.
+- `torch.compile` is enabled by default in `Trainer`.
+- Mixed precision (float16) is enabled by default.
+
 ## Code Style
 - Python 3.10+, use type hints (`str | Path`, `int | None`)
 - Use dataclasses for configs (see `src/config.py`)

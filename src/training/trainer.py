@@ -24,7 +24,8 @@ class Trainer:
         - Support for all head types (policy, value, dual)
         - Learning rate scheduling
         - Checkpoint saving/loading
-        - MPS-optimized training
+        - Mixed-precision (float16) training for MPS / CUDA
+        - torch.compile support
     """
     
     def __init__(
@@ -38,26 +39,27 @@ class Trainer:
         value_weight: float = 1.0,
         use_soft_labels: bool = True,
         checkpoint_dir: Optional[str | Path] = None,
+        mixed_precision: bool = True,
+        compile_model: bool = True,
     ):
-        """
-        Initialize trainer.
-        
-        Args:
-            model: Chess model to train.
-            device: Device for training.
-            head_type: Type of head ("policy", "value", "dual").
-            learning_rate: Initial learning rate.
-            weight_decay: Weight decay for optimizer.
-            policy_weight: Weight for policy loss.
-            value_weight: Weight for value loss.
-            use_soft_labels: Use soft policy labels.
-            checkpoint_dir: Directory for saving checkpoints.
-        """
-        self.model = model.to(device)
         self.device = device
         self.head_type = head_type
+
+        self.use_amp = mixed_precision and device.type in ("cuda", "mps")
+        if device.type == "cuda":
+            self.amp_dtype = torch.float16
+        elif device.type == "mps":
+            self.amp_dtype = torch.float16
+        else:
+            self.amp_dtype = torch.float32
+
+        self.model = model.to(device)
+        if compile_model and hasattr(torch, "compile"):
+            try:
+                self.model = torch.compile(self.model)
+            except Exception:
+                pass
         
-        # Create loss function
         self.loss_fn = create_loss(
             head_type=head_type,
             policy_weight=policy_weight,
@@ -65,24 +67,25 @@ class Trainer:
             use_soft_labels=use_soft_labels,
         )
         
-        # Create optimizer
         self.optimizer = AdamW(
             model.parameters(),
             lr=learning_rate,
             weight_decay=weight_decay,
         )
+
+        self.scaler = torch.amp.GradScaler(
+            device=device.type,
+            enabled=self.use_amp and device.type == "cuda",
+        )
         
-        # Scheduler (will be set in train())
         self.scheduler = None
         
-        # Checkpoint directory
         if checkpoint_dir:
             self.checkpoint_dir = Path(checkpoint_dir)
             self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         else:
             self.checkpoint_dir = None
         
-        # Training state
         self.epoch = 0
         self.global_step = 0
         self.best_loss = float('inf')
@@ -110,37 +113,37 @@ class Trainer:
         pbar = tqdm(dataloader, desc=f"Epoch {epoch}", total=total)
         
         for batch_idx, batch in enumerate(pbar):
-            # Move data to device
             inputs = self._prepare_inputs(batch['input'])
             policy_target = batch['policy_target'].to(self.device)
             value_target = batch.get('value_target')
             if value_target is not None:
                 value_target = value_target.to(self.device)
             
-            # Forward pass
-            self.optimizer.zero_grad()
-            output = self.model(inputs)
-            
-            # Compute loss
-            if self.head_type == "dual":
-                loss_dict = self.loss_fn(output, policy_target, value_target)
-                loss = loss_dict['loss']
-                policy_loss_sum += loss_dict['policy_loss'].item()
-                value_loss_sum += loss_dict['value_loss'].item()
-            elif self.head_type == "policy":
-                loss = self.loss_fn(output['policy'], policy_target)
-                policy_loss_sum += loss.item()
-            else:  # value
-                loss = self.loss_fn(output['value'], value_target)
-                value_loss_sum += loss.item()
-            
-            # Backward pass
-            loss.backward()
-            
-            # Gradient clipping
+            self.optimizer.zero_grad(set_to_none=True)
+
+            with torch.autocast(
+                device_type=self.device.type,
+                dtype=self.amp_dtype,
+                enabled=self.use_amp,
+            ):
+                output = self.model(inputs)
+                if self.head_type == "dual":
+                    loss_dict = self.loss_fn(output, policy_target, value_target)
+                    loss = loss_dict['loss']
+                    policy_loss_sum += loss_dict['policy_loss'].item()
+                    value_loss_sum += loss_dict['value_loss'].item()
+                elif self.head_type == "policy":
+                    loss = self.loss_fn(output['policy'], policy_target)
+                    policy_loss_sum += loss.item()
+                else:
+                    loss = self.loss_fn(output['value'], value_target)
+                    value_loss_sum += loss.item()
+
+            self.scaler.scale(loss).backward()
+            self.scaler.unscale_(self.optimizer)
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
-            
-            self.optimizer.step()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
             
             total_loss += loss.item()
             num_batches += 1
@@ -190,20 +193,23 @@ class Trainer:
             if value_target is not None:
                 value_target = value_target.to(self.device)
             
-            output = self.model(inputs)
-            
-            # Compute loss
-            if self.head_type == "dual":
-                loss_dict = self.loss_fn(output, policy_target, value_target)
-                loss = loss_dict['loss']
-                policy_loss_sum += loss_dict['policy_loss'].item()
-                value_loss_sum += loss_dict['value_loss'].item()
-            elif self.head_type == "policy":
-                loss = self.loss_fn(output['policy'], policy_target)
-                policy_loss_sum += loss.item()
-            else:
-                loss = self.loss_fn(output['value'], value_target)
-                value_loss_sum += loss.item()
+            with torch.autocast(
+                device_type=self.device.type,
+                dtype=self.amp_dtype,
+                enabled=self.use_amp,
+            ):
+                output = self.model(inputs)
+                if self.head_type == "dual":
+                    loss_dict = self.loss_fn(output, policy_target, value_target)
+                    loss = loss_dict['loss']
+                    policy_loss_sum += loss_dict['policy_loss'].item()
+                    value_loss_sum += loss_dict['value_loss'].item()
+                elif self.head_type == "policy":
+                    loss = self.loss_fn(output['policy'], policy_target)
+                    policy_loss_sum += loss.item()
+                else:
+                    loss = self.loss_fn(output['value'], value_target)
+                    value_loss_sum += loss.item()
             
             total_loss += loss.item()
             num_batches += 1
