@@ -30,7 +30,7 @@ model:
     heads: 4
 
 training:
-  batch_size: 2048
+  batch_size: 4096
   learning_rate: 0.001
   weight_decay: 0.0001
   epochs: 50
