@@ -17,12 +17,18 @@ class ChessDataset(IterableDataset):
     """
     Streams training examples from one or more Parquet files.
 
-    Each row is expected to contain at least:
+    Supports two Parquet schemas:
+
+    Engine-evaluated positions (primary):
+        fen    – FEN string
+        line   – PV line in UCI (first move = best move)
+        cp     – centipawn evaluation (None if mate)
+        mate   – mate-in-N evaluation (None if no mate)
+
+    Legacy multi-move format:
         fen            – FEN string
         best_move      – UCI move string
         result         – game result ('1-0', '0-1', '1/2-1/2')
-
-    Optional soft-label columns:
         move_uci_0 … move_uci_N   – UCI strings for the top-N moves
         move_score_0 … move_score_N – centipawn scores for those moves
 
@@ -115,6 +121,19 @@ class ChessDataset(IterableDataset):
 
         return result
 
+    def _extract_best_move(self, row) -> str | None:
+        best = row.get("best_move") or row.get("best_move_uci")
+        if best is not None and str(best) != "nan":
+            return str(best)
+
+        line = row.get("line")
+        if line is not None and str(line) != "nan":
+            first_move = str(line).strip().split()[0]
+            if first_move:
+                return first_move
+
+        return None
+
     def _build_policy(self, row) -> torch.Tensor:
         policy = torch.zeros(NUM_MOVES)
 
@@ -134,16 +153,18 @@ class ChessDataset(IterableDataset):
                         scores.append(float(row.get(score_col, 0)))
 
             if indices:
-                s = torch.tensor(scores, dtype=torch.float32) / 100.0
+                s = torch.tensor(scores, dtype=torch.float32)
+                s = s / s.abs().max().clamp(min=1.0)
                 probs = torch.softmax(s, dim=0)
                 for idx, p in zip(indices, probs):
                     policy[idx] = p
                 return policy
 
-        best = row.get("best_move") or row.get("best_move_uci")
+        best = self._extract_best_move(row)
         if best is not None:
-            idx = UCI_MOVE_TO_INDEX.get(str(best), 0)
-            policy[idx] = 1.0
+            idx = UCI_MOVE_TO_INDEX.get(best, -1)
+            if idx >= 0:
+                policy[idx] = 1.0
 
         return policy
 
@@ -151,10 +172,25 @@ class ChessDataset(IterableDataset):
         result_str = row.get("result") or row.get("game_result")
         side = 0 if board.turn == chess.WHITE else 1
 
-        if result_str == "1-0":
-            return 1.0 if side == 0 else -1.0
-        elif result_str == "0-1":
-            return -1.0 if side == 0 else 1.0
+        if result_str is not None and str(result_str) != "nan":
+            if result_str == "1-0":
+                return 1.0 if side == 0 else -1.0
+            elif result_str == "0-1":
+                return -1.0 if side == 0 else 1.0
+            elif result_str == "1/2-1/2":
+                return 0.0
+
+        mate = row.get("mate")
+        if mate is not None and str(mate) != "nan":
+            mate = int(mate)
+            val = 1.0 if mate > 0 else -1.0
+            return val if side == 0 else -val
+
+        cp = row.get("cp")
+        if cp is not None and str(cp) != "nan":
+            val = max(-1.0, min(1.0, float(cp) / 1000.0))
+            return val if side == 0 else -val
+
         return 0.0
 
 
