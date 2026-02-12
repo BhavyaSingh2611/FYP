@@ -4,6 +4,8 @@ Training loop for chess models.
 from pathlib import Path
 from typing import Optional
 import time
+import urllib.request
+import urllib.error
 
 import torch
 import torch.nn as nn
@@ -14,6 +16,23 @@ from tqdm import tqdm
 
 from .losses import create_loss, PolicyLoss, ValueLoss, DualLoss
 from ..models.base import ChessModel
+
+NTFY_URL = "https://ntfy.lunex.page/FYP"
+
+
+def _send_ntfy(title: str, message: str, priority: str = "default") -> None:
+    try:
+        req = urllib.request.Request(
+            NTFY_URL,
+            data=message.encode(),
+            headers={
+                "Title": title,
+                "Priority": priority,
+            },
+        )
+        urllib.request.urlopen(req, timeout=10)
+    except Exception:
+        pass
 
 
 class Trainer:
@@ -269,11 +288,11 @@ class Trainer:
         }
         
         start_time = time.time()
+        model_name = getattr(self.model, 'name', type(self.model).__name__)
         
         for epoch in range(1, epochs + 1):
             self.epoch = epoch
             
-            # Train
             train_metrics = self.train_epoch(train_loader, epoch)
             history['train_loss'].append(train_metrics['loss'])
             
@@ -285,7 +304,6 @@ class Trainer:
             if 'value_loss' in train_metrics:
                 print(f"  Value Loss: {train_metrics['value_loss']:.4f}")
             
-            # Validate
             if val_loader is not None:
                 val_metrics = self.evaluate(val_loader)
                 history['val_loss'].append(val_metrics['loss'])
@@ -297,24 +315,43 @@ class Trainer:
                 if 'accuracy' in val_metrics:
                     print(f"  Val Accuracy: {val_metrics['accuracy']:.4f}")
                 
-                # Save best
                 if save_best and val_metrics['loss'] < self.best_loss:
                     self.best_loss = val_metrics['loss']
                     self.save_checkpoint('best.pt')
                     print("  Saved best model!")
             
-            # Save periodic checkpoint
-            if self.checkpoint_dir and epoch % save_every == 0:
+            if self.checkpoint_dir:
                 self.save_checkpoint(f'epoch_{epoch}.pt')
+                self.save_checkpoint('latest.pt')
+            
+            ntfy_lines = [f"Loss: {train_metrics['loss']:.4f}"]
+            if 'policy_loss' in train_metrics:
+                ntfy_lines.append(f"Policy: {train_metrics['policy_loss']:.4f}")
+            if 'value_loss' in train_metrics:
+                ntfy_lines.append(f"Value: {train_metrics['value_loss']:.4f}")
+            _send_ntfy(
+                title=f"{model_name} — Epoch {epoch}/{epochs}",
+                message="\n".join(ntfy_lines),
+            )
             
             print()
         
         total_time = time.time() - start_time
         print(f"Training complete in {total_time/60:.1f} minutes")
         
-        # Save final checkpoint
         if self.checkpoint_dir:
             self.save_checkpoint('final.pt')
+            for ckpt in sorted(self.checkpoint_dir.glob("epoch_*.pt")):
+                num = int(ckpt.stem.split("_")[1])
+                if num % 5 != 0:
+                    ckpt.unlink()
+                    print(f"  Removed {ckpt.name}")
+        
+        _send_ntfy(
+            title=f"{model_name} — Training Complete",
+            message=f"Finished {epochs} epochs in {total_time/60:.1f} min\nFinal loss: {history['train_loss'][-1]:.4f}",
+            priority="high",
+        )
         
         return history
     
