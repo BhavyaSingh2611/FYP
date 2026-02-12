@@ -4,8 +4,7 @@ Training loop for chess models.
 from pathlib import Path
 from typing import Optional
 import time
-import urllib.request
-import urllib.error
+import requests
 
 import torch
 import torch.nn as nn
@@ -22,17 +21,11 @@ NTFY_URL = "https://ntfy.lunex.page/FYP"
 
 def _send_ntfy(title: str, message: str, priority: str = "default") -> None:
     try:
-        req = urllib.request.Request(
-            NTFY_URL,
-            data=message.encode(),
-            headers={
-                "Title": title,
-                "Priority": priority,
-            },
-        )
-        urllib.request.urlopen(req, timeout=10)
-    except Exception:
-        pass
+        requests.post(NTFY_URL,
+            data=message.encode(encoding='utf-8'),
+            headers={"Title": title, "Priority": priority})
+    except Exception as e:
+        print(f"Failed to send ntfy notification: {e}")
 
 
 class Trainer:
