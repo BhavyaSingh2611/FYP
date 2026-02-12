@@ -18,7 +18,7 @@ declare -A MODELS=(
 for host in otter{1..6}; do
   model="${MODELS[$host]}"
   run_name="${model}_50_10M"
-  cmd="cd ${REMOTE_DIR} && source .venv/bin/activate && python scripts/train.py --config config/config.yaml --name ${run_name} supervised --model ${model} --epochs 50 --num-samples 10000000"
+  cmd="cd ${REMOTE_DIR} && source .venv/bin/activate && python3 scripts/train.py --config config/config.yaml --name ${run_name} supervised --model ${model} --epochs 50 --num-samples 10000000"
 
   echo "[$host] Launching ${model}..."
   ssh -o StrictHostKeyChecking=no "$host" \

@@ -104,67 +104,39 @@ class GCN(ChessModel):
         return self.output_dim
     
     def forward_backbone(self, x: dict) -> torch.Tensor:
-        """
-        Forward pass through the backbone.
-        """
         node_features = x['x']
         edge_index = x['edge_index']
         side_to_move = x['side_to_move']
         castling = x['castling']
-        
-        # Handle batched input
-        if node_features.dim() == 3:
-            # (B, 64, 12) -> (B*64, 12)
+
+        if 'batch' in x:
+            batch = x['batch'].to(node_features.device)
+        elif node_features.dim() == 3:
             batch_size = node_features.size(0)
             node_features = node_features.view(-1, node_features.size(-1))
-            
-            # Create batch indices
             batch = torch.arange(batch_size, device=node_features.device)
             batch = batch.unsqueeze(1).expand(-1, 64).reshape(-1)
-            
-            # Adjust edge indices for batching
-            edge_index = self._batch_edge_indices(edge_index, batch_size)
+            edge_indices = []
+            for i in range(batch_size):
+                edge_indices.append(edge_index + i * 64)
+            edge_index = torch.cat(edge_indices, dim=1)
         else:
-            batch_size = 1
             batch = torch.zeros(node_features.size(0), dtype=torch.long, device=node_features.device)
-        
-        # Initial projection
-        h = self.input_proj(node_features)  # (B*64, D)
+
+        h = self.input_proj(node_features)
         h = self.dropout(F.relu(h))
-        
-        # GCN layers
+
         for layer in self.gcn_layers:
             h = layer(h, edge_index)
-        
-        # Global mean pooling
-        output = global_mean_pool(h, batch)  # (B, D)
-        
-        # Add side to move
-        side_emb = self.side_embedding(side_to_move)  # (B, D)
-        output = output + side_emb
-        
-        # Add castling info
-        castling_emb = self.castling_proj(castling)  # (B, D)
-        output = output + castling_emb
-        
-        # Final projection
-        output = self.output_proj(output)
-        
-        return output
-    
-    def _batch_edge_indices(
-        self,
-        edge_index: torch.Tensor,
-        batch_size: int,
-    ) -> torch.Tensor:
-        """Batch edge indices by offsetting node indices."""
-        # Repeat edge_index for each graph in batch
-        edge_indices = []
-        for i in range(batch_size):
-            offset = i * 64
-            edge_indices.append(edge_index + offset)
-        
-        if not edge_indices:
-             return torch.empty((2, 0), device=edge_index.device, dtype=torch.long)
 
-        return torch.cat(edge_indices, dim=1)
+        output = global_mean_pool(h, batch)
+
+        side_emb = self.side_embedding(side_to_move)
+        output = output + side_emb
+
+        castling_emb = self.castling_proj(castling)
+        output = output + castling_emb
+
+        output = self.output_proj(output)
+
+        return output

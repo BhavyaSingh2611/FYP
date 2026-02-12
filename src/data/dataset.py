@@ -207,12 +207,51 @@ class ChessDataset(IterableDataset):
         return 0.0
 
 
+def _is_graph_input(first_input: dict) -> bool:
+    return isinstance(first_input, dict) and "edge_index" in first_input
+
+
+def _collate_graph_inputs(batch: list[dict]) -> dict:
+    """Batch graph inputs by concatenating edges with node-index offsets."""
+    num_nodes_per_graph = 64
+
+    node_features = torch.stack([b["input"]["x"] for b in batch])  # (B, 64, F)
+    batch_size = node_features.size(0)
+
+    edge_indices = []
+    edge_attrs = []
+    for i, b in enumerate(batch):
+        offset = i * num_nodes_per_graph
+        edge_indices.append(b["input"]["edge_index"] + offset)
+        if "edge_attr" in b["input"]:
+            edge_attrs.append(b["input"]["edge_attr"])
+
+    batched_edge_index = torch.cat(edge_indices, dim=1)  # (2, total_E)
+
+    graph_batch = torch.arange(batch_size).unsqueeze(1).expand(-1, num_nodes_per_graph).reshape(-1)
+
+    result = {
+        "x": node_features.view(-1, node_features.size(-1)),  # (B*64, F)
+        "edge_index": batched_edge_index,
+        "batch": graph_batch,
+        "side_to_move": torch.stack([b["input"]["side_to_move"] for b in batch]),
+        "castling": torch.stack([b["input"]["castling"] for b in batch]),
+    }
+
+    if edge_attrs:
+        result["edge_attr"] = torch.cat(edge_attrs, dim=0)  # (total_E, 3)
+
+    return result
+
+
 def collate_fn(batch: list[dict]) -> dict:
     result = {}
 
     first_input = batch[0]["input"]
     if isinstance(first_input, torch.Tensor):
         result["input"] = torch.stack([b["input"] for b in batch])
+    elif _is_graph_input(first_input):
+        result["input"] = _collate_graph_inputs(batch)
     else:
         result["input"] = {}
         for key in first_input.keys():

@@ -120,76 +120,47 @@ class GAT(ChessModel):
         return self.output_dim
     
     def forward_backbone(self, x: dict) -> torch.Tensor:
-        """
-        Forward pass through the backbone.
-        """
         node_features = x['x']
         edge_index = x['edge_index']
         edge_attr = x.get('edge_attr')
         side_to_move = x['side_to_move']
         castling = x['castling']
-        
-        # Handle batched input
-        if node_features.dim() == 3:
+
+        if 'batch' in x:
+            batch = x['batch'].to(node_features.device)
+        elif node_features.dim() == 3:
             batch_size = node_features.size(0)
             node_features = node_features.view(-1, node_features.size(-1))
-            
             batch = torch.arange(batch_size, device=node_features.device)
             batch = batch.unsqueeze(1).expand(-1, 64).reshape(-1)
-            
-            # Batch edges
-            edge_index, edge_attr = self._batch_edges(edge_index, edge_attr, batch_size)
+            edge_indices, edge_attrs = [], []
+            for i in range(batch_size):
+                edge_indices.append(edge_index + i * 64)
+                if edge_attr is not None:
+                    edge_attrs.append(edge_attr)
+            edge_index = torch.cat(edge_indices, dim=1)
+            if edge_attrs:
+                edge_attr = torch.cat(edge_attrs, dim=0)
         else:
-            batch_size = 1
             batch = torch.zeros(node_features.size(0), dtype=torch.long, device=node_features.device)
-        
-        # Initial projection
+
         h = self.input_proj(node_features)
         h = self.dropout(F.relu(h))
-        
-        # GAT layers
+
         for layer in self.gat_layers:
             h = layer(h, edge_index, edge_attr)
-        
-        # Global mean pooling
+
         output = global_mean_pool(h, batch)
-        
-        # Add side to move
+
         side_emb = self.side_embedding(side_to_move)
         output = output + side_emb
-        
-        # Add castling info
+
         castling_emb = self.castling_proj(castling)
         output = output + castling_emb
-        
-        # Final projection
-        output = self.output_proj(output)
-        
-        return output
-    
-    def _batch_edges(
-        self,
-        edge_index: torch.Tensor,
-        edge_attr: torch.Tensor,
-        batch_size: int,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Batch edge indices and attributes."""
-        edge_indices = []
-        edge_attrs = []
-        
-        num_edges = edge_index.size(1)
-        
-        for i in range(batch_size):
-            offset = i * 64
-            # Edges are (2, E)
-            edge_indices.append(edge_index + offset)
-            # Attrs are (E, 3)
-            edge_attrs.append(edge_attr) # Features don't change, just repeat
-        
-        if not edge_indices:
-             return torch.empty((2, 0), device=edge_index.device, dtype=torch.long), torch.empty((0, 3), device=edge_index.device)
 
-        return torch.cat(edge_indices, dim=1), torch.cat(edge_attrs, dim=0)
+        output = self.output_proj(output)
+
+        return output
 
 
 
