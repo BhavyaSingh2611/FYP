@@ -66,7 +66,8 @@ class Trainer:
             self.amp_dtype = torch.float32
 
         self.model = model.to(device)
-        if compile_model and hasattr(torch, "compile"):
+        is_gnn = type(model).__name__ in ("GCN", "GAT")
+        if compile_model and not is_gnn and hasattr(torch, "compile"):
             try:
                 self.model = torch.compile(self.model)
             except Exception:
@@ -323,7 +324,7 @@ class Trainer:
             if 'value_loss' in train_metrics:
                 ntfy_lines.append(f"Value: {train_metrics['value_loss']:.4f}")
             _send_ntfy(
-                title=f"{model_name} — Epoch {epoch}/{epochs}",
+                title=f"{model_name} - Epoch {epoch}/{epochs}",
                 message="\n".join(ntfy_lines),
             )
             
@@ -341,7 +342,7 @@ class Trainer:
                     print(f"  Removed {ckpt.name}")
         
         _send_ntfy(
-            title=f"{model_name} — Training Complete",
+            title=f"{model_name} - Training Complete",
             message=f"Finished {epochs} epochs in {total_time/60:.1f} min\nFinal loss: {history['train_loss'][-1]:.4f}",
             priority="high",
         )

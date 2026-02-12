@@ -15,10 +15,10 @@ declare -A MODELS=(
   [otter6]="gat"
 )
 
-for host in otter{5..6}; do
+for host in otter{1..6}; do
   model="${MODELS[$host]}"
-  run_name="${model}_30_5M"
-  cmd="cd ${REMOTE_DIR} && source .venv/bin/activate && python3 scripts/train.py --config config/config.yaml --name ${run_name} supervised --model ${model} --epochs 30 --num-samples 5000000"
+  run_name="${model}_50_10M"
+  cmd="cd ${REMOTE_DIR} && source .venv/bin/activate && python3 scripts/train.py --config config/config.yaml --name ${run_name} supervised --model ${model} --epochs 50 --num-samples 10000000"
 
   echo "[$host] Launching ${model}..."
   ssh -o StrictHostKeyChecking=no "$host" \
