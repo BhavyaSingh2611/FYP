@@ -1,0 +1,10 @@
+[Event "Benchmark: gat vs Stockfish D24"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_GAT_6L_4H_256D"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. e4 { [%eval 0.39] } 1... d5 { [%eval 0.69] } 2. exd5 { [%eval 0.74] } 2... e5 { [%eval 1.18] } 3. dxe6 { [%eval 1.10] } 3... Bxe6 { [%eval 1.05] } 4. Nf3 { [%eval 1.14] } 4... Nf6 { [%eval 1.00] } 5. d4 { [%eval 1.06] } 5... Nc6 { [%eval 1.73] } 6. Be2 { [%eval 1.77] } 6... Bd6 { [%eval 1.76] } 7. c4 { [%eval 1.71] } 7... Qe7 { [%eval 3.06] } 8. c5 { [%eval 3.00] } 8... Bxc5 { [%eval 3.67] } 9. dxc5 { [%eval 3.75] } 9... Rd8 { [%eval 4.25] } 10. Qa4 { [%eval 4.18] } 10... Nd5 { [%eval 4.50] } 11. O-O { [%eval 4.34] } 11... a6 { [%eval 4.59] } 12. Bg5 { [%eval 4.64] } 12... f6 { [%eval 4.64] } 13. Bd2 { [%eval 4.62] } 13... Rd7 { [%eval 5.01] } 14. Nc3 { [%eval 4.83] } 14... Nxc3 { [%eval 5.33] } 15. Bxc3 { [%eval 5.24] } 15... Bd5 { [%eval 5.51] } 16. Rfe1 { [%eval 5.33] } 16... Qf7 { [%eval 6.16] } 17. Ng5 { [%eval 6.78] } 17... fxg5 { [%eval 6.48] } 18. Bh5+ { [%eval 6.82] } 18... Kf8 { [%eval 6.99] } 19. Bxf7 { [%eval 7.12] } 19... Rxf7 { [%eval 8.42] } 20. Rad1 { [%eval 8.71] } 20... b6 { [%eval 12.45] } 21. Qxc6 { [%eval 99.40] } 21... Bxc6 { [%eval 99.80] } 22. Rd8+ { [%eval 99.90] } 22... Be8 { [%eval 99.90] } 23. Rexe8# { [%eval #-0] } 1-0
