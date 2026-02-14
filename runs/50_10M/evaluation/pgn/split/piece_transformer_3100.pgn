@@ -1,0 +1,239 @@
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_PieceTransformer_6L_256D"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.20] } 1... Nf6 { [%eval 0.22] } 2. Nf3 { [%eval 0.21] } 2... d5 { [%eval 0.25] } 3. Bf4 { [%eval 0.20] } 3... c5 { [%eval 0.12] } 4. e3 { [%eval 0.14] } 4... Nc6 { [%eval 0.12] } 5. Bb5 { [%eval -0.11] } 5... Qa5+ { [%eval -0.20] } 6. Nc3 { [%eval -0.20] } 6... Bd7 { [%eval 0.13] } 7. dxc5 { [%eval -0.28] } 7... Ne4 { [%eval -0.20] } 8. Qxd5 { [%eval -3.73] } 8... Nxc3 { [%eval -3.73] } 9. Bxc6 { [%eval -7.22] } 9... Nxd5+ { [%eval -7.25] } 10. b4 { [%eval -8.45] } 10... Qxb4+ { [%eval -8.62] } 11. c3 { [%eval -8.71] } 11... Qxc3+ { [%eval -9.48] } 12. Ke2 { [%eval -10.06] } 12... Qc4+ { [%eval -9.71] } 13. Ke1 { [%eval -10.46] } 13... Bxc6 { [%eval -9.65] } 14. Be5 { [%eval -9.63] } 14... f6 { [%eval -9.71] } 15. Bd4 { [%eval -10.51] } 15... Qb5 { [%eval -9.91] } 16. a4 { [%eval -9.80] } 16... Qb4+ { [%eval -9.68] } 17. Ke2 { [%eval -9.75] } 17... Qa5 { [%eval -8.95] } 18. Rhb1 { [%eval -9.10] } 18... e6 { [%eval -8.92] } 19. Nd2 { [%eval -9.30] } 19... Qa6+ { [%eval -9.13] } 20. Ke1 { [%eval -9.17] } 20... e5 { [%eval -9.11] } 21. Bb2 { [%eval -9.62] } 21... Bxc5 { [%eval -9.30] } 22. e4 { [%eval -98.90] } 22... Nf4 { [%eval -99.00] } 23. g3 { [%eval -99.90] } 23... Bxf2+ { [%eval -99.00] } 24. Kxf2 { [%eval -99.80] } 24... Qe2+ { [%eval -99.90] } 25. Kg1 { [%eval -99.90] } 25... Nh3+ { [%eval -99.80] } 26. Kh1 { [%eval -99.80] } 26... Qxe4+ { [%eval -99.90] } 27. Nxe4 { [%eval -99.90] } 27... Bxe4# { [%eval #0] } 0-1
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_PieceTransformer_6L_256D"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.27] } 1... d5 { [%eval 0.20] } 2. Nf3 { [%eval 0.21] } 2... Nf6 { [%eval 0.18] } 3. Bf4 { [%eval 0.01] } 3... c5 { [%eval 0.02] } 4. dxc5 { [%eval -0.10] } 4... e6 { [%eval -0.07] } 5. e3 { [%eval -0.11] } 5... Bxc5 { [%eval -0.17] } 6. Be2 { [%eval -0.13] } 6... Nc6 { [%eval -0.09] } 7. O-O { [%eval -0.01] } 7... a6 { [%eval 0.10] } 8. c4 { [%eval 0.10] } 8... dxc4 { [%eval 0.08] } 9. Qxd8+ { [%eval 0.05] } 9... Nxd8 { [%eval 0.15] } 10. Rc1 { [%eval -0.09] } 10... b5 { [%eval 0.27] } 11. b3 { [%eval -0.10] } 11... Bb7 { [%eval 0.34] } 12. a3 { [%eval 0.20] } 12... cxb3 { [%eval 2.53] } 13. Rxc5 { [%eval 2.78] } 13... b2 { [%eval 3.81] } 14. Ra2 { [%eval 3.86] } 14... Be4 { [%eval 3.64] } 15. Rxb2 { [%eval 3.59] } 15... Nd7 { [%eval 5.06] } 16. Rc7 { [%eval 5.10] } 16... f6 { [%eval 5.45] } 17. Nbd2 { [%eval 4.62] } 17... Bd5 { [%eval 5.25] } 18. e4 { [%eval 5.33] } 18... Bc6 { [%eval 5.44] } 19. h4 { [%eval 4.70] } 19... e5 { [%eval 5.01] } 20. Be3 { [%eval 5.02] } 20... Rc8 { [%eval 7.68] } 21. Rxc8 { [%eval 7.60] } 21... Ke7 { [%eval 7.85] } 22. Kh1 { [%eval 7.73] } 22... Bb7 { [%eval 7.80] } 23. Rc7 { [%eval 7.73] } 23... Ne6 { [%eval 8.68] } 24. Rxb7 { [%eval 8.62] } 24... Rc8 { [%eval 8.62] } 25. Rb1 { [%eval 8.63] } 25... Rc2 { [%eval 8.76] } 26. Ng1 { [%eval 8.36] } 26... Nd4 { [%eval 9.13] } 27. Bd1 { [%eval 8.93] } 27... Ra2 { [%eval 9.41] } 28. Bg4 { [%eval 9.44] } 28... Rxa3 { [%eval 99.10] } 29. Rxd7+ { [%eval 99.20] } 29... Ke8 { [%eval 99.20] } 30. Rc1 { [%eval 99.30] } 30... f5 { [%eval 99.30] } 31. Rxg7 { [%eval 99.40] } 31... fxg4 { [%eval 99.90] } 32. Bxd4 { [%eval 99.70] } 32... exd4 { [%eval 99.90] } 33. Rc8# { [%eval #0] } 1-0
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_PieceTransformer_6L_256D"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.13] } 1... d5 { [%eval 0.23] } 2. Nf3 { [%eval 0.21] } 2... Nf6 { [%eval 0.20] } 3. Bf4 { [%eval 0.04] } 3... c5 { [%eval 0.05] } 4. e3 { [%eval 0.19] } 4... cxd4 { [%eval 0.26] } 5. exd4 { [%eval 0.24] } 5... a6 { [%eval 0.34] } 6. c3 { [%eval 0.26] } 6... Nc6 { [%eval 0.28] } 7. Bd3 { [%eval 0.29] } 7... Bg4 { [%eval 0.31] } 8. h3 { [%eval 0.30] } 8... Bh5 { [%eval 0.27] } 9. Nbd2 { [%eval 0.31] } 9... Bg6 { [%eval 0.33] } 10. Bxg6 { [%eval 0.42] } 10... hxg6 { [%eval 0.40] } 11. Qb3 { [%eval 0.34] } 11... Na5 { [%eval 0.39] } 12. Qa4+ { [%eval 0.18] } 12... Nd7 { [%eval 0.52] } 13. b4 { [%eval 0.32] } 13... Nc6 { [%eval 0.35] } 14. Qb3 { [%eval 0.27] } 14... Nf6 { [%eval 0.27] } 15. a4 { [%eval 0.24] } 15... Rc8 { [%eval 0.25] } 16. b5 { [%eval 0.03] } 16... Na5 { [%eval 0.15] } 17. Qa2 { [%eval -0.27] } 17... Qb6 { [%eval 0.02] } 18. Rb1 { [%eval -0.12] } 18... e6 { [%eval -0.11] } 19. bxa6 { [%eval -0.40] } 19... Qxa6 { [%eval -0.36] } 20. Ne5 { [%eval -1.05] } 20... Bd6 { [%eval -0.98] } 21. Qb2 { [%eval -1.55] } 21... O-O { [%eval -1.64] } 22. Qb5 { [%eval -1.90] } 22... Qxb5 { [%eval -1.77] } 23. Rxb5 { [%eval -1.85] } 23... Rxc3 { [%eval -1.86] } 24. Rxa5 { [%eval -3.78] } 24... Rc1+ { [%eval -3.82] } 25. Ke2 { [%eval -3.85] } 25... Rxh1 { [%eval -4.08] } 26. Nd3 { [%eval -4.64] } 26... Bxf4 { [%eval -4.49] } 27. Nxf4 { [%eval -4.60] } 27... Ra1 { [%eval -4.48] } 28. Nd3 { [%eval -4.53] } 28... Ne8 { [%eval -4.36] } 29. Rb5 { [%eval -4.43] } 29... Nd6 { [%eval -4.54] } 30. Rc5 { [%eval -5.16] } 30... Nf5 { [%eval -4.73] } 31. g4 { [%eval -5.17] } 31... b6 { [%eval -5.20] } 32. Rc3 { [%eval -5.10] } 32... Nxd4+ { [%eval -5.32] } 33. Ke3 { [%eval -5.28] } 33... e5 { [%eval -5.30] } 34. Nxe5 { [%eval -5.30] } 34... Rxa4 { [%eval -5.44] } 35. Rd3 { [%eval -5.52] } 35... Re8 { [%eval -5.64] } 36. Rxd4 { [%eval -5.62] } 36... Rxe5+ { [%eval -5.63] } 37. Kd3 { [%eval -5.49] } 37... b5 { [%eval -5.55] } 38. Nf3 { [%eval -6.70] } 38... Ra3+ { [%eval -7.03] } 39. Kd2 { [%eval -7.10] } 39... Rxf3 { [%eval -7.11] } 40. h4 { [%eval -7.16] } 40... Kh7 { [%eval -7.26] } 41. g5 { [%eval -7.46] } 41... Rxf2+ { [%eval -7.46] } 42. Kd3 { [%eval -7.55] } 42... Ref5 { [%eval -7.56] } 43. Ke3 { [%eval -99.90] } 43... R5f3# { [%eval #0] } 0-1
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_PieceTransformer_6L_256D"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.15] } 1... d5 { [%eval 0.22] } 2. Bf4 { [%eval 0.09] } 2... c5 { [%eval 0.08] } 3. dxc5 { [%eval 0.00] } 3... Nf6 { [%eval -0.15] } 4. Nf3 { [%eval -0.24] } 4... e6 { [%eval -0.12] } 5. e3 { [%eval -0.06] } 5... Bxc5 { [%eval -0.08] } 6. Nbd2 { [%eval -0.25] } 6... Nc6 { [%eval -0.32] } 7. Bb5 { [%eval -0.40] } 7... Bd7 { [%eval -0.31] } 8. O-O { [%eval -0.24] } 8... a6 { [%eval 0.11] } 9. Bd3 { [%eval -0.01] } 9... Nh5 { [%eval 0.10] } 10. Be5 { [%eval 0.06] } 10... Nxe5 { [%eval 0.01] } 11. Nxe5 { [%eval -0.01] } 11... Nf6 { [%eval 0.04] } 12. c4 { [%eval 0.04] } 12... dxc4 { [%eval -0.05] } 13. Ndxc4 { [%eval -0.05] } 13... Bc6 { [%eval 1.04] } 14. Nxc6 { [%eval 1.06] } 14... bxc6 { [%eval 1.23] } 15. Qa4 { [%eval 0.72] } 15... Qc7 { [%eval 2.09] } 16. b4 { [%eval 1.97] } 16... Be7 { [%eval 2.15] } 17. Na5 { [%eval 2.26] } 17... Nd5 { [%eval 2.20] } 18. Rac1 { [%eval 2.48] } 18... Rc8 { [%eval 5.02] } 19. Rxc6 { [%eval 5.19] } 19... Qd7 { [%eval 6.96] } 20. Rxc8+ { [%eval 7.02] } 20... Bd8 { [%eval 7.13] } 21. Qc6 { [%eval 7.12] } 21... Nxb4 { [%eval 7.28] } 22. Rxd8+ { [%eval 7.57] } 22... Kxd8 { [%eval 7.58] } 23. Qb6+ { [%eval 7.58] } 23... Kc8 { [%eval 99.50] } 24. Rc1+ { [%eval 99.60] } 24... Qc6 { [%eval 99.60] } 25. Qb7+ { [%eval 99.70] } 25... Kd8 { [%eval 99.70] } 26. Rxc6 { [%eval 99.80] } 26... Nxd3 { [%eval 99.90] } 27. Rc3 { [%eval 99.80] } 27... Nc5 { [%eval 99.80] } 28. Rxc5 { [%eval 99.90] } 28... Re8 { [%eval 99.90] } 29. Nc6# { [%eval #0] } 1-0
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_PieceTransformer_6L_256D"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.26] } 1... Nf6 { [%eval 0.25] } 2. Nf3 { [%eval 0.23] } 2... e6 { [%eval 0.22] } 3. c4 { [%eval 0.20] } 3... Bb4+ { [%eval 0.35] } 4. Bd2 { [%eval 0.31] } 4... Bxd2+ { [%eval 0.33] } 5. Qxd2 { [%eval 0.26] } 5... O-O { [%eval 0.26] } 6. Nc3 { [%eval 0.15] } 6... Nc6 { [%eval 0.44] } 7. e4 { [%eval 0.44] } 7... d5 { [%eval 0.44] } 8. e5 { [%eval 0.40] } 8... Ne4 { [%eval 0.34] } 9. Qe3 { [%eval 0.24] } 9... f5 { [%eval 0.45] } 10. exf6 { [%eval 0.50] } 10... Nxf6 { [%eval 0.56] } 11. Be2 { [%eval 0.34] } 11... e5 { [%eval 0.37] } 12. dxe5 { [%eval 0.06] } 12... d4 { [%eval 0.11] } 13. Nxd4 { [%eval 0.10] } 13... Nxd4 { [%eval 0.14] } 14. Rd1 { [%eval -7.28] } 14... Nc2+ { [%eval -7.52] } 15. Kf1 { [%eval -7.48] } 15... Nxe3+ { [%eval -7.64] } 16. fxe3 { [%eval -7.47] } 16... Ne4+ { [%eval -6.91] } 17. Bf3 { [%eval -7.40] } 17... Qh4 { [%eval -7.05] } 18. Nxe4 { [%eval -8.34] } 18... Qxe4 { [%eval -8.76] } 19. Kg1 { [%eval -99.70] } 19... Qxe3+ { [%eval -99.80] } 20. Kf1 { [%eval -99.80] } 20... Be6 { [%eval -99.70] } 21. Re1 { [%eval -99.80] } 21... Rxf3+ { [%eval -99.90] } 22. gxf3 { [%eval -99.90] } 22... Bh3# { [%eval #0] } 0-1
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_PieceTransformer_6L_256D"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. e4 { [%eval 0.20] } 1... e5 { [%eval 0.31] } 2. d4 { [%eval -0.14] } 2... exd4 { [%eval -0.15] } 3. Nf3 { [%eval -0.16] } 3... Bb4+ { [%eval -0.19] } 4. c3 { [%eval -0.26] } 4... Bxc3+ { [%eval 4.76] } 5. bxc3 { [%eval 4.33] } 5... dxc3 { [%eval 4.65] } 6. Bc4 { [%eval 4.66] } 6... c2 { [%eval 4.86] } 7. Qxc2 { [%eval 4.75] } 7... Nc6 { [%eval 4.91] } 8. O-O { [%eval 4.95] } 8... Nge7 { [%eval 5.07] } 9. Qc3 { [%eval 4.96] } 9... d5 { [%eval 5.83] } 10. Bxd5 { [%eval 4.75] } 10... Nxd5 { [%eval 4.86] } 11. exd5 { [%eval 4.80] } 11... Qxd5 { [%eval 6.64] } 12. Qxg7 { [%eval 6.48] } 12... Rf8 { [%eval 7.20] } 13. Bh6 { [%eval 7.18] } 13... Be6 { [%eval 9.29] } 14. Qxf8+ { [%eval 9.90] } 14... Kd7 { [%eval 9.88] } 15. Qg7 { [%eval 7.18] } 15... Re8 { [%eval 6.84] } 16. Re1 { [%eval 7.09] } 16... Qh5 { [%eval 7.25] } 17. Nc3 { [%eval 7.23] } 17... Kc8 { [%eval 7.15] } 18. h4 { [%eval 6.97] } 18... Qg6 { [%eval 7.22] } 19. Qxg6 { [%eval 7.28] } 19... hxg6 { [%eval 7.38] } 20. Kh1 { [%eval 7.12] } 20... f6 { [%eval 7.36] } 21. Kh2 { [%eval 7.25] } 21... Bf7 { [%eval 7.36] } 22. Ne4 { [%eval 7.15] } 22... Bd5 { [%eval 7.74] } 23. Nxf6 { [%eval 7.91] } 23... Rxe1 { [%eval 8.05] } 24. Nxe1 { [%eval 7.39] } 24... Bf7 { [%eval 7.34] } 25. a3 { [%eval 7.47] } 25... b6 { [%eval 7.57] } 26. Nf3 { [%eval 7.67] } 26... Kb7 { [%eval 7.73] } 27. Rc1 { [%eval 7.58] } 27... a5 { [%eval 7.71] } 28. Ng4 { [%eval 7.57] } 28... Bd5 { [%eval 7.52] } 29. Nge5 { [%eval 7.48] } 29... Nxe5 { [%eval 7.85] } 30. Nxe5 { [%eval 7.88] } 30... c5 { [%eval 7.92] } 31. Nxg6 { [%eval 7.96] } 31... a4 { [%eval 8.29] } 32. Bg5 { [%eval 8.18] } 32... b5 { [%eval 8.52] } 33. Rxc5 { [%eval 8.59] } 33... Bb3 { [%eval 8.85] } 34. Rxb5+ { [%eval 9.87] } 34... Kc7 { [%eval 10.08] } 35. Re5 { [%eval 10.09] } 35... Kd6 { [%eval 10.39] } 36. Bf6 { [%eval 10.45] } 36... Bf7 { [%eval 10.71] } 37. Nf4 { [%eval 11.04] } 37... Kd7 { [%eval 98.70] } 38. Re2 { [%eval 11.32] } 38... Bc4 { [%eval 11.32] } 39. Re7+ { [%eval 11.39] } 39... Kc6 { [%eval 12.97] } 40. Re3 { [%eval 10.78] } 40... Kd7 { [%eval 14.87] } 41. g4 { [%eval 10.63] } 41... Kd6 { [%eval 13.67] } 42. h5 { [%eval 11.83] } 42... Bf7 { [%eval 12.80] } 43. h6 { [%eval 98.00] } 43... Bc4 { [%eval 99.20] } 44. h7 { [%eval 99.30] } 44... Bf7 { [%eval 99.40] } 45. Re7 { [%eval 99.40] } 45... Bc4 { [%eval 99.50] } 46. h8=Q { [%eval 99.60] } 46... Kc6 { [%eval 99.70] } 47. Qc8+ { [%eval 99.70] } 47... Kb5 { [%eval 99.70] } 48. Rb7+ { [%eval 99.80] } 48... Ka5 { [%eval 99.80] } 49. Qd8+ { [%eval 99.90] } 49... Ka6 { [%eval 99.90] } 50. Qb8 { [%eval 99.80] } 50... Ka5 { [%eval 99.80] } 51. Bd8+ { [%eval 99.90] } 51... Ka6 { [%eval 99.90] } 52. Nh3 { [%eval 99.90] } 52... Bd5 { [%eval 99.90] } 53. Qa7# { [%eval #0] } 1-0
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_PieceTransformer_6L_256D"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.16] } 1... e6 { [%eval 0.39] } 2. Nf3 { [%eval 0.15] } 2... Nf6 { [%eval 0.29] } 3. c4 { [%eval 0.30] } 3... d5 { [%eval 0.25] } 4. e3 { [%eval 0.04] } 4... c5 { [%eval 0.17] } 5. cxd5 { [%eval 0.13] } 5... exd5 { [%eval 0.05] } 6. dxc5 { [%eval -0.13] } 6... Nc6 { [%eval 0.31] } 7. Bb5 { [%eval -0.28] } 7... Bxc5 { [%eval -0.14] } 8. Nc3 { [%eval -0.35] } 8... Bb4 { [%eval -0.06] } 9. Bd2 { [%eval -0.22] } 9... Qe7 { [%eval -0.01] } 10. Rc1 { [%eval -0.13] } 10... O-O { [%eval 0.02] } 11. Ne2 { [%eval -0.21] } 11... Bxd2+ { [%eval -0.10] } 12. Qxd2 { [%eval -0.77] } 12... Ne4 { [%eval -0.69] } 13. Qxd5 { [%eval -0.83] } 13... Qb4+ { [%eval -0.83] } 14. Nc3 { [%eval -2.52] } 14... Qxb2 { [%eval -2.58] } 15. Nxe4 { [%eval -3.64] } 15... Qxc1+ { [%eval -3.94] } 16. Ke2 { [%eval -4.17] } 16... Qb2+ { [%eval -4.28] } 17. Ned2 { [%eval -4.59] } 17... Be6 { [%eval -4.53] } 18. Qe4 { [%eval -6.83] } 18... Qxb5+ { [%eval -6.63] } 19. Qd3 { [%eval -6.67] } 19... Qxd3+ { [%eval -6.74] } 20. Ke1 { [%eval -9.57] } 20... Qg6 { [%eval -9.91] } 21. Kf1 { [%eval -9.99] } 21... Rfd8 { [%eval -10.13] } 22. h4 { [%eval -10.55] } 22... Qf6 { [%eval -9.89] } 23. Ne4 { [%eval -11.40] } 23... Rd1+ { [%eval -99.20] } 24. Ne1 { [%eval -99.70] } 24... Bc4+ { [%eval -99.80] } 25. Kg1 { [%eval -99.80] } 25... Rxe1+ { [%eval -99.90] } 26. Kh2 { [%eval -99.90] } 26... Qxh4# { [%eval #0] } 0-1
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_PieceTransformer_6L_256D"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. e4 { [%eval 0.31] } 1... e5 { [%eval 0.37] } 2. Nf3 { [%eval 0.31] } 2... Nc6 { [%eval 0.38] } 3. Bb5 { [%eval 0.39] } 3... Nf6 { [%eval 0.26] } 4. O-O { [%eval 0.15] } 4... Nxe4 { [%eval 0.14] } 5. d4 { [%eval 0.00] } 5... exd4 { [%eval 0.78] } 6. Re1 { [%eval 0.68] } 6... Be7 { [%eval 4.01] } 7. Rxe4 { [%eval 3.86] } 7... d5 { [%eval 4.31] } 8. Rxd4 { [%eval 4.20] } 8... Qd6 { [%eval 5.33] } 9. Nc3 { [%eval 4.88] } 9... Be6 { [%eval 5.59] } 10. Bf4 { [%eval 5.52] } 10... Qc5 { [%eval 5.36] } 11. Nxd5 { [%eval 5.50] } 11... Bxd5 { [%eval 6.17] } 12. Rxd5 { [%eval 6.22] } 12... Qxd5 { [%eval 7.10] } 13. Qxd5 { [%eval 6.90] } 13... Rd8 { [%eval 8.78] } 14. Bxc6+ { [%eval 8.92] } 14... bxc6 { [%eval 9.04] } 15. Qxc6+ { [%eval 8.97] } 15... Kf8 { [%eval 9.31] } 16. Bxc7 { [%eval 8.54] } 16... Re8 { [%eval 8.78] } 17. Ne5 { [%eval 9.32] } 17... f6 { [%eval 11.43] } 18. Nd7+ { [%eval 11.91] } 18... Kf7 { [%eval 11.34] } 19. Qd5+ { [%eval 12.00] } 19... Kg6 { [%eval 10.91] } 20. Qd3+ { [%eval 8.67] } 20... f5 { [%eval 10.69] } 21. Rd1 { [%eval 9.11] } 21... Bf6 { [%eval 10.39] } 22. g4 { [%eval 10.54] } 22... h5 { [%eval 98.80] } 23. gxf5+ { [%eval 11.69] } 23... Kf7 { [%eval 99.80] } 24. Qc4+ { [%eval 99.90] } 24... Re6 { [%eval 99.90] } 25. Qxe6# { [%eval #0] } 1-0
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_PieceTransformer_6L_256D"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.22] } 1... Nf6 { [%eval 0.25] } 2. Nf3 { [%eval 0.26] } 2... e6 { [%eval 0.29] } 3. c4 { [%eval 0.34] } 3... d5 { [%eval 0.33] } 4. e3 { [%eval 0.18] } 4... Be7 { [%eval 0.18] } 5. Nc3 { [%eval 0.13] } 5... Nbd7 { [%eval 0.29] } 6. cxd5 { [%eval 0.21] } 6... exd5 { [%eval 0.08] } 7. Bd3 { [%eval 0.15] } 7... c6 { [%eval 0.27] } 8. Qc2 { [%eval 0.27] } 8... O-O { [%eval 0.22] } 9. h3 { [%eval 0.18] } 9... Re8 { [%eval 0.26] } 10. Bd2 { [%eval -0.55] } 10... Bf8 { [%eval 0.26] } 11. a3 { [%eval -0.37] } 11... Bd6 { [%eval -0.38] } 12. b4 { [%eval -0.36] } 12... g6 { [%eval 0.17] } 13. Rc1 { [%eval -0.34] } 13... Qe7 { [%eval -0.51] } 14. Ne2 { [%eval -0.55] } 14... Ne4 { [%eval -0.50] } 15. Bxe4 { [%eval -1.78] } 15... dxe4 { [%eval -1.81] } 16. Nfg1 { [%eval -2.15] } 16... Nf6 { [%eval -2.20] } 17. b5 { [%eval -3.64] } 17... cxb5 { [%eval -3.62] } 18. Qb3 { [%eval -4.60] } 18... Bxa3 { [%eval -4.28] } 19. Ra1 { [%eval -4.46] } 19... b4 { [%eval -4.33] } 20. Nf4 { [%eval -4.47] } 20... a5 { [%eval -4.26] } 21. Nge2 { [%eval -4.24] } 21... Bd7 { [%eval -4.06] } 22. d5 { [%eval -4.42] } 22... g5 { [%eval -3.95] } 23. Nh5 { [%eval -5.21] } 23... Nxh5 { [%eval -4.89] } 24. Nd4 { [%eval -5.41] } 24... Nf6 { [%eval -5.65] } 25. Qc2 { [%eval -5.66] } 25... a4 { [%eval -5.61] } 26. Rb1 { [%eval -6.30] } 26... b3 { [%eval -6.10] } 27. Rxb3 { [%eval -6.74] } 27... axb3 { [%eval -6.72] } 28. Qxb3 { [%eval -6.76] } 28... Qe5 { [%eval -6.84] } 29. Bc3 { [%eval -7.09] } 29... Nxd5 { [%eval -7.14] } 30. Ne2 { [%eval -8.42] } 30... Nxc3 { [%eval -8.51] } 31. Nxc3 { [%eval -9.46] } 31... Be6 { [%eval -9.62] } 32. Qc2 { [%eval -10.47] } 32... Rec8 { [%eval -8.44] } 33. Qd2 { [%eval -8.65] } 33... Rxc3 { [%eval -8.68] } 34. f4 { [%eval -11.09] } 34... Rxe3+ { [%eval -98.90] } 35. Qxe3 { [%eval -98.90] } 35... Qa5+ { [%eval -9.97] } 36. Kf2 { [%eval -12.60] } 36... Bc5 { [%eval -98.90] } 37. Rc1 { [%eval -99.40] } 37... Qd2+ { [%eval -99.50] } 38. Kg3 { [%eval -99.60] } 38... Bxe3 { [%eval -99.60] } 39. Rf1 { [%eval -99.80] } 39... gxf4+ { [%eval -99.60] } 40. Rxf4 { [%eval -99.70] } 40... Qe1+ { [%eval -99.70] } 41. Kh2 { [%eval -99.80] } 41... Bxf4+ { [%eval -99.90] } 42. g3 { [%eval -99.90] } 42... Qxg3+ { [%eval -99.90] } 43. Kh1 { [%eval -99.90] } 43... Qf3+ { [%eval -99.90] } 44. Kg1 { [%eval -99.90] } 44... Qg3+ { [%eval -99.90] } 45. Kf1 { [%eval -99.90] } 45... Rd8 { [%eval -99.90] } 46. h4 { [%eval -99.90] } 46... Bc4# { [%eval #0] } 0-1
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_PieceTransformer_6L_256D"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.29] } 1... d5 { [%eval 0.32] } 2. c4 { [%eval 0.30] } 2... dxc4 { [%eval 0.39] } 3. Nf3 { [%eval 0.21] } 3... Nf6 { [%eval 0.33] } 4. Nc3 { [%eval 0.08] } 4... e6 { [%eval 0.31] } 5. e4 { [%eval 0.40] } 5... Bb4 { [%eval 0.43] } 6. Bxc4 { [%eval 0.26] } 6... Nxe4 { [%eval 0.27] } 7. Qc2 { [%eval 0.12] } 7... Nxc3 { [%eval 0.35] } 8. bxc3 { [%eval 0.36] } 8... Be7 { [%eval 0.41] } 9. O-O { [%eval 0.34] } 9... Nd7 { [%eval 0.35] } 10. Rd1 { [%eval 0.28] } 10... c5 { [%eval 1.29] } 11. d5 { [%eval 1.33] } 11... Nb6 { [%eval 3.57] } 12. dxe6 { [%eval 3.79] } 12... Bxe6 { [%eval 5.02] } 13. Rxd8+ { [%eval 5.24] } 13... Rxd8 { [%eval 5.27] } 14. Bb5+ { [%eval 4.68] } 14... Bd7 { [%eval 4.56] } 15. Bxd7+ { [%eval 4.51] } 15... Rxd7 { [%eval 4.55] } 16. c4 { [%eval 4.60] } 16... Bf6 { [%eval 5.01] } 17. Rb1 { [%eval 4.43] } 17... h6 { [%eval 5.00] } 18. Bb2 { [%eval 5.17] } 18... Bxb2 { [%eval 5.32] } 19. Re1+ { [%eval 5.19] } 19... Be5 { [%eval 5.55] } 20. Rxe5+ { [%eval 5.85] } 20... Kd8 { [%eval 5.65] } 21. Re3 { [%eval 5.14] } 21... Re8 { [%eval 5.44] } 22. Rxe8+ { [%eval 5.29] } 22... Kxe8 { [%eval 5.44] } 23. h4 { [%eval 5.38] } 23... Kd8 { [%eval 5.87] } 24. Kh1 { [%eval 5.17] } 24... Kc7 { [%eval 6.13] } 25. Kh2 { [%eval 5.20] } 25... a6 { [%eval 6.65] } 26. Qf5 { [%eval 6.34] } 26... Nxc4 { [%eval 7.20] } 27. Qxc5+ { [%eval 7.48] } 27... Kd8 { [%eval 7.74] } 28. h5 { [%eval 6.14] } 28... Nd6 { [%eval 6.72] } 29. Ne5 { [%eval 6.76] } 29... Rc7 { [%eval 99.60] } 30. Qxd6+ { [%eval 99.70] } 30... Kc8 { [%eval 99.90] } 31. Qf8# { [%eval #0] } 1-0
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_PieceTransformer_6L_256D"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.27] } 1... d5 { [%eval 0.31] } 2. Nf3 { [%eval 0.29] } 2... e6 { [%eval 0.27] } 3. Bf4 { [%eval 0.22] } 3... c5 { [%eval 0.17] } 4. e3 { [%eval 0.25] } 4... Nc6 { [%eval 0.23] } 5. c3 { [%eval 0.24] } 5... Nf6 { [%eval 0.21] } 6. Nbd2 { [%eval 0.23] } 6... Nh5 { [%eval 0.16] } 7. Be5 { [%eval -0.19] } 7... f6 { [%eval -0.16] } 8. Bg3 { [%eval -0.28] } 8... cxd4 { [%eval -0.16] } 9. Nxd4 { [%eval -0.22] } 9... Nxd4 { [%eval 0.12] } 10. cxd4 { [%eval 0.21] } 10... g6 { [%eval 0.23] } 11. Rc1 { [%eval 0.19] } 11... Nxg3 { [%eval 0.15] } 12. hxg3 { [%eval 0.20] } 12... Be7 { [%eval 0.25] } 13. Bd3 { [%eval 0.25] } 13... Kf7 { [%eval 0.19] } 14. g4 { [%eval -0.08] } 14... Rb8 { [%eval 0.57] } 15. f4 { [%eval 0.13] } 15... Kg7 { [%eval 0.30] } 16. Nf3 { [%eval 0.08] } 16... e5 { [%eval 0.16] } 17. dxe5 { [%eval 0.11] } 17... Bxg4 { [%eval 0.20] } 18. Qb3 { [%eval -0.06] } 18... Qa5+ { [%eval -0.07] } 19. Kf2 { [%eval -0.47] } 19... Rhc8 { [%eval 0.58] } 20. Rxc8 { [%eval 0.37] } 20... Rxc8 { [%eval 0.31] } 21. Qxb7 { [%eval 0.27] } 21... Rc7 { [%eval 0.26] } 22. Qb3 { [%eval -0.41] } 22... fxe5 { [%eval -0.24] } 23. fxe5 { [%eval -0.25] } 23... Bxf3 { [%eval -0.26] } 24. gxf3 { [%eval -1.05] } 24... Qd2+ { [%eval -0.97] } 25. Kg3 { [%eval -1.40] } 25... h5 { [%eval -2.13] } 26. Qxd5 { [%eval -3.35] } 26... h4+ { [%eval -3.59] } 27. Kh3 { [%eval -99.40] } 27... Qf2 { [%eval -99.50] } 28. Bxg6 { [%eval -99.90] } 28... Qg3# { [%eval #0] } 0-1
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_PieceTransformer_6L_256D"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. Nf3 { [%eval 0.24] } 1... d5 { [%eval 0.24] } 2. c3 { [%eval -0.02] } 2... Nf6 { [%eval 0.13] } 3. d4 { [%eval 0.13] } 3... Bf5 { [%eval 0.11] } 4. Bf4 { [%eval 0.12] } 4... e6 { [%eval 0.14] } 5. Qb3 { [%eval 0.13] } 5... Qc8 { [%eval 0.15] } 6. e3 { [%eval 0.08] } 6... Nbd7 { [%eval 0.16] } 7. a4 { [%eval 0.23] } 7... Be7 { [%eval 0.28] } 8. h3 { [%eval 0.13] } 8... c5 { [%eval 0.16] } 9. Qd1 { [%eval -0.15] } 9... a6 { [%eval 0.02] } 10. a5 { [%eval -0.08] } 10... h6 { [%eval -0.03] } 11. Bd3 { [%eval -0.18] } 11... Bxd3 { [%eval -0.16] } 12. Qxd3 { [%eval -0.17] } 12... Ne4 { [%eval 0.00] } 13. O-O { [%eval 0.03] } 13... g5 { [%eval 0.17] } 14. Be5 { [%eval -0.28] } 14... Nxe5 { [%eval -0.24] } 15. Nxe5 { [%eval -0.35] } 15... h5 { [%eval 0.49] } 16. c4 { [%eval 0.65] } 16... cxd4 { [%eval 1.36] } 17. cxd5 { [%eval 1.34] } 17... Nc5 { [%eval 1.67] } 18. Qxd4 { [%eval 1.80] } 18... exd5 { [%eval 3.48] } 19. Ng6 { [%eval 3.75] } 19... fxg6 { [%eval 4.05] } 20. Qxh8+ { [%eval 4.39] } 20... Kf7 { [%eval 4.54] } 21. Qh7+ { [%eval 4.92] } 21... Ke6 { [%eval 5.01] } 22. Qxg6+ { [%eval 5.00] } 22... Kd7 { [%eval 5.53] } 23. Nc3 { [%eval 5.47] } 23... Qc6 { [%eval 6.43] } 24. Qh7 { [%eval 6.43] } 24... Rf8 { [%eval 6.66] } 25. Nxd5 { [%eval 6.55] } 25... Qxd5 { [%eval 7.51] } 26. Rfd1 { [%eval 7.30] } 26... Kc6 { [%eval 8.99] } 27. Rxd5 { [%eval 8.86] } 27... Kxd5 { [%eval 9.45] } 28. Qxe7 { [%eval 9.43] } 28... Rc8 { [%eval 98.20] } 29. Qf7+ { [%eval 9.76] } 29... Kd6 { [%eval 99.50] } 30. Rd1+ { [%eval 99.60] } 30... Kc6 { [%eval 99.60] } 31. Qg6+ { [%eval 99.70] } 31... Kb5 { [%eval 99.80] } 32. Qb6+ { [%eval 99.90] } 32... Ka4 { [%eval 99.90] } 33. Ra1# { [%eval #0] } 1-0
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_PieceTransformer_6L_256D"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.25] } 1... Nf6 { [%eval 0.32] } 2. Nf3 { [%eval 0.26] } 2... e6 { [%eval 0.25] } 3. c4 { [%eval 0.29] } 3... d5 { [%eval 0.26] } 4. e3 { [%eval 0.14] } 4... c5 { [%eval 0.17] } 5. cxd5 { [%eval 0.25] } 5... exd5 { [%eval 0.15] } 6. dxc5 { [%eval -0.12] } 6... Bxc5 { [%eval -0.08] } 7. a3 { [%eval -0.07] } 7... Nc6 { [%eval -0.08] } 8. b4 { [%eval 0.00] } 8... Bb6 { [%eval 0.02] } 9. Bb2 { [%eval -0.04] } 9... d4 { [%eval 0.01] } 10. exd4 { [%eval 0.10] } 10... Nd5 { [%eval 0.36] } 11. Bc4 { [%eval 0.25] } 11... Be6 { [%eval 0.78] } 12. Nbd2 { [%eval 0.93] } 12... O-O { [%eval 0.68] } 13. Ne4 { [%eval -1.78] } 13... Nc3 { [%eval -1.93] } 14. Nxc3 { [%eval -3.67] } 14... Bxc4 { [%eval -4.28] } 15. Ne2 { [%eval -4.83] } 15... Re8 { [%eval -5.36] } 16. Rc1 { [%eval -5.81] } 16... Rxe2+ { [%eval -5.12] } 17. Qxe2 { [%eval -5.32] } 17... Bxe2 { [%eval -5.30] } 18. Kxe2 { [%eval -5.30] } 18... Qe8+ { [%eval -5.22] } 19. Kf1 { [%eval -5.52] } 19... Rd8 { [%eval -4.90] } 20. h4 { [%eval -4.90] } 20... f6 { [%eval -4.81] } 21. h5 { [%eval -4.91] } 21... Qf7 { [%eval -4.94] } 22. h6 { [%eval -5.33] } 22... Qa2 { [%eval -5.55] } 23. hxg7 { [%eval -6.78] } 23... Qxb2 { [%eval -7.06] } 24. Re1 { [%eval -6.71] } 24... Nxd4 { [%eval -7.39] } 25. Nxd4 { [%eval -99.40] } 25... Qxd4 { [%eval -99.50] } 26. Re2 { [%eval -99.50] } 26... Qa1+ { [%eval -99.60] } 27. Re1 { [%eval -99.60] } 27... Qa2 { [%eval -99.70] } 28. Re2 { [%eval -99.80] } 28... Rd1+ { [%eval -99.90] } 29. Re1 { [%eval -99.90] } 29... Qxf2# { [%eval #0] } 0-1
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_PieceTransformer_6L_256D"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. Nf3 { [%eval 0.22] } 1... d5 { [%eval 0.23] } 2. e3 { [%eval 0.14] } 2... Nf6 { [%eval 0.12] } 3. Be2 { [%eval 0.15] } 3... c5 { [%eval 0.11] } 4. O-O { [%eval 0.15] } 4... Nc6 { [%eval 0.17] } 5. Na3 { [%eval -0.45] } 5... e5 { [%eval -0.67] } 6. d3 { [%eval -0.97] } 6... Bd6 { [%eval -0.94] } 7. e4 { [%eval -0.92] } 7... d4 { [%eval -0.64] } 8. c3 { [%eval -0.57] } 8... a6 { [%eval -0.51] } 9. Bg5 { [%eval -0.62] } 9... h6 { [%eval -0.78] } 10. Bh4 { [%eval -0.82] } 10... g5 { [%eval -0.32] } 11. Bg3 { [%eval -0.23] } 11... Be6 { [%eval -0.34] } 12. h3 { [%eval -1.06] } 12... dxc3 { [%eval -0.04] } 13. bxc3 { [%eval -0.13] } 13... Qc7 { [%eval 0.25] } 14. Nd2 { [%eval 0.26] } 14... Rg8 { [%eval 0.54] } 15. Nac4 { [%eval 0.62] } 15... b5 { [%eval 0.56] } 16. Nxd6+ { [%eval 0.44] } 16... Qxd6 { [%eval 0.55] } 17. Qc1 { [%eval 0.42] } 17... Rd8 { [%eval 0.49] } 18. Nb3 { [%eval 0.54] } 18... c4 { [%eval 0.91] } 19. dxc4 { [%eval 0.93] } 19... Nxe4 { [%eval 2.05] } 20. Qe3 { [%eval 2.00] } 20... Nxg3 { [%eval 2.05] } 21. fxg3 { [%eval 2.14] } 21... bxc4 { [%eval 3.10] } 22. Nc5 { [%eval 3.16] } 22... Bd5 { [%eval 4.51] } 23. Nb7 { [%eval 4.53] } 23... Qc7 { [%eval 4.69] } 24. Nxd8 { [%eval 4.71] } 24... Kxd8 { [%eval 5.72] } 25. Rad1 { [%eval 5.63] } 25... Rg7 { [%eval 6.70] } 26. Bxc4 { [%eval 6.75] } 26... Ne7 { [%eval 6.67] } 27. Bxd5 { [%eval 6.72] } 27... Nxd5 { [%eval 9.24] } 28. Rxd5+ { [%eval 98.20] } 28... Kc8 { [%eval 98.30] } 29. Rc5 { [%eval 98.40] } 29... Kb7 { [%eval 99.40] } 30. Rxc7+ { [%eval 99.50] } 30... Kxc7 { [%eval 99.50] } 31. Qc5+ { [%eval 99.60] } 31... Kd7 { [%eval 99.60] } 32. Qd5+ { [%eval 99.20] } 32... Ke7 { [%eval 99.40] } 33. Qc5+ { [%eval 99.20] } 33... Ke8 { [%eval 99.20] } 34. Qxe5+ { [%eval 99.30] } 34... Kd7 { [%eval 99.40] } 35. Rd1+ { [%eval 99.60] } 35... Kc6 { [%eval 99.70] } 36. Qd6+ { [%eval 99.80] } 36... Kb7 { [%eval 99.80] } 37. Rb1+ { [%eval 99.90] } 37... Kc8 { [%eval 99.90] } 38. Qc6+ { [%eval 99.80] } 38... Kd8 { [%eval 99.80] } 39. Rb7 { [%eval 99.80] } 39... g4 { [%eval 99.90] } 40. Qd7# { [%eval #0] } 1-0
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_PieceTransformer_6L_256D"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.25] } 1... Nf6 { [%eval 0.28] } 2. Nf3 { [%eval 0.30] } 2... e6 { [%eval 0.42] } 3. c4 { [%eval 0.34] } 3... d5 { [%eval 0.39] } 4. e3 { [%eval 0.21] } 4... b6 { [%eval 0.15] } 5. Nc3 { [%eval 0.08] } 5... Bd6 { [%eval 0.03] } 6. cxd5 { [%eval -0.05] } 6... exd5 { [%eval 0.00] } 7. Bd3 { [%eval -0.06] } 7... O-O { [%eval 0.00] } 8. Nb5 { [%eval 0.00] } 8... Be7 { [%eval 0.00] } 9. Nc3 { [%eval -0.01] } 9... a6 { [%eval -0.04] } 10. Ne5 { [%eval -0.16] } 10... c5 { [%eval -0.16] } 11. b3 { [%eval -0.42] } 11... Bd6 { [%eval -0.31] } 12. Bb2 { [%eval -0.35] } 12... Ra7 { [%eval -0.13] } 13. Rc1 { [%eval -0.38] } 13... b5 { [%eval -0.41] } 14. dxc5 { [%eval -3.99] } 14... Bxe5 { [%eval -4.07] } 15. b4 { [%eval -4.12] } 15... Re7 { [%eval -3.65] } 16. Ne2 { [%eval -5.88] } 16... Bxb2 { [%eval -5.85] } 17. Rb1 { [%eval -6.01] } 17... Be5 { [%eval -5.93] } 18. a4 { [%eval -5.83] } 18... bxa4 { [%eval -5.92] } 19. Qxa4 { [%eval -5.69] } 19... d4 { [%eval -5.68] } 20. exd4 { [%eval -5.58] } 20... Bxd4 { [%eval -5.58] } 21. Rd1 { [%eval -6.69] } 21... Bg4 { [%eval -6.37] } 22. Bxh7+ { [%eval -8.06] } 22... Nxh7 { [%eval -8.51] } 23. Rxd4 { [%eval -99.60] } 23... Rxe2+ { [%eval -99.70] } 24. Kf1 { [%eval -99.80] } 24... Qxd4 { [%eval -99.90] } 25. f3 { [%eval -99.90] } 25... Rf2+ { [%eval -99.90] } 26. Kg1 { [%eval -99.90] } 26... Rxf3# { [%eval #0] } 0-1
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_PieceTransformer_6L_256D"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. Nf3 { [%eval 0.32] } 1... d5 { [%eval 0.37] } 2. d4 { [%eval 0.32] } 2... Nf6 { [%eval 0.34] } 3. e3 { [%eval 0.14] } 3... Bf5 { [%eval 0.34] } 4. c4 { [%eval 0.31] } 4... e6 { [%eval 0.29] } 5. Qb3 { [%eval 0.25] } 5... Qc8 { [%eval 0.47] } 6. Nh4 { [%eval 0.35] } 6... Bxb1 { [%eval 0.37] } 7. Rxb1 { [%eval 0.36] } 7... dxc4 { [%eval 0.44] } 8. Bxc4 { [%eval 0.44] } 8... Nbd7 { [%eval 0.62] } 9. Nf3 { [%eval 0.56] } 9... c5 { [%eval 0.61] } 10. Bd2 { [%eval 0.47] } 10... Be7 { [%eval 0.67] } 11. O-O { [%eval 0.71] } 11... a6 { [%eval 0.74] } 12. a4 { [%eval 0.59] } 12... cxd4 { [%eval 0.63] } 13. Nxd4 { [%eval 0.67] } 13... Nc5 { [%eval 0.75] } 14. Qd1 { [%eval 0.12] } 14... Qd7 { [%eval 0.20] } 15. Ra1 { [%eval 0.03] } 15... Rc8 { [%eval 0.12] } 16. Ba5 { [%eval 0.03] } 16... b6 { [%eval 2.28] } 17. Bxb6 { [%eval 2.19] } 17... Qb7 { [%eval 2.16] } 18. Ba5 { [%eval 2.00] } 18... Nce4 { [%eval 2.66] } 19. Rc1 { [%eval 2.48] } 19... Nc5 { [%eval 4.49] } 20. b4 { [%eval 4.57] } 20... Nce4 { [%eval 4.27] } 21. Qe2 { [%eval 4.44] } 21... Nd6 { [%eval 6.01] } 22. Bxa6 { [%eval 6.07] } 22... Rxc1 { [%eval 6.30] } 23. Bxb7 { [%eval 6.48] } 23... Rxf1+ { [%eval 6.48] } 24. Kxf1 { [%eval 6.53] } 24... Nxb7 { [%eval 7.11] } 25. Qb5+ { [%eval 7.31] } 25... Nd7 { [%eval 8.02] } 26. Qxb7 { [%eval 8.12] } 26... Bd8 { [%eval 8.87] } 27. Nc6 { [%eval 8.26] } 27... h5 { [%eval 9.05] } 28. Ke2 { [%eval 8.64] } 28... h4 { [%eval 9.05] } 29. Bxd8 { [%eval 9.10] } 29... h3 { [%eval 9.32] } 30. gxh3 { [%eval 9.38] } 30... f6 { [%eval 9.91] } 31. Qc8 { [%eval 9.81] } 31... Kf7 { [%eval 99.20] } 32. Qb7 { [%eval 9.56] } 32... Rxd8 { [%eval 98.40] } 33. a5 { [%eval 8.90] } 33... Re8 { [%eval 10.16] } 34. Qxd7+ { [%eval 14.51] } 34... Kg6 { [%eval 99.60] } 35. Qxe8+ { [%eval 99.70] } 35... Kf5 { [%eval 99.80] } 36. f4 { [%eval 99.70] } 36... Ke4 { [%eval 99.90] } 37. Qd8 { [%eval 99.90] } 37... e5 { [%eval 99.90] } 38. Qd7 { [%eval 99.90] } 38... exf4 { [%eval 99.90] } 39. Qg4 { [%eval 99.80] } 39... Kd5 { [%eval 99.80] } 40. Qd7+ { [%eval 99.90] } 40... Kc4 { [%eval 99.90] } 41. Qd3# { [%eval #0] } 1-0
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_PieceTransformer_6L_256D"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.34] } 1... d5 { [%eval 0.32] } 2. Nf3 { [%eval 0.35] } 2... Nf6 { [%eval 0.31] } 3. Bf4 { [%eval 0.15] } 3... e6 { [%eval 0.24] } 4. e3 { [%eval 0.27] } 4... c5 { [%eval 0.26] } 5. c3 { [%eval 0.16] } 5... Bd6 { [%eval 0.16] } 6. Bb5+ { [%eval 0.22] } 6... Nc6 { [%eval 0.23] } 7. dxc5 { [%eval 0.04] } 7... Bxc5 { [%eval 0.11] } 8. Nbd2 { [%eval -0.02] } 8... a6 { [%eval 0.07] } 9. Bxc6+ { [%eval 0.04] } 9... bxc6 { [%eval -0.06] } 10. Ne5 { [%eval -0.17] } 10... Bb7 { [%eval -0.17] } 11. Qa4 { [%eval -0.24] } 11... a5 { [%eval -0.22] } 12. Nb3 { [%eval -0.25] } 12... Bb6 { [%eval -0.31] } 13. c4 { [%eval -0.05] } 13... O-O { [%eval -0.08] } 14. c5 { [%eval -0.88] } 14... Bc7 { [%eval -0.87] } 15. Nd3 { [%eval -2.09] } 15... Re8 { [%eval -1.60] } 16. Bxc7 { [%eval -1.86] } 16... Qxc7 { [%eval -1.82] } 17. Rc1 { [%eval -3.27] } 17... Ba6 { [%eval -3.01] } 18. Rc3 { [%eval -4.45] } 18... Ne4 { [%eval -4.19] } 19. Rc2 { [%eval -5.95] } 19... Bxd3 { [%eval -6.15] } 20. Rc1 { [%eval -6.82] } 20... e5 { [%eval -6.35] } 21. f3 { [%eval -6.49] } 21... Bb5 { [%eval -5.45] } 22. Qxe4 { [%eval -7.48] } 22... dxe4 { [%eval -7.38] } 23. fxe4 { [%eval -7.97] } 23... Qd8 { [%eval -8.05] } 24. Nd2 { [%eval -8.17] } 24... h5 { [%eval -7.95] } 25. Rc3 { [%eval -8.78] } 25... Qh4+ { [%eval -8.70] } 26. g3 { [%eval -9.30] } 26... Qg4 { [%eval -9.64] } 27. Kf2 { [%eval -12.51] } 27... Qe2+ { [%eval -12.98] } 28. Kg1 { [%eval -12.49] } 28... Qe1+ { [%eval -98.80] } 29. Nf1 { [%eval -99.90] } 29... Qxf1# { [%eval #0] } 0-1
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_PieceTransformer_6L_256D"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. c4 { [%eval 0.09] } 1... e5 { [%eval 0.14] } 2. Nc3 { [%eval 0.22] } 2... Nc6 { [%eval 0.33] } 3. g3 { [%eval 0.32] } 3... Bc5 { [%eval 0.40] } 4. e3 { [%eval 0.29] } 4... Nf6 { [%eval 0.26] } 5. Bg2 { [%eval 0.40] } 5... Bb6 { [%eval 0.61] } 6. a3 { [%eval 0.30] } 6... d6 { [%eval 0.32] } 7. b3 { [%eval 0.32] } 7... a5 { [%eval 0.40] } 8. Nge2 { [%eval 0.44] } 8... h5 { [%eval 0.70] } 9. h3 { [%eval 0.80] } 9... h4 { [%eval 1.32] } 10. g4 { [%eval 1.39] } 10... Be6 { [%eval 1.94] } 11. d4 { [%eval 1.92] } 11... Bd7 { [%eval 2.04] } 12. O-O { [%eval 2.19] } 12... Nh7 { [%eval 2.21] } 13. Ra2 { [%eval 1.76] } 13... g5 { [%eval 2.89] } 14. Nd5 { [%eval 2.94] } 14... Ba7 { [%eval 3.11] } 15. Nec3 { [%eval 3.18] } 15... exd4 { [%eval 3.69] } 16. Nb5 { [%eval 3.51] } 16... Bc5 { [%eval 5.38] } 17. exd4 { [%eval 5.62] } 17... Bb6 { [%eval 5.68] } 18. Re2+ { [%eval 5.36] } 18... Kf8 { [%eval 5.56] } 19. Rfe1 { [%eval 5.24] } 19... Kg7 { [%eval 5.32] } 20. Bb2 { [%eval 5.10] } 20... a4 { [%eval 6.19] } 21. Nxb6 { [%eval 6.24] } 21... cxb6 { [%eval 6.84] } 22. d5+ { [%eval 6.78] } 22... Nf6 { [%eval 7.06] } 23. dxc6 { [%eval 7.09] } 23... bxc6 { [%eval 7.28] } 24. Qc1 { [%eval 6.38] } 24... cxb5 { [%eval 13.19] } 25. Qxg5+ { [%eval 98.60] } 25... Kf8 { [%eval 98.60] } 26. Bxf6 { [%eval 98.70] } 26... Qxf6 { [%eval 98.70] } 27. Qxf6 { [%eval 98.80] } 27... Rh7 { [%eval 98.80] } 28. Bxa8 { [%eval 98.90] } 28... bxc4 { [%eval 98.90] } 29. Qe7+ { [%eval 99.20] } 29... Kg7 { [%eval 99.20] } 30. Bd5 { [%eval 99.50] } 30... cxb3 { [%eval 99.80] } 31. Qxf7+ { [%eval 99.90] } 31... Kh8 { [%eval 99.90] } 32. Qg8# { [%eval #0] } 1-0
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_PieceTransformer_6L_256D"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.25] } 1... Nf6 { [%eval 0.29] } 2. Nf3 { [%eval 0.36] } 2... g6 { [%eval 0.47] } 3. c4 { [%eval 0.41] } 3... Bg7 { [%eval 0.36] } 4. Nc3 { [%eval 0.35] } 4... O-O { [%eval 0.56] } 5. e4 { [%eval 0.61] } 5... a5 { [%eval 0.79] } 6. e5 { [%eval 0.55] } 6... Ne8 { [%eval 0.68] } 7. h4 { [%eval 0.54] } 7... d6 { [%eval 0.53] } 8. h5 { [%eval 0.50] } 8... dxe5 { [%eval 0.48] } 9. dxe5 { [%eval -0.66] } 9... Qxd1+ { [%eval -0.47] } 10. Nxd1 { [%eval -0.41] } 10... Nc6 { [%eval -0.43] } 11. Nc3 { [%eval -0.77] } 11... Nxe5 { [%eval -0.66] } 12. Nxe5 { [%eval -0.73] } 12... Bxe5 { [%eval -0.57] } 13. hxg6 { [%eval -0.71] } 13... fxg6 { [%eval -0.79] } 14. Be2 { [%eval -1.22] } 14... c6 { [%eval -1.17] } 15. Be3 { [%eval -1.01] } 15... Be6 { [%eval -1.05] } 16. Rd1 { [%eval -1.15] } 16... Nf6 { [%eval -1.02] } 17. f4 { [%eval -1.90] } 17... Bxc3+ { [%eval -2.05] } 18. bxc3 { [%eval -1.91] } 18... Ne4 { [%eval -1.96] } 19. Bd3 { [%eval -2.01] } 19... Nxc3 { [%eval -2.17] } 20. Rd2 { [%eval -1.97] } 20... b5 { [%eval -1.98] } 21. cxb5 { [%eval -2.44] } 21... cxb5 { [%eval -2.63] } 22. Bd4 { [%eval -2.25] } 22... Rac8 { [%eval -2.23] } 23. f5 { [%eval -4.42] } 23... Bxf5 { [%eval -4.30] } 24. Bxf5 { [%eval -4.50] } 24... Rxf5 { [%eval -4.59] } 25. Bxc3 { [%eval -5.05] } 25... Rxc3 { [%eval -5.10] } 26. Rd7 { [%eval -5.36] } 26... Rc1+ { [%eval -5.30] } 27. Ke2 { [%eval -6.97] } 27... Re5+ { [%eval -7.15] } 28. Kf2 { [%eval -7.17] } 28... Rxh1 { [%eval -7.22] } 29. Rd2 { [%eval -7.18] } 29... g5 { [%eval -7.21] } 30. Rd8+ { [%eval -7.09] } 30... Kf7 { [%eval -7.35] } 31. Rd2 { [%eval -7.44] } 31... a4 { [%eval -7.35] } 32. Rd7 { [%eval -7.47] } 32... Ra1 { [%eval -7.35] } 33. Rd2 { [%eval -7.44] } 33... Rf5+ { [%eval -7.42] } 34. Ke2 { [%eval -7.41] } 34... Rg1 { [%eval -7.36] } 35. g4 { [%eval -8.75] } 35... Rg2+ { [%eval -9.01] } 36. Ke3 { [%eval -9.16] } 36... Re5+ { [%eval -9.21] } 37. Kf3 { [%eval -99.70] } 37... Rxd2 { [%eval -99.80] } 38. a3 { [%eval -99.80] } 38... Rb2 { [%eval -99.90] } 39. Kg3 { [%eval -99.90] } 39... Re3# { [%eval #0] } 0-1
+
+
+[Event "piece_transformer vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_PieceTransformer_6L_256D"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. e4 { [%eval 0.33] } 1... e5 { [%eval 0.24] } 2. Nf3 { [%eval 0.34] } 2... Nc6 { [%eval 0.41] } 3. Nc3 { [%eval 0.27] } 3... Bc5 { [%eval 0.65] } 4. Nxe5 { [%eval 0.68] } 4... Nxe5 { [%eval 0.71] } 5. d4 { [%eval 0.67] } 5... Bxd4 { [%eval 2.09] } 6. Qxd4 { [%eval 1.99] } 6... Qf6 { [%eval 2.99] } 7. Nb5 { [%eval 3.47] } 7... Kd8 { [%eval 5.13] } 8. Qc5 { [%eval 5.28] } 8... b6 { [%eval 99.90] } 9. Qf8# { [%eval #0] } 1-0
+
