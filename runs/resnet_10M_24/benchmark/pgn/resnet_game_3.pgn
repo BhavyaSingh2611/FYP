@@ -1,0 +1,10 @@
+[Event "Benchmark: resnet vs Stockfish D24"]
+[Site "?"]
+[Date "2026.02.13"]
+[Round "?"]
+[White "Learning_ResNet_10B_256C"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.26] } 1... d5 { [%eval 0.27] } 2. Nf3 { [%eval 0.22] } 2... Nf6 { [%eval 0.24] } 3. c4 { [%eval 0.26] } 3... dxc4 { [%eval 0.20] } 4. e3 { [%eval 0.19] } 4... e6 { [%eval 0.33] } 5. Bxc4 { [%eval 0.32] } 5... c5 { [%eval 0.34] } 6. Nc3 { [%eval 0.28] } 6... a6 { [%eval 0.20] } 7. d5 { [%eval -0.80] } 7... b5 { [%eval -0.58] } 8. Be2 { [%eval -0.81] } 8... exd5 { [%eval -1.02] } 9. a4 { [%eval -2.53] } 9... b4 { [%eval -2.48] } 10. Nb1 { [%eval -2.47] } 10... c4 { [%eval -2.50] } 11. b3 { [%eval -4.06] } 11... c3 { [%eval -3.98] } 12. Nd4 { [%eval -4.46] } 12... Bd6 { [%eval -4.30] } 13. Bf3 { [%eval -4.90] } 13... O-O { [%eval -4.61] } 14. h3 { [%eval -5.11] } 14... Nbd7 { [%eval -4.85] } 15. Nc6 { [%eval -4.93] } 15... Qc7 { [%eval -4.83] } 16. Nd4 { [%eval -4.95] } 16... Ne5 { [%eval -5.03] } 17. Be2 { [%eval -4.90] } 17... Bd7 { [%eval -4.94] } 18. Ra2 { [%eval -5.08] } 18... Rfe8 { [%eval -4.98] } 19. Rc2 { [%eval -5.01] } 19... Qb6 { [%eval -5.04] } 20. Ra2 { [%eval -5.32] } 20... Rac8 { [%eval -5.13] } 21. a5 { [%eval -5.25] } 21... Qb7 { [%eval -5.30] } 22. Rc2 { [%eval -5.34] } 22... Bb8 { [%eval -5.29] } 23. Ra2 { [%eval -5.40] } 23... Nc6 { [%eval -5.49] } 24. Nxc6 { [%eval -5.84] } 24... Qxc6 { [%eval -5.82] } 25. Nd2 { [%eval -6.35] } 25... cxd2+ { [%eval -6.39] } 26. Rxd2 { [%eval -7.02] } 26... Qxc1 { [%eval -7.13] } 27. Bxa6 { [%eval -7.11] } 27... Qxd1+ { [%eval -7.07] } 28. Rxd1 { [%eval -7.06] } 28... Rc5 { [%eval -7.02] } 29. Ra1 { [%eval -7.40] } 29... Be5 { [%eval -7.71] } 30. Ra2 { [%eval -8.13] } 30... Rc1+ { [%eval -8.52] } 31. Ke2 { [%eval -8.84] } 31... Rxh1 { [%eval -8.82] } 32. Bd3 { [%eval -8.94] } 32... Ne4 { [%eval -9.07] } 33. Bxe4 { [%eval -11.15] } 33... dxe4 { [%eval -97.90] } 34. Rd2 { [%eval -99.70] } 34... Bb5+ { [%eval -99.80] } 35. Rd3 { [%eval -99.80] } 35... Bxd3+ { [%eval -99.90] } 36. Kd2 { [%eval -99.90] } 36... Bc3# { [%eval #-0] } 0-1

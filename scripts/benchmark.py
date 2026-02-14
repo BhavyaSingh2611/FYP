@@ -117,6 +117,8 @@ def play_game_with_analysis(
         'san_moves': [],       # Standard algebraic notation
         'evaluations': [],     # Centipawn after each move
         'move_times': [],      # Time taken for each move
+        'white_move_times': [],
+        'black_move_times': [],
         'white_agent': getattr(white_agent, 'name', str(white_agent)),
         'black_agent': getattr(black_agent, 'name', str(black_agent)),
     }
@@ -141,6 +143,10 @@ def play_game_with_analysis(
         game_data['moves'].append(move.uci())
         game_data['san_moves'].append(san)
         game_data['move_times'].append(move_time)
+        if board.turn == chess.WHITE:
+            game_data['white_move_times'].append(move_time)
+        else:
+            game_data['black_move_times'].append(move_time)
         
         # Make the move
         board.push(move)
@@ -319,6 +325,7 @@ def run_detailed_benchmark(
     single_model: str = None,
     single_checkpoint: Path = None,
     skill_level: int = None,
+    max_time: float | None = None,
 ):
     """Run detailed benchmark with full analysis."""
     device = get_device()
@@ -352,7 +359,7 @@ def run_detailed_benchmark(
                 continue
             
             # Create opponent Stockfish
-            opponent = UCIAgent(stockfish_path, depth=opponent_depth, skill_level=skill_level)
+            opponent = UCIAgent(stockfish_path, depth=opponent_depth, time_limit=max_time, skill_level=skill_level)
             
             model_games = []
             wins, draws, losses = 0, 0, 0
@@ -418,14 +425,41 @@ def run_detailed_benchmark(
                 opponent.close()
             
             all_games[model_name] = model_games
+            
+            def _time_stats(times: list[float]) -> dict:
+                if not times:
+                    return {'avg': 0, 'median': 0, 'min': 0, 'max': 0, 'count': 0}
+                return {
+                    'avg': sum(times) / len(times),
+                    'median': float(np.median(times)),
+                    'min': min(times),
+                    'max': max(times),
+                    'count': len(times),
+                }
+            
+            model_times = []
+            opponent_times = []
+            for g in model_games:
+                color_key = g['model_color'] + '_move_times'
+                opp_key = ('black' if g['model_color'] == 'white' else 'white') + '_move_times'
+                model_times.extend(g[color_key])
+                opponent_times.extend(g[opp_key])
+            
+            model_stats = _time_stats(model_times)
+            opponent_stats = _time_stats(opponent_times)
+            
             all_results[model_name] = {
                 'wins': wins,
                 'draws': draws,
                 'losses': losses,
                 'games': len(model_games),
+                'model_move_time': model_stats,
+                'opponent_move_time': opponent_stats,
             }
             
             print(f"\nResults: {wins}W - {draws}D - {losses}L")
+            print(f"Model move time:    avg={model_stats['avg']:.3f}s, median={model_stats['median']:.3f}s, min={model_stats['min']:.3f}s, max={model_stats['max']:.3f}s ({model_stats['count']} moves)")
+            print(f"Opponent move time: avg={opponent_stats['avg']:.3f}s, median={opponent_stats['median']:.3f}s, min={opponent_stats['min']:.3f}s, max={opponent_stats['max']:.3f}s ({opponent_stats['count']} moves)")
         
         # Create combined PGN file
         combined_pgn_path = output_dir / "all_games.pgn"
@@ -459,6 +493,7 @@ def run_detailed_benchmark(
                         'total_moves': g['total_moves'],
                         'moves': g['san_moves'],
                         'evaluations': g['evaluations'],
+                        'move_times': g['move_times'],
                     }
                     for g in games
                 ]
@@ -497,6 +532,20 @@ def generate_detailed_report(results: dict, games: dict, output_dir: Path, oppon
             score = res['wins'] + 0.5 * res['draws']
             f.write(f"| {model} | {res['wins']} | {res['draws']} | {res['losses']} | {score}/{total} |\n")
         
+        f.write("\n## Move Timing — Model\n\n")
+        f.write("| Model | Avg (s) | Median (s) | Min (s) | Max (s) | Moves |\n")
+        f.write("|-------|---------|------------|---------|---------|-------|\n")
+        for model, res in results.items():
+            s = res.get('model_move_time', {})
+            f.write(f"| {model} | {s.get('avg', 0):.3f} | {s.get('median', 0):.3f} | {s.get('min', 0):.3f} | {s.get('max', 0):.3f} | {s.get('count', 0)} |\n")
+        
+        f.write("\n## Move Timing — Opponent (Stockfish)\n\n")
+        f.write("| Model | Avg (s) | Median (s) | Min (s) | Max (s) | Moves |\n")
+        f.write("|-------|---------|------------|---------|---------|-------|\n")
+        for model, res in results.items():
+            s = res.get('opponent_move_time', {})
+            f.write(f"| {model} | {s.get('avg', 0):.3f} | {s.get('median', 0):.3f} | {s.get('min', 0):.3f} | {s.get('max', 0):.3f} | {s.get('count', 0)} |\n")
+        
         f.write("\n## Game Files\n\n")
         f.write("- **Combined PGN:** [all_games.pgn](all_games.pgn) - Open in Lichess, Chess.com, or any chess software\n")
         f.write("- **Individual PGNs:** `pgn/` directory\n\n")
@@ -529,6 +578,7 @@ def main():
     parser.add_argument("--stockfish", type=str, default="/opt/homebrew/bin/stockfish")
     parser.add_argument("--opponent-depth", type=int, default=5, help="Stockfish opponent depth")
     parser.add_argument("--skill-level", type=int, default=None, help="Stockfish skill level (0-20, None for full strength)")
+    parser.add_argument("--max-time", type=float, default=None, help="Max time per move in seconds for Stockfish opponent (overrides --opponent-depth)")
     parser.add_argument("--games", type=int, default=4, help="Games per model (even number)")
     parser.add_argument("--output-dir", type=str, default="detailed_benchmark")
     parser.add_argument("--name", type=str, default=None, help="Run name (saves to runs/<name>/benchmark/)")
@@ -547,7 +597,14 @@ def main():
     if args.name:
         print(f"Run: {args.name}")
     print("=" * 60)
-    print(f"Opponent: Stockfish depth {args.opponent_depth}" + (f", skill level {args.skill_level}" if args.skill_level is not None else ""))
+    opponent_info = f"Opponent: Stockfish"
+    if args.max_time is not None:
+        opponent_info += f" max {args.max_time}s/move"
+    else:
+        opponent_info += f" depth {args.opponent_depth}"
+    if args.skill_level is not None:
+        opponent_info += f", skill level {args.skill_level}"
+    print(opponent_info)
     print(f"Evaluation: Stockfish depth {EVAL_DEPTH}")
     if args.model:
         print(f"Model: {args.model}")
@@ -566,6 +623,7 @@ def main():
         single_model=args.model,
         single_checkpoint=Path(args.checkpoint) if args.checkpoint else None,
         skill_level=args.skill_level,
+        max_time=args.max_time,
     )
     
     print("\n" + "=" * 60)
