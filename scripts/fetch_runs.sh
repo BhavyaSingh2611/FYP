@@ -14,7 +14,7 @@ mkdir -p "$DEST"
 for host in otter{1..6}; do
   echo "[$host] Fetching runs..."
   mkdir -p "${DEST}/${host}"
-  scp -r -o StrictHostKeyChecking=no "${host}:${REMOTE_DIR}/"* "${DEST}/${host}/" &
+  rsync -avz --include='*/' --include='*.pt' --exclude='*' -e "ssh -o StrictHostKeyChecking=no" "${host}:${REMOTE_DIR}/" "${DEST}/${host}/" &
 done
 
 echo "Waiting for all transfers to finish..."
