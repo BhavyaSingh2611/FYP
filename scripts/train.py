@@ -18,6 +18,7 @@ import json
 from datetime import datetime
 import time
 
+import requests
 import torch
 from torch.optim import AdamW
 import torch.nn.functional as F
@@ -29,6 +30,18 @@ from src.data.dataset import create_dataloader
 from src.training import Trainer
 from src.training.self_play import SelfPlayGenerator, games_to_tensors
 from src.training.stockfish_rl import StockfishRLGenerator, stockfish_games_to_tensors
+
+
+NTFY_URL = "https://ntfy.lunex.page/FYP"
+
+
+def _send_ntfy(title: str, message: str, priority: str = "default") -> None:
+    try:
+        requests.post(NTFY_URL,
+            data=message.encode(encoding='utf-8'),
+            headers={"Title": title, "Priority": priority})
+    except Exception as e:
+        print(f"Failed to send ntfy notification: {e}")
 
 
 ALL_MODELS = ["convnet", "resnet", "square_transformer", "piece_transformer", "gcn", "gat"]
@@ -548,6 +561,14 @@ def run_stockfish_rl(args):
         }, ckpt_path)
         print(f"Saved checkpoint: {ckpt_path}")
 
+        avg_loss = history['loss'][-1] if history['loss'] else 0
+        _send_ntfy(
+            f"[{args.model}] SF-RL Iter {iteration + 1}/{args.iterations}",
+            f"Level: {level['name']} (skill={level['skill']})\n"
+            f"W:{results['1-0']} B:{results['0-1']} D:{results['1/2-1/2']}\n"
+            f"Loss: {avg_loss:.4f} | Positions: {total_positions}",
+        )
+
     final_path = output_dir / f"{args.model}_stockfish_final.pt"
     torch.save({
         'model_state_dict': model.state_dict(),
@@ -576,6 +597,14 @@ def run_stockfish_rl(args):
     print("\n" + "=" * 60)
     print("STOCKFISH RL TRAINING COMPLETE!")
     print("=" * 60)
+
+    _send_ntfy(
+        f"[{args.model}] Stockfish RL Complete",
+        f"Iterations: {args.iterations}\n"
+        f"Games/iter: {args.games}\n"
+        f"Final checkpoint: {final_path}",
+        priority="high",
+    )
 
 
 # ---------------------------------------------------------------------------
