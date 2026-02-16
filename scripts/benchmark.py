@@ -25,6 +25,7 @@ from tqdm import tqdm
 from src.config import load_config
 from src.models.factory import create_model, get_encoder_for_model
 from src.agents.learning_agent import LearningAgent
+from src.agents.mcts_agent import MCTSAgent
 from src.agents.uci_agent import UCIAgent
 from src.device import get_device
 
@@ -41,8 +42,10 @@ def load_model_agent(
     checkpoint_dir: Path, 
     device: torch.device,
     checkpoint_path: Path = None,
-) -> LearningAgent:
-    """Load a trained model and create a LearningAgent."""
+    use_mcts: bool = False,
+    mcts_sims: int = 200,
+) -> LearningAgent | MCTSAgent:
+    """Load a trained model and create a LearningAgent or MCTSAgent."""
     config = load_config("config/default.yaml")
     config.model.backbone = model_name
     config.model.head = "dual"
@@ -65,12 +68,22 @@ def load_model_agent(
     encoder_factory = get_encoder_for_model(model_name)
     encoder = encoder_factory() if callable(encoder_factory) else encoder_factory()
     
-    agent = LearningAgent(
-        model=model,
-        encoder=encoder,
-        device=device,
-        temperature=0.0,
-    )
+    if use_mcts:
+        agent = MCTSAgent(
+            model=model,
+            encoder=encoder,
+            device=device,
+            num_simulations=mcts_sims,
+            c_puct=1.4,
+            temperature=0.0,
+        )
+    else:
+        agent = LearningAgent(
+            model=model,
+            encoder=encoder,
+            device=device,
+            temperature=0.0,
+        )
     
     return agent
 
@@ -326,6 +339,8 @@ def run_detailed_benchmark(
     single_checkpoint: Path = None,
     skill_level: int = None,
     max_time: float | None = None,
+    use_mcts: bool = False,
+    mcts_sims: int = 200,
 ):
     """Run detailed benchmark with full analysis."""
     device = get_device()
@@ -353,7 +368,7 @@ def run_detailed_benchmark(
             
             try:
                 ckpt_path = single_checkpoint if single_model else None
-                agent = load_model_agent(model_name, checkpoint_dir, device, ckpt_path)
+                agent = load_model_agent(model_name, checkpoint_dir, device, ckpt_path, use_mcts, mcts_sims)
             except FileNotFoundError as e:
                 print(f"Skipping {model_name}: {e}")
                 continue
@@ -580,6 +595,8 @@ def main():
     parser.add_argument("--skill-level", type=int, default=None, help="Stockfish skill level (0-20, None for full strength)")
     parser.add_argument("--max-time", type=float, default=None, help="Max time per move in seconds for Stockfish opponent (overrides --opponent-depth)")
     parser.add_argument("--games", type=int, default=4, help="Games per model (even number)")
+    parser.add_argument("--mcts", action="store_true", help="Use MCTS agent instead of raw policy")
+    parser.add_argument("--sims", type=int, default=200, help="MCTS simulations per move (default: 200)")
     parser.add_argument("--output-dir", type=str, default="detailed_benchmark")
     parser.add_argument("--name", type=str, default=None, help="Run name (saves to runs/<name>/benchmark/)")
     
@@ -606,6 +623,10 @@ def main():
         opponent_info += f", skill level {args.skill_level}"
     print(opponent_info)
     print(f"Evaluation: Stockfish depth {EVAL_DEPTH}")
+    if args.mcts:
+        print(f"Agent: MCTS ({args.sims} simulations)")
+    else:
+        print(f"Agent: Raw policy (greedy)")
     if args.model:
         print(f"Model: {args.model}")
         print(f"Checkpoint: {args.checkpoint}")
@@ -624,6 +645,8 @@ def main():
         single_checkpoint=Path(args.checkpoint) if args.checkpoint else None,
         skill_level=args.skill_level,
         max_time=args.max_time,
+        use_mcts=args.mcts,
+        mcts_sims=args.sims,
     )
     
     print("\n" + "=" * 60)
