@@ -244,8 +244,14 @@ class MCTSAgent(ChessAgent):
         if isinstance(encoded, torch.Tensor):
             x = encoded.unsqueeze(0).to(self.device)
         else:
-            x = {k: v.unsqueeze(0).to(self.device) if torch.is_tensor(v) else v 
-                 for k, v in encoded.items()}
+            x = {}
+            for k, v in encoded.items():
+                if not torch.is_tensor(v):
+                    x[k] = v
+                elif k in ('edge_index', 'edge_attr'):
+                    x[k] = v.to(self.device)
+                else:
+                    x[k] = v.unsqueeze(0).to(self.device)
         
         # Forward pass
         output = self.model(x)

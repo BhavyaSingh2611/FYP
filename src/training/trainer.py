@@ -4,6 +4,7 @@ Training loop for chess models.
 from pathlib import Path
 from typing import Optional
 import time
+import requests
 
 import torch
 import torch.nn as nn
@@ -15,6 +16,17 @@ from tqdm import tqdm
 from .losses import create_loss, PolicyLoss, ValueLoss, DualLoss
 from ..models.base import ChessModel
 
+NTFY_URL = "https://ntfy.lunex.page/FYP"
+
+
+def _send_ntfy(title: str, message: str, priority: str = "default") -> None:
+    try:
+        requests.post(NTFY_URL,
+            data=message.encode(encoding='utf-8'),
+            headers={"Title": title, "Priority": priority})
+    except Exception as e:
+        print(f"Failed to send ntfy notification: {e}")
+
 
 class Trainer:
     """
@@ -24,7 +36,8 @@ class Trainer:
         - Support for all head types (policy, value, dual)
         - Learning rate scheduling
         - Checkpoint saving/loading
-        - MPS-optimized training
+        - Mixed-precision (float16) training for MPS / CUDA
+        - torch.compile support
     """
     
     def __init__(
@@ -38,26 +51,28 @@ class Trainer:
         value_weight: float = 1.0,
         use_soft_labels: bool = True,
         checkpoint_dir: Optional[str | Path] = None,
+        mixed_precision: bool = True,
+        compile_model: bool = True,
     ):
-        """
-        Initialize trainer.
-        
-        Args:
-            model: Chess model to train.
-            device: Device for training.
-            head_type: Type of head ("policy", "value", "dual").
-            learning_rate: Initial learning rate.
-            weight_decay: Weight decay for optimizer.
-            policy_weight: Weight for policy loss.
-            value_weight: Weight for value loss.
-            use_soft_labels: Use soft policy labels.
-            checkpoint_dir: Directory for saving checkpoints.
-        """
-        self.model = model.to(device)
         self.device = device
         self.head_type = head_type
+
+        self.use_amp = mixed_precision and device.type in ("cuda", "mps")
+        if device.type == "cuda":
+            self.amp_dtype = torch.float16
+        elif device.type == "mps":
+            self.amp_dtype = torch.float16
+        else:
+            self.amp_dtype = torch.float32
+
+        self.model = model.to(device)
+        is_gnn = type(model).__name__ in ("GCN", "GAT")
+        if compile_model and not is_gnn and hasattr(torch, "compile"):
+            try:
+                self.model = torch.compile(self.model)
+            except Exception:
+                pass
         
-        # Create loss function
         self.loss_fn = create_loss(
             head_type=head_type,
             policy_weight=policy_weight,
@@ -65,24 +80,25 @@ class Trainer:
             use_soft_labels=use_soft_labels,
         )
         
-        # Create optimizer
         self.optimizer = AdamW(
             model.parameters(),
             lr=learning_rate,
             weight_decay=weight_decay,
         )
+
+        self.scaler = torch.amp.GradScaler(
+            device=device.type,
+            enabled=self.use_amp and device.type == "cuda",
+        )
         
-        # Scheduler (will be set in train())
         self.scheduler = None
         
-        # Checkpoint directory
         if checkpoint_dir:
             self.checkpoint_dir = Path(checkpoint_dir)
             self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         else:
             self.checkpoint_dir = None
         
-        # Training state
         self.epoch = 0
         self.global_step = 0
         self.best_loss = float('inf')
@@ -106,40 +122,41 @@ class Trainer:
         value_loss_sum = 0.0
         num_batches = 0
         
-        pbar = tqdm(dataloader, desc=f"Epoch {epoch}")
+        total = len(dataloader.dataset) // dataloader.batch_size if hasattr(dataloader.dataset, '__len__') else None
+        pbar = tqdm(dataloader, desc=f"Epoch {epoch}", total=total)
         
         for batch_idx, batch in enumerate(pbar):
-            # Move data to device
             inputs = self._prepare_inputs(batch['input'])
             policy_target = batch['policy_target'].to(self.device)
             value_target = batch.get('value_target')
             if value_target is not None:
                 value_target = value_target.to(self.device)
             
-            # Forward pass
-            self.optimizer.zero_grad()
-            output = self.model(inputs)
-            
-            # Compute loss
-            if self.head_type == "dual":
-                loss_dict = self.loss_fn(output, policy_target, value_target)
-                loss = loss_dict['loss']
-                policy_loss_sum += loss_dict['policy_loss'].item()
-                value_loss_sum += loss_dict['value_loss'].item()
-            elif self.head_type == "policy":
-                loss = self.loss_fn(output['policy'], policy_target)
-                policy_loss_sum += loss.item()
-            else:  # value
-                loss = self.loss_fn(output['value'], value_target)
-                value_loss_sum += loss.item()
-            
-            # Backward pass
-            loss.backward()
-            
-            # Gradient clipping
+            self.optimizer.zero_grad(set_to_none=True)
+
+            with torch.autocast(
+                device_type=self.device.type,
+                dtype=self.amp_dtype,
+                enabled=self.use_amp,
+            ):
+                output = self.model(inputs)
+                if self.head_type == "dual":
+                    loss_dict = self.loss_fn(output, policy_target, value_target)
+                    loss = loss_dict['loss']
+                    policy_loss_sum += loss_dict['policy_loss'].item()
+                    value_loss_sum += loss_dict['value_loss'].item()
+                elif self.head_type == "policy":
+                    loss = self.loss_fn(output['policy'], policy_target)
+                    policy_loss_sum += loss.item()
+                else:
+                    loss = self.loss_fn(output['value'], value_target)
+                    value_loss_sum += loss.item()
+
+            self.scaler.scale(loss).backward()
+            self.scaler.unscale_(self.optimizer)
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
-            
-            self.optimizer.step()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
             
             total_loss += loss.item()
             num_batches += 1
@@ -189,20 +206,23 @@ class Trainer:
             if value_target is not None:
                 value_target = value_target.to(self.device)
             
-            output = self.model(inputs)
-            
-            # Compute loss
-            if self.head_type == "dual":
-                loss_dict = self.loss_fn(output, policy_target, value_target)
-                loss = loss_dict['loss']
-                policy_loss_sum += loss_dict['policy_loss'].item()
-                value_loss_sum += loss_dict['value_loss'].item()
-            elif self.head_type == "policy":
-                loss = self.loss_fn(output['policy'], policy_target)
-                policy_loss_sum += loss.item()
-            else:
-                loss = self.loss_fn(output['value'], value_target)
-                value_loss_sum += loss.item()
+            with torch.autocast(
+                device_type=self.device.type,
+                dtype=self.amp_dtype,
+                enabled=self.use_amp,
+            ):
+                output = self.model(inputs)
+                if self.head_type == "dual":
+                    loss_dict = self.loss_fn(output, policy_target, value_target)
+                    loss = loss_dict['loss']
+                    policy_loss_sum += loss_dict['policy_loss'].item()
+                    value_loss_sum += loss_dict['value_loss'].item()
+                elif self.head_type == "policy":
+                    loss = self.loss_fn(output['policy'], policy_target)
+                    policy_loss_sum += loss.item()
+                else:
+                    loss = self.loss_fn(output['value'], value_target)
+                    value_loss_sum += loss.item()
             
             total_loss += loss.item()
             num_batches += 1
@@ -262,11 +282,11 @@ class Trainer:
         }
         
         start_time = time.time()
+        model_name = getattr(self.model, 'name', type(self.model).__name__)
         
         for epoch in range(1, epochs + 1):
             self.epoch = epoch
             
-            # Train
             train_metrics = self.train_epoch(train_loader, epoch)
             history['train_loss'].append(train_metrics['loss'])
             
@@ -278,7 +298,6 @@ class Trainer:
             if 'value_loss' in train_metrics:
                 print(f"  Value Loss: {train_metrics['value_loss']:.4f}")
             
-            # Validate
             if val_loader is not None:
                 val_metrics = self.evaluate(val_loader)
                 history['val_loss'].append(val_metrics['loss'])
@@ -290,24 +309,43 @@ class Trainer:
                 if 'accuracy' in val_metrics:
                     print(f"  Val Accuracy: {val_metrics['accuracy']:.4f}")
                 
-                # Save best
                 if save_best and val_metrics['loss'] < self.best_loss:
                     self.best_loss = val_metrics['loss']
                     self.save_checkpoint('best.pt')
                     print("  Saved best model!")
             
-            # Save periodic checkpoint
-            if self.checkpoint_dir and epoch % save_every == 0:
+            if self.checkpoint_dir:
                 self.save_checkpoint(f'epoch_{epoch}.pt')
+                self.save_checkpoint('latest.pt')
+            
+            ntfy_lines = [f"Loss: {train_metrics['loss']:.4f}"]
+            if 'policy_loss' in train_metrics:
+                ntfy_lines.append(f"Policy: {train_metrics['policy_loss']:.4f}")
+            if 'value_loss' in train_metrics:
+                ntfy_lines.append(f"Value: {train_metrics['value_loss']:.4f}")
+            _send_ntfy(
+                title=f"{model_name} - Epoch {epoch}/{epochs}",
+                message="\n".join(ntfy_lines),
+            )
             
             print()
         
         total_time = time.time() - start_time
         print(f"Training complete in {total_time/60:.1f} minutes")
         
-        # Save final checkpoint
         if self.checkpoint_dir:
             self.save_checkpoint('final.pt')
+            for ckpt in sorted(self.checkpoint_dir.glob("epoch_*.pt")):
+                num = int(ckpt.stem.split("_")[1])
+                if num % 5 != 0:
+                    ckpt.unlink()
+                    print(f"  Removed {ckpt.name}")
+        
+        _send_ntfy(
+            title=f"{model_name} - Training Complete",
+            message=f"Finished {epochs} epochs in {total_time/60:.1f} min\nFinal loss: {history['train_loss'][-1]:.4f}",
+            priority="high",
+        )
         
         return history
     

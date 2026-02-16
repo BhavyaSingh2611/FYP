@@ -1,258 +1,271 @@
 """
-PyTorch Dataset for loading chess training data from SQLite.
-"""
-from typing import Optional, Callable
-from pathlib import Path
+PyTorch IterableDataset for loading chess training data from Parquet files.
 
-import torch
-from torch.utils.data import Dataset, DataLoader
+Streams row-groups one at a time so the full file is never resident in memory.
+"""
+from pathlib import Path
+from typing import Optional
 
 import chess
+import torch
+from torch.utils.data import DataLoader, IterableDataset
 
-from .database import ChessDatabase
 from ..chess_env.board_wrapper import UCI_MOVE_TO_INDEX, NUM_MOVES
 
 
-class ChessDataset(Dataset):
+class ChessDataset(IterableDataset):
     """
-    PyTorch Dataset for chess training data.
-    
-    Loads positions from SQLite database and encodes them on-the-fly
-    using the provided encoder.
-    
-    Supports:
-        - Policy targets (move indices or soft distributions)
-        - Value targets (game outcome from perspective of side to move)
+    Streams training examples from one or more Parquet files.
+
+    Supports two Parquet schemas:
+
+    Engine-evaluated positions (primary):
+        fen    – FEN string
+        line   – PV line in UCI (first move = best move)
+        cp     – centipawn evaluation (None if mate)
+        mate   – mate-in-N evaluation (None if no mate)
+
+    Legacy multi-move format:
+        fen            – FEN string
+        best_move      – UCI move string
+        result         – game result ('1-0', '0-1', '1/2-1/2')
+        move_uci_0 … move_uci_N   – UCI strings for the top-N moves
+        move_score_0 … move_score_N – centipawn scores for those moves
+
+    Only one row-group is in memory at a time, so RAM usage stays bounded
+    regardless of file size.
     """
-    
+
     def __init__(
         self,
-        db_path: str | Path,
-        encoder: Callable,
+        paths: list[Path],
+        encoder,
+        num_samples: int | None = None,
         use_soft_labels: bool = True,
         include_value: bool = True,
-        cache_positions: bool = True,
-        use_game_outcome: bool = True,
-        blend_value: float = 0.0,
+        shuffle: bool = True,
     ):
-        """
-        Initialize dataset.
-        
-        Args:
-            db_path: Path to SQLite database.
-            encoder: State encoder instance (CNNEncoder, etc.).
-            use_soft_labels: If True, return soft policy targets from move distribution.
-            include_value: If True, include value targets.
-            cache_positions: If True, load all positions into memory.
-            use_game_outcome: If True, use actual game results for value targets.
-                              If False, use centipawn scores as approximation.
-            blend_value: Blend factor for combining game outcome with centipawn score.
-                        0.0 = pure game outcome, 1.0 = pure centipawn score.
-                        Values in between create a weighted blend.
-        """
-        self.db_path = Path(db_path)
+        super().__init__()
+        self.paths = [Path(p) for p in paths]
         self.encoder = encoder
+        self.num_samples = num_samples
         self.use_soft_labels = use_soft_labels
         self.include_value = include_value
-        self.use_game_outcome = use_game_outcome
-        self.blend_value = blend_value
-        
-        # Load positions (with game outcomes if needed)
-        with ChessDatabase(self.db_path) as db:
-            if cache_positions:
-                if use_game_outcome:
-                    self.positions = db.get_positions_with_outcomes()
-                else:
-                    self.positions = db.get_positions_with_distributions()
-            else:
-                # Just get count for lazy loading
-                self._position_count = db.get_position_count()
-                self.positions = None
-    
+        self.shuffle = shuffle
+
+        import pyarrow.parquet as pq
+
+        self._total_rows = 0
+        for p in self.paths:
+            meta = pq.read_metadata(p)
+            self._total_rows += meta.num_rows
+        self._effective_len = (
+            min(self.num_samples, self._total_rows) if self.num_samples else self._total_rows
+        )
+
     def __len__(self) -> int:
-        if self.positions is not None:
-            return len(self.positions)
-        return self._position_count
-    
-    def __getitem__(self, idx: int) -> dict:
-        """
-        Get a single training example.
-        
-        Returns:
-            Dictionary with:
-                - 'input': Encoded board state
-                - 'policy_target': Move target (index or distribution)
-                - 'value_target': Game outcome (optional)
-        """
-        # Get position data
-        if self.positions is not None:
-            pos = self.positions[idx]
-        else:
-            with ChessDatabase(self.db_path) as db:
-                positions = db.get_positions_with_distributions(limit=1, offset=idx)
-                pos = positions[0]
-        
-        # Create board from FEN
-        board = chess.Board(pos['fen'])
-        
-        # Encode board
+        return self._effective_len
+
+    def __iter__(self):
+        import pyarrow.parquet as pq
+        import numpy as np
+
+        worker_info = torch.utils.data.get_worker_info()
+
+        all_row_groups = []
+        for fi, p in enumerate(self.paths):
+            meta = pq.read_metadata(p)
+            for rg in range(meta.num_row_groups):
+                all_row_groups.append((fi, rg))
+
+        if worker_info is not None:
+            all_row_groups = all_row_groups[worker_info.id :: worker_info.num_workers]
+
+        if self.shuffle:
+            np.random.shuffle(all_row_groups)
+
+        per_worker_limit = None
+        if self.num_samples:
+            n_workers = worker_info.num_workers if worker_info else 1
+            per_worker_limit = self.num_samples // n_workers
+
+        emitted = 0
+
+        for fi, rg_idx in all_row_groups:
+            pf = pq.ParquetFile(self.paths[fi])
+            table = pf.read_row_group(rg_idx)
+            cols = {name: table.column(name).to_pylist() for name in table.schema.names}
+            n_rows = table.num_rows
+
+            indices = np.arange(n_rows)
+            if self.shuffle:
+                np.random.shuffle(indices)
+
+            for i in indices:
+                if per_worker_limit and emitted >= per_worker_limit:
+                    return
+
+                row = {k: v[i] for k, v in cols.items()}
+                example = self._row_to_example(row)
+                if example is not None:
+                    emitted += 1
+                    yield example
+
+    def _row_to_example(self, row) -> dict | None:
+        fen = row.get("fen") or row.get("FEN")
+        if fen is None:
+            return None
+
+        try:
+            board = chess.Board(fen)
+        except ValueError:
+            return None
+
         encoded = self.encoder.encode(board)
-        
-        # Create policy target
-        if self.use_soft_labels and 'move_distribution' in pos and pos['move_distribution']:
-            # Soft labels from move distribution
-            policy_target = self._create_soft_policy(pos['move_distribution'])
-        else:
-            # Hard label (one-hot)
-            move_idx = UCI_MOVE_TO_INDEX.get(pos['best_move_uci'], 0)
-            policy_target = torch.zeros(NUM_MOVES)
-            policy_target[move_idx] = 1.0
-        
-        result = {
-            'policy_target': policy_target,
-        }
-        
-        # Add encoded input
-        if isinstance(encoded, torch.Tensor):
-            result['input'] = encoded
-        else:
-            # For dict-based encodings (Transformer, GNN)
-            result['input'] = encoded
-        
-        # Add value target if requested
+        policy_target = self._build_policy(row)
+
+        result = {"input": encoded, "policy_target": policy_target}
+
         if self.include_value:
-            value = self._compute_value_target(pos)
-            result['value_target'] = torch.tensor([value], dtype=torch.float32)
-        
-        return result
-    
-    def _compute_value_target(self, pos: dict) -> float:
-        """
-        Compute value target from game outcome and/or centipawn score.
-        
-        Args:
-            pos: Position dict with game_result, side_to_move, best_move_score.
-        
-        Returns:
-            Value target in range [-1, 1].
-        """
-        game_value = 0.0
-        cp_value = 0.0
-        
-        # Compute value from game outcome
-        if self.use_game_outcome and pos.get('game_result') is not None:
-            game_value = self._result_to_value(
-                pos['game_result'], 
-                pos.get('side_to_move', 0)
+            result["value_target"] = torch.tensor(
+                [self._compute_value(row, board)],
+                dtype=torch.float32,
             )
-        
-        # Compute value from centipawn score
-        if pos.get('best_move_score') is not None:
-            score = pos['best_move_score']
-            cp_value = max(-1.0, min(1.0, score / 1000.0))
-        
-        # Blend values if requested
-        if self.use_game_outcome:
-            if self.blend_value > 0 and pos.get('best_move_score') is not None:
-                # Weighted blend: (1 - blend) * game_outcome + blend * cp_score
-                return (1 - self.blend_value) * game_value + self.blend_value * cp_value
-            return game_value
-        else:
-            return cp_value
-    
-    def _result_to_value(self, result: str, side_to_move: int) -> float:
-        """
-        Convert game result to value from perspective of side to move.
-        
-        Args:
-            result: Game result ('1-0', '0-1', '1/2-1/2', '*').
-            side_to_move: 0 for white, 1 for black.
-        
-        Returns:
-            Value: +1 for win, -1 for loss, 0 for draw.
-        """
-        if result == '1-0':  # White wins
-            return 1.0 if side_to_move == 0 else -1.0
-        elif result == '0-1':  # Black wins
-            return -1.0 if side_to_move == 0 else 1.0
-        elif result == '1/2-1/2':  # Draw
-            return 0.0
-        else:  # Unknown result '*'
-            return 0.0
-    
-    def _create_soft_policy(self, move_distribution: list[dict]) -> torch.Tensor:
-        """
-        Create soft policy target from move distribution.
-        
-        Uses softmax over centipawn scores to create probabilities.
-        """
+
+        return result
+
+    def _extract_best_move(self, row) -> str | None:
+        best = row.get("best_move") or row.get("best_move_uci")
+        if best is not None and str(best) != "nan":
+            return str(best)
+
+        line = row.get("line")
+        if line is not None and str(line) != "nan":
+            first_move = str(line).strip().split()[0]
+            if first_move:
+                return first_move
+
+        return None
+
+    def _build_policy(self, row) -> torch.Tensor:
         policy = torch.zeros(NUM_MOVES)
-        
-        if not move_distribution:
-            return policy
-        
-        # Collect scores
-        indices = []
-        scores = []
-        
-        for move_info in move_distribution:
-            move_uci = move_info['move_uci']
-            idx = UCI_MOVE_TO_INDEX.get(move_uci, -1)
+
+        if self.use_soft_labels:
+            indices, scores = [], []
+            for i in range(20):
+                uci_col = f"move_uci_{i}"
+                score_col = f"move_score_{i}"
+                uci_val = row.get(uci_col)
+                if (
+                    uci_val is not None
+                    and str(uci_val) != "nan"
+                ):
+                    idx = UCI_MOVE_TO_INDEX.get(str(uci_val), -1)
+                    if idx >= 0:
+                        indices.append(idx)
+                        scores.append(float(row.get(score_col, 0)))
+
+            if indices:
+                s = torch.tensor(scores, dtype=torch.float32)
+                s = s / s.abs().max().clamp(min=1.0)
+                probs = torch.softmax(s, dim=0)
+                for idx, p in zip(indices, probs):
+                    policy[idx] = p
+                return policy
+
+        best = self._extract_best_move(row)
+        if best is not None:
+            idx = UCI_MOVE_TO_INDEX.get(best, -1)
             if idx >= 0:
-                indices.append(idx)
-                scores.append(move_info.get('score', 0))
-        
-        if not indices:
-            # Fallback to first move
-            first_move = move_distribution[0]['move_uci']
-            idx = UCI_MOVE_TO_INDEX.get(first_move, 0)
-            policy[idx] = 1.0
-            return policy
-        
-        # Convert scores to probabilities using softmax
-        # Scale scores to prevent numerical issues
-        scores = torch.tensor(scores, dtype=torch.float32)
-        scores = scores / 100.0  # Scale centipawns
-        
-        probs = torch.softmax(scores, dim=0)
-        
-        for idx, prob in zip(indices, probs):
-            policy[idx] = prob
-        
+                policy[idx] = 1.0
+
         return policy
+
+    def _compute_value(self, row, board: chess.Board) -> float:
+        result_str = row.get("result") or row.get("game_result")
+        side = 0 if board.turn == chess.WHITE else 1
+
+        if result_str is not None and str(result_str) != "nan":
+            if result_str == "1-0":
+                return 1.0 if side == 0 else -1.0
+            elif result_str == "0-1":
+                return -1.0 if side == 0 else 1.0
+            elif result_str == "1/2-1/2":
+                return 0.0
+
+        mate = row.get("mate")
+        if mate is not None and str(mate) != "nan":
+            mate = int(mate)
+            val = 1.0 if mate > 0 else -1.0
+            return val if side == 0 else -val
+
+        cp = row.get("cp")
+        if cp is not None and str(cp) != "nan":
+            val = max(-1.0, min(1.0, float(cp) / 1000.0))
+            return val if side == 0 else -val
+
+        return 0.0
+
+
+def _is_graph_input(first_input: dict) -> bool:
+    return isinstance(first_input, dict) and "edge_index" in first_input
+
+
+def _collate_graph_inputs(batch: list[dict]) -> dict:
+    """Batch graph inputs by concatenating edges with node-index offsets."""
+    num_nodes_per_graph = 64
+
+    node_features = torch.stack([b["input"]["x"] for b in batch])  # (B, 64, F)
+    batch_size = node_features.size(0)
+
+    edge_indices = []
+    edge_attrs = []
+    for i, b in enumerate(batch):
+        offset = i * num_nodes_per_graph
+        edge_indices.append(b["input"]["edge_index"] + offset)
+        if "edge_attr" in b["input"]:
+            edge_attrs.append(b["input"]["edge_attr"])
+
+    batched_edge_index = torch.cat(edge_indices, dim=1)  # (2, total_E)
+
+    graph_batch = torch.arange(batch_size).unsqueeze(1).expand(-1, num_nodes_per_graph).reshape(-1)
+
+    result = {
+        "x": node_features.view(-1, node_features.size(-1)),  # (B*64, F)
+        "edge_index": batched_edge_index,
+        "batch": graph_batch,
+        "side_to_move": torch.stack([b["input"]["side_to_move"] for b in batch]),
+        "castling": torch.stack([b["input"]["castling"] for b in batch]),
+    }
+
+    if edge_attrs:
+        result["edge_attr"] = torch.cat(edge_attrs, dim=0)  # (total_E, 3)
+
+    return result
 
 
 def collate_fn(batch: list[dict]) -> dict:
-    """
-    Custom collate function for batching chess data.
-    
-    Handles both tensor and dict-based inputs.
-    """
     result = {}
-    
-    # Check input type from first example
-    first_input = batch[0]['input']
-    
+
+    first_input = batch[0]["input"]
     if isinstance(first_input, torch.Tensor):
-        # CNN-style batching
-        result['input'] = torch.stack([b['input'] for b in batch])
+        result["input"] = torch.stack([b["input"] for b in batch])
+    elif _is_graph_input(first_input):
+        result["input"] = _collate_graph_inputs(batch)
     else:
-        # Dict-style batching (Transformer, GNN)
-        result['input'] = {}
+        result["input"] = {}
         for key in first_input.keys():
-            values = [b['input'][key] for b in batch]
+            values = [b["input"][key] for b in batch]
             if torch.is_tensor(values[0]):
-                result['input'][key] = torch.stack(values)
+                result["input"][key] = torch.stack(values)
             else:
-                result['input'][key] = values
-    
-    # Stack policy targets
-    result['policy_target'] = torch.stack([b['policy_target'] for b in batch])
-    
-    # Stack value targets if present
-    if 'value_target' in batch[0]:
-        result['value_target'] = torch.stack([b['value_target'] for b in batch])
-    
+                result["input"][key] = values
+
+    result["policy_target"] = torch.stack([b["policy_target"] for b in batch])
+
+    if "value_target" in batch[0]:
+        result["value_target"] = torch.stack([b["value_target"] for b in batch])
+
     return result
 
 
@@ -264,33 +277,34 @@ def create_dataloader(
     num_workers: int = 0,
     use_soft_labels: bool = True,
     include_value: bool = True,
+    num_samples: int | None = None,
 ) -> DataLoader:
     """
-    Create a DataLoader for chess training data.
-    
-    Args:
-        db_path: Path to SQLite database.
-        encoder: State encoder instance.
-        batch_size: Batch size.
-        shuffle: Whether to shuffle data.
-        num_workers: Number of data loading workers.
-        use_soft_labels: Use soft policy labels from move distribution.
-        include_value: Include value targets.
-    
-    Returns:
-        PyTorch DataLoader.
+    Create a DataLoader from Parquet file(s).
+
+    Accepts a single .parquet file or a directory of .parquet files.
+    Data is streamed row-group by row-group so the full file is never
+    loaded into memory.
     """
+    db_path = Path(db_path)
+
+    if db_path.is_dir():
+        parquet_files = sorted(db_path.glob("*.parquet"))
+    else:
+        parquet_files = [db_path]
+
     dataset = ChessDataset(
-        db_path=db_path,
+        paths=parquet_files,
         encoder=encoder,
+        num_samples=num_samples,
         use_soft_labels=use_soft_labels,
         include_value=include_value,
+        shuffle=shuffle,
     )
-    
+
     return DataLoader(
         dataset,
         batch_size=batch_size,
-        shuffle=shuffle,
         num_workers=num_workers,
         collate_fn=collate_fn,
         pin_memory=True,

@@ -81,8 +81,14 @@ class LearningAgent(ChessAgent):
             x = encoded.unsqueeze(0).to(self.device)
         elif isinstance(encoded, dict):
             # Transformer or GNN encoder
-            x = {k: v.unsqueeze(0).to(self.device) if torch.is_tensor(v) else v 
-                 for k, v in encoded.items()}
+            x = {}
+            for k, v in encoded.items():
+                if not torch.is_tensor(v):
+                    x[k] = v
+                elif k in ('edge_index', 'edge_attr'):
+                    x[k] = v.to(self.device)
+                else:
+                    x[k] = v.unsqueeze(0).to(self.device)
         else:
             raise ValueError(f"Unknown encoded type: {type(encoded)}")
         
@@ -150,8 +156,14 @@ class LearningAgent(ChessAgent):
         if isinstance(encoded, torch.Tensor):
             x = encoded.unsqueeze(0).to(self.device)
         else:
-            x = {k: v.unsqueeze(0).to(self.device) if torch.is_tensor(v) else v 
-                 for k, v in encoded.items()}
+            x = {}
+            for k, v in encoded.items():
+                if not torch.is_tensor(v):
+                    x[k] = v
+                elif k in ('edge_index', 'edge_attr'):
+                    x[k] = v.to(self.device)
+                else:
+                    x[k] = v.unsqueeze(0).to(self.device)
         
         output = self.model(x)
         
@@ -186,8 +198,14 @@ class LearningAgent(ChessAgent):
         if isinstance(encoded, torch.Tensor):
             x = encoded.unsqueeze(0).to(self.device)
         else:
-            x = {k: v.unsqueeze(0).to(self.device) if torch.is_tensor(v) else v 
-                 for k, v in encoded.items()}
+            x = {}
+            for k, v in encoded.items():
+                if not torch.is_tensor(v):
+                    x[k] = v
+                elif k in ('edge_index', 'edge_attr'):
+                    x[k] = v.to(self.device)
+                else:
+                    x[k] = v.unsqueeze(0).to(self.device)
         
         output = self.model(x)
         

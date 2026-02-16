@@ -120,6 +120,9 @@ class SquareTransformer(ChessModel):
         # Castling embedding
         self.castling_proj = nn.Linear(4, embed_dim)
         
+        # Coordinate projection
+        self.coord_proj = nn.Linear(2, embed_dim)
+        
         # Transformer layers
         self.transformer_layers = nn.ModuleList([
             TransformerBlock(embed_dim, num_heads, dropout=dropout)
@@ -158,6 +161,7 @@ class SquareTransformer(ChessModel):
         """
         tokens = x['tokens']  # (B, 64)
         positions = x['positions']  # (B, 64)
+        coordinates = x.get('coordinates') # (B, 64, 2) - Normalized rank/file
         side_to_move = x['side_to_move']  # (B,)
         castling = x['castling']  # (B, 4)
         
@@ -174,6 +178,11 @@ class SquareTransformer(ChessModel):
             pos_emb = self.pos_embedding(positions)
         
         embeddings = token_emb + pos_emb  # (B, 64, D)
+        
+        # Add coordinate embeddings if available
+        if coordinates is not None:
+             coord_emb = self.coord_proj(coordinates)
+             embeddings = embeddings + coord_emb
         
         # Add side to move as bias to all tokens
         side_emb = self.side_embedding(side_to_move)  # (B, D)

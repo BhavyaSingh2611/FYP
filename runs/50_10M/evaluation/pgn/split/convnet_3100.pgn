@@ -1,0 +1,239 @@
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_ConvNet_6L_256C"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.20] } 1... Nf6 { [%eval 0.22] } 2. Nf3 { [%eval 0.21] } 2... e6 { [%eval 0.24] } 3. c4 { [%eval 0.18] } 3... d5 { [%eval 0.29] } 4. e3 { [%eval 0.10] } 4... b6 { [%eval 0.17] } 5. cxd5 { [%eval 0.02] } 5... exd5 { [%eval -0.06] } 6. Nc3 { [%eval -0.08] } 6... Bd6 { [%eval -0.04] } 7. Bd3 { [%eval -0.11] } 7... O-O { [%eval -0.16] } 8. Ne5 { [%eval -0.19] } 8... c5 { [%eval -0.22] } 9. f4 { [%eval -0.48] } 9... Bb7 { [%eval -0.47] } 10. b3 { [%eval -1.00] } 10... cxd4 { [%eval -0.91] } 11. exd4 { [%eval -0.91] } 11... Bb4 { [%eval -0.90] } 12. Bd2 { [%eval -0.99] } 12... Bxc3 { [%eval -0.79] } 13. Bxc3 { [%eval -0.76] } 13... Ba6 { [%eval -0.43] } 14. Bxa6 { [%eval -0.57] } 14... Nxa6 { [%eval -0.46] } 15. Qf3 { [%eval -0.80] } 15... Rc8 { [%eval -0.80] } 16. Bb2 { [%eval -1.34] } 16... Ne4 { [%eval -1.36] } 17. Ba3 { [%eval -2.31] } 17... Rc3 { [%eval -2.58] } 18. Qe2 { [%eval -4.03] } 18... Qh4+ { [%eval -4.52] } 19. Kf1 { [%eval -4.75] } 19... Ng3+ { [%eval -5.04] } 20. hxg3 { [%eval -5.31] } 20... Qxh1+ { [%eval -5.30] } 21. Kf2 { [%eval -5.38] } 21... Qxa1 { [%eval -5.49] } 22. Qxa6 { [%eval -8.59] } 22... Rc2+ { [%eval -8.86] } 23. Kf3 { [%eval -99.60] } 23... Qd1+ { [%eval -99.70] } 24. Qe2 { [%eval -99.90] } 24... Qxe2# { [%eval #0] } 0-1
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_ConvNet_6L_256C"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.19] } 1... d5 { [%eval 0.28] } 2. c4 { [%eval 0.24] } 2... dxc4 { [%eval 0.32] } 3. e3 { [%eval 0.29] } 3... Nf6 { [%eval 0.28] } 4. Nc3 { [%eval 0.13] } 4... c5 { [%eval 0.16] } 5. Bxc4 { [%eval 0.19] } 5... cxd4 { [%eval 0.50] } 6. Qxd4 { [%eval -0.01] } 6... Qxd4 { [%eval -0.03] } 7. exd4 { [%eval 0.00] } 7... Nc6 { [%eval 0.23] } 8. Nb5 { [%eval 0.38] } 8... Kd8 { [%eval 0.18] } 9. Bg5 { [%eval 0.10] } 9... e6 { [%eval 0.20] } 10. O-O-O { [%eval 0.24] } 10... Be7 { [%eval 0.50] } 11. Nf3 { [%eval 0.37] } 11... a6 { [%eval 0.41] } 12. Nc3 { [%eval 0.36] } 12... b5 { [%eval 1.64] } 13. d5 { [%eval 1.72] } 13... Nxd5 { [%eval 1.76] } 14. Bxd5 { [%eval 1.40] } 14... Bd7 { [%eval 6.72] } 15. Bxc6 { [%eval 6.78] } 15... f6 { [%eval 9.51] } 16. Be3 { [%eval 8.17] } 16... Rc8 { [%eval 8.47] } 17. Bxd7 { [%eval 8.69] } 17... Kc7 { [%eval 8.86] } 18. Kb1 { [%eval 8.68] } 18... Kb7 { [%eval 8.88] } 19. Rd2 { [%eval 8.42] } 19... Rcd8 { [%eval 8.49] } 20. Bxe6 { [%eval 8.53] } 20... Rxd2 { [%eval 8.52] } 21. Nxd2 { [%eval 8.47] } 21... Rd8 { [%eval 8.66] } 22. Re1 { [%eval 8.45] } 22... b4 { [%eval 8.88] } 23. Nd1 { [%eval 8.36] } 23... a5 { [%eval 8.67] } 24. Nc4 { [%eval 8.62] } 24... a4 { [%eval 8.72] } 25. Bf5 { [%eval 8.42] } 25... g6 { [%eval 8.58] } 26. Be4+ { [%eval 8.58] } 26... Kc7 { [%eval 8.81] } 27. Bb6+ { [%eval 8.87] } 27... Kd7 { [%eval 8.84] } 28. Bxd8 { [%eval 8.84] } 28... Bxd8 { [%eval 8.89] } 29. a3 { [%eval 8.74] } 29... f5 { [%eval 8.90] } 30. Bd5 { [%eval 8.65] } 30... bxa3 { [%eval 8.63] } 31. bxa3 { [%eval 8.71] } 31... Bf6 { [%eval 8.73] } 32. f4 { [%eval 8.78] } 32... Kc7 { [%eval 9.03] } 33. Nce3 { [%eval 8.60] } 33... Kd6 { [%eval 8.68] } 34. Bf3 { [%eval 8.69] } 34... Bh4 { [%eval 8.72] } 35. g3 { [%eval 8.71] } 35... Bf6 { [%eval 8.90] } 36. Nd5 { [%eval 8.81] } 36... Bd4 { [%eval 8.86] } 37. Re2 { [%eval 8.87] } 37... h5 { [%eval 9.00] } 38. Re1 { [%eval 8.88] } 38... h4 { [%eval 8.91] } 39. gxh4 { [%eval 8.90] } 39... Kc5 { [%eval 9.38] } 40. Re8 { [%eval 9.05] } 40... Kd6 { [%eval 9.04] } 41. Re2 { [%eval 9.10] } 41... Bc5 { [%eval 9.05] } 42. N1c3 { [%eval 9.01] } 42... Bxa3 { [%eval 9.98] } 43. Nb5+ { [%eval 9.79] } 43... Kd7 { [%eval 99.80] } 44. Nf6+ { [%eval 99.90] } 44... Kd8 { [%eval 99.90] } 45. Re8# { [%eval #0] } 1-0
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_ConvNet_6L_256C"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.20] } 1... d5 { [%eval 0.24] } 2. Nf3 { [%eval 0.24] } 2... Nf6 { [%eval 0.26] } 3. c4 { [%eval 0.24] } 3... e6 { [%eval 0.28] } 4. Nc3 { [%eval 0.15] } 4... c5 { [%eval 0.26] } 5. e3 { [%eval 0.10] } 5... Nc6 { [%eval 0.15] } 6. cxd5 { [%eval 0.14] } 6... exd5 { [%eval 0.18] } 7. Bb5 { [%eval 0.24] } 7... a6 { [%eval 0.30] } 8. Bxc6+ { [%eval 0.26] } 8... bxc6 { [%eval 0.33] } 9. dxc5 { [%eval -0.29] } 9... Bxc5 { [%eval -0.29] } 10. Qc2 { [%eval -0.54] } 10... Bd6 { [%eval -0.57] } 11. b3 { [%eval -0.88] } 11... O-O { [%eval -0.91] } 12. Bb2 { [%eval -0.96] } 12... Re8 { [%eval -0.84] } 13. h3 { [%eval -1.09] } 13... Bb7 { [%eval -1.17] } 14. Rd1 { [%eval -1.93] } 14... c5 { [%eval -2.25] } 15. Ne2 { [%eval -2.25] } 15... d4 { [%eval -2.34] } 16. exd4 { [%eval -2.59] } 16... Qe7 { [%eval -2.64] } 17. dxc5 { [%eval -2.69] } 17... Bxc5 { [%eval -2.69] } 18. Kf1 { [%eval -2.81] } 18... Rac8 { [%eval -3.00] } 19. Qf5 { [%eval -8.30] } 19... Qxe2+ { [%eval -8.54] } 20. Kg1 { [%eval -8.68] } 20... Qxd1+ { [%eval -8.80] } 21. Kh2 { [%eval -8.82] } 21... Qc2 { [%eval -7.50] } 22. Qxc2 { [%eval -7.77] } 22... Bd6+ { [%eval -7.91] } 23. Be5 { [%eval -7.97] } 23... Bxe5+ { [%eval -7.89] } 24. Nxe5 { [%eval -7.95] } 24... Rxc2 { [%eval -8.04] } 25. Re1 { [%eval -8.29] } 25... Rxf2 { [%eval -8.51] } 26. Kg3 { [%eval -12.71] } 26... Rxg2+ { [%eval -98.00] } 27. Kh4 { [%eval -99.90] } 27... h6 { [%eval -99.70] } 28. Nxf7 { [%eval -99.80] } 28... Kxf7 { [%eval -99.80] } 29. Rc1 { [%eval -99.90] } 29... g5# { [%eval #0] } 0-1
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_ConvNet_6L_256C"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. Nf3 { [%eval 0.16] } 1... d5 { [%eval 0.22] } 2. d4 { [%eval 0.18] } 2... Nf6 { [%eval 0.22] } 3. e3 { [%eval -0.02] } 3... Bf5 { [%eval 0.18] } 4. c4 { [%eval 0.21] } 4... e6 { [%eval 0.19] } 5. Qb3 { [%eval 0.15] } 5... Nbd7 { [%eval 0.64] } 6. cxd5 { [%eval 0.13] } 6... exd5 { [%eval -0.04] } 7. Qxb7 { [%eval -0.15] } 7... Rb8 { [%eval 0.33] } 8. Qa6 { [%eval -0.13] } 8... Bb4+ { [%eval 0.20] } 9. Bd2 { [%eval 0.00] } 9... Bd6 { [%eval 0.00] } 10. b3 { [%eval 0.00] } 10... Rb6 { [%eval 0.00] } 11. Qa4 { [%eval 0.34] } 11... Ne4 { [%eval 0.52] } 12. Nc3 { [%eval 0.43] } 12... Nxd2 { [%eval 0.62] } 13. Nxd2 { [%eval 0.57] } 13... c6 { [%eval 0.52] } 14. Be2 { [%eval 0.44] } 14... Rb4 { [%eval 3.33] } 15. Qxc6 { [%eval 3.44] } 15... Rb6 { [%eval 3.35] } 16. Qxd5 { [%eval 3.55] } 16... Be6 { [%eval 3.36] } 17. Qh5 { [%eval 3.01] } 17... Bb4 { [%eval 3.48] } 18. Rc1 { [%eval 3.34] } 18... Bxc3 { [%eval 4.50] } 19. Rxc3 { [%eval 4.25] } 19... g6 { [%eval 4.70] } 20. Qa5 { [%eval 4.53] } 20... h5 { [%eval 4.53] } 21. Rc2 { [%eval 4.24] } 21... h4 { [%eval 4.55] } 22. Qa3 { [%eval 4.38] } 22... h3 { [%eval 4.30] } 23. g4 { [%eval 3.73] } 23... Qh4 { [%eval 6.63] } 24. Rc8+ { [%eval 6.59] } 24... Qd8 { [%eval 6.70] } 25. Rxd8+ { [%eval 6.76] } 25... Kxd8 { [%eval 6.78] } 26. e4 { [%eval 6.62] } 26... Re8 { [%eval 6.86] } 27. Nf1 { [%eval 6.07] } 27... f5 { [%eval 6.11] } 28. Ne3 { [%eval 6.31] } 28... fxe4 { [%eval 6.99] } 29. O-O { [%eval 7.13] } 29... Nf6 { [%eval 7.06] } 30. d5 { [%eval 7.06] } 30... Bd7 { [%eval 7.13] } 31. Qxa7 { [%eval 7.41] } 31... Rd6 { [%eval 7.38] } 32. Rd1 { [%eval 7.02] } 32... Ke7 { [%eval 7.47] } 33. Qa3 { [%eval 7.16] } 33... Kd8 { [%eval 9.48] } 34. Qxd6 { [%eval 9.64] } 34... Re7 { [%eval 11.78] } 35. Qb6+ { [%eval 10.50] } 35... Ke8 { [%eval 12.01] } 36. Qxf6 { [%eval 12.95] } 36... g5 { [%eval 98.50] } 37. Qxg5 { [%eval 11.35] } 37... Kd8 { [%eval 99.10] } 38. d6 { [%eval 99.20] } 38... Ke8 { [%eval 99.90] } 39. dxe7 { [%eval 99.70] } 39... Be6 { [%eval 99.80] } 40. Bb5+ { [%eval 99.80] } 40... Bd7 { [%eval 99.80] } 41. Rxd7 { [%eval 99.80] } 41... Kf7 { [%eval 99.80] } 42. Rd5 { [%eval 99.90] } 42... Ke6 { [%eval 99.90] } 43. Rd2 { [%eval 99.90] } 43... Kf7 { [%eval 99.90] } 44. Rd5 { [%eval 99.90] } 44... Ke6 { [%eval 99.90] } 45. e8=Q# { [%eval #0] } 1-0
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_ConvNet_6L_256C"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.28] } 1... Nf6 { [%eval 0.33] } 2. Nf3 { [%eval 0.25] } 2... d5 { [%eval 0.27] } 3. e3 { [%eval 0.11] } 3... a6 { [%eval 0.21] } 4. c4 { [%eval 0.15] } 4... e6 { [%eval 0.11] } 5. Nc3 { [%eval 0.08] } 5... c5 { [%eval 0.24] } 6. dxc5 { [%eval 0.11] } 6... dxc4 { [%eval 0.58] } 7. Qxd8+ { [%eval 0.56] } 7... Kxd8 { [%eval 0.56] } 8. Bxc4 { [%eval 0.21] } 8... Bxc5 { [%eval 0.23] } 9. Bd2 { [%eval 0.11] } 9... Nbd7 { [%eval 0.12] } 10. Be2 { [%eval 0.09] } 10... b5 { [%eval 0.19] } 11. a4 { [%eval -0.54] } 11... b4 { [%eval -0.47] } 12. Nb1 { [%eval -0.46] } 12... a5 { [%eval -0.45] } 13. Nd4 { [%eval -1.29] } 13... Bb7 { [%eval -1.21] } 14. f3 { [%eval -2.11] } 14... e5 { [%eval -1.69] } 15. Nb3 { [%eval -2.31] } 15... Bd5 { [%eval -2.29] } 16. Nxc5 { [%eval -2.77] } 16... Nxc5 { [%eval -2.70] } 17. e4 { [%eval -2.53] } 17... Nb3 { [%eval -2.68] } 18. exd5 { [%eval -2.75] } 18... Nxa1 { [%eval -2.68] } 19. Bb5 { [%eval -3.16] } 19... Rc8 { [%eval -3.40] } 20. Ke2 { [%eval -4.14] } 20... Ke7 { [%eval -3.71] } 21. Rd1 { [%eval -4.17] } 21... Rc2 { [%eval -4.20] } 22. Rc1 { [%eval -5.29] } 22... Rhc8 { [%eval -5.23] } 23. Rxc2 { [%eval -5.35] } 23... Nxc2 { [%eval -4.52] } 24. Kd3 { [%eval -4.80] } 24... Nxd5 { [%eval -4.88] } 25. Ba6 { [%eval -4.81] } 25... Rc5 { [%eval -4.87] } 26. b3 { [%eval -6.37] } 26... h6 { [%eval -5.05] } 27. Bc4 { [%eval -5.46] } 27... Nd4 { [%eval -4.49] } 28. Bxd5 { [%eval -5.58] } 28... Rxd5 { [%eval -5.56] } 29. Kc4 { [%eval -5.88] } 29... Rd7 { [%eval -5.47] } 30. Be3 { [%eval -5.79] } 30... Ke6 { [%eval -5.83] } 31. Nd2 { [%eval -99.70] } 31... Rc7+ { [%eval -99.80] } 32. Kd3 { [%eval -99.80] } 32... Rc3+ { [%eval -99.90] } 33. Ke4 { [%eval -99.90] } 33... Nc2 { [%eval -99.90] } 34. Bb6 { [%eval -99.90] } 34... f6 { [%eval -99.70] } 35. Bxa5 { [%eval -99.90] } 35... f5# { [%eval #0] } 0-1
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_ConvNet_6L_256C"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.26] } 1... d5 { [%eval 0.28] } 2. c4 { [%eval 0.30] } 2... dxc4 { [%eval 0.41] } 3. e4 { [%eval 0.32] } 3... b5 { [%eval 0.60] } 4. a4 { [%eval 0.66] } 4... a6 { [%eval 1.33] } 5. axb5 { [%eval 1.74] } 5... e6 { [%eval 1.83] } 6. Nc3 { [%eval 1.85] } 6... Bb7 { [%eval 1.86] } 7. Bxc4 { [%eval 2.11] } 7... Bb4 { [%eval 2.09] } 8. Nf3 { [%eval 2.15] } 8... axb5 { [%eval 2.45] } 9. Rxa8 { [%eval 2.57] } 9... Bxa8 { [%eval 2.48] } 10. Bxb5+ { [%eval 2.51] } 10... Nd7 { [%eval 3.30] } 11. Qa4 { [%eval 3.04] } 11... Bxc3+ { [%eval 3.07] } 12. bxc3 { [%eval 3.14] } 12... Nf6 { [%eval 4.03] } 13. Ba3 { [%eval 4.12] } 13... Nxe4 { [%eval 6.68] } 14. Bxd7+ { [%eval 6.81] } 14... Qxd7 { [%eval 6.98] } 15. Qxa8+ { [%eval 6.91] } 15... Qd8 { [%eval 7.04] } 16. Qa4+ { [%eval 6.98] } 16... Qd7 { [%eval 6.89] } 17. Qa8+ { [%eval 6.98] } 17... Qd8 { [%eval 7.02] } 18. Qa6 { [%eval 5.22] } 18... Nxc3 { [%eval 6.11] } 19. Ne5 { [%eval 6.24] } 19... Nd5 { [%eval 99.80] } 20. Qc6+ { [%eval 99.90] } 20... Qd7 { [%eval 99.90] } 21. Qxd7# { [%eval #0] } 1-0
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_ConvNet_6L_256C"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.18] } 1... d5 { [%eval 0.26] } 2. Nf3 { [%eval 0.25] } 2... e6 { [%eval 0.26] } 3. c4 { [%eval 0.26] } 3... Nf6 { [%eval 0.22] } 4. Nc3 { [%eval 0.24] } 4... Bb4 { [%eval 0.30] } 5. cxd5 { [%eval 0.30] } 5... Nxd5 { [%eval 0.55] } 6. Bd2 { [%eval 0.46] } 6... Nxc3 { [%eval 0.51] } 7. bxc3 { [%eval 0.50] } 7... Be7 { [%eval 0.54] } 8. e4 { [%eval 0.61] } 8... c5 { [%eval 0.66] } 9. Bd3 { [%eval 0.57] } 9... cxd4 { [%eval 0.72] } 10. cxd4 { [%eval 0.72] } 10... O-O { [%eval 0.77] } 11. Rc1 { [%eval 0.64] } 11... Nc6 { [%eval 0.66] } 12. Be3 { [%eval -0.60] } 12... Nb4 { [%eval -0.72] } 13. Bb1 { [%eval -0.58] } 13... Nxa2 { [%eval -0.66] } 14. Bxa2 { [%eval -0.74] } 14... Qa5+ { [%eval -0.81] } 15. Qd2 { [%eval -3.07] } 15... Bb4 { [%eval -3.08] } 16. Ke2 { [%eval -4.91] } 16... Bxd2 { [%eval -5.20] } 17. Nxd2 { [%eval -5.35] } 17... Qxa2 { [%eval -5.44] } 18. h4 { [%eval -6.15] } 18... Qa6+ { [%eval -6.02] } 19. Rc4 { [%eval -6.51] } 19... h5 { [%eval -6.21] } 20. Rc1 { [%eval -6.31] } 20... e5 { [%eval -6.22] } 21. f3 { [%eval -7.25] } 21... exd4 { [%eval -7.47] } 22. Bxd4 { [%eval -7.48] } 22... Be6 { [%eval -7.65] } 23. Ke3 { [%eval -7.64] } 23... Bxc4 { [%eval -7.56] } 24. Nxc4 { [%eval -8.01] } 24... Rfc8 { [%eval -8.11] } 25. Ne5 { [%eval -9.09] } 25... Qa3+ { [%eval -8.23] } 26. Kd2 { [%eval -99.10] } 26... Qxc1+ { [%eval -99.20] } 27. Kd3 { [%eval -99.20] } 27... Rc2 { [%eval -99.40] } 28. g3 { [%eval -99.90] } 28... Qd2# { [%eval #0] } 0-1
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_ConvNet_6L_256C"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. Nf3 { [%eval 0.18] } 1... d5 { [%eval 0.18] } 2. d4 { [%eval 0.16] } 2... Nf6 { [%eval 0.19] } 3. c4 { [%eval 0.19] } 3... dxc4 { [%eval 0.22] } 4. e3 { [%eval 0.26] } 4... c5 { [%eval 0.23] } 5. Bxc4 { [%eval 0.28] } 5... e6 { [%eval 0.33] } 6. O-O { [%eval 0.29] } 6... Be7 { [%eval 0.35] } 7. Qe2 { [%eval 0.35] } 7... cxd4 { [%eval 0.40] } 8. Rd1 { [%eval 0.36] } 8... Nc6 { [%eval 0.40] } 9. Nc3 { [%eval 0.39] } 9... e5 { [%eval 0.84] } 10. Bb5 { [%eval 0.20] } 10... Qc7 { [%eval 0.16] } 11. exd4 { [%eval 0.11] } 11... exd4 { [%eval 0.11] } 12. Nxd4 { [%eval 0.13] } 12... Bd7 { [%eval 2.25] } 13. g3 { [%eval 2.15] } 13... Nxd4 { [%eval 2.98] } 14. Rxd4 { [%eval 2.87] } 14... Bxb5 { [%eval 3.58] } 15. Nxb5 { [%eval 3.45] } 15... Qb6 { [%eval 3.74] } 16. Rd6 { [%eval 2.99] } 16... Qxd6 { [%eval 6.25] } 17. Nxd6+ { [%eval 6.24] } 17... Kf8 { [%eval 6.40] } 18. Bf4 { [%eval 5.50] } 18... Bxd6 { [%eval 5.63] } 19. Bxd6+ { [%eval 5.40] } 19... Kg8 { [%eval 5.45] } 20. Be5 { [%eval 5.08] } 20... h5 { [%eval 5.34] } 21. Rd1 { [%eval 4.71] } 21... Rh6 { [%eval 4.90] } 22. f3 { [%eval 4.29] } 22... Re8 { [%eval 4.88] } 23. Re1 { [%eval 4.55] } 23... h4 { [%eval 4.64] } 24. Qd2 { [%eval 4.66] } 24... hxg3 { [%eval 4.71] } 25. Bxg3 { [%eval 4.35] } 25... Rxe1+ { [%eval 5.11] } 26. Qxe1 { [%eval 4.72] } 26... Nh5 { [%eval 5.74] } 27. Qe5 { [%eval 5.40] } 27... Nxg3 { [%eval 5.13] } 28. hxg3 { [%eval 5.32] } 28... Re6 { [%eval 5.76] } 29. Qb8+ { [%eval 5.68] } 29... Re8 { [%eval 8.15] } 30. Qxe8+ { [%eval 8.94] } 30... Kh7 { [%eval 9.75] } 31. Qf8 { [%eval 8.65] } 31... Kg6 { [%eval 8.70] } 32. g4 { [%eval 9.10] } 32... f6 { [%eval 9.29] } 33. Kh2 { [%eval 8.74] } 33... Kg5 { [%eval 9.34] } 34. Qc5+ { [%eval 99.40] } 34... Kg6 { [%eval 99.90] } 35. Qh5# { [%eval #0] } 1-0
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_ConvNet_6L_256C"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.20] } 1... e6 { [%eval 0.30] } 2. e4 { [%eval 0.28] } 2... d5 { [%eval 0.41] } 3. e5 { [%eval 0.38] } 3... Bd7 { [%eval 0.27] } 4. c3 { [%eval 0.29] } 4... a5 { [%eval 0.72] } 5. Nf3 { [%eval 0.79] } 5... a4 { [%eval 0.87] } 6. Bd3 { [%eval 0.87] } 6... Be7 { [%eval 0.99] } 7. h4 { [%eval 0.85] } 7... h5 { [%eval 0.81] } 8. Ng5 { [%eval 0.37] } 8... c5 { [%eval 0.39] } 9. Na3 { [%eval 0.43] } 9... Nc6 { [%eval 0.17] } 10. Nb5 { [%eval -0.71] } 10... c4 { [%eval -0.23] } 11. Bc2 { [%eval -0.30] } 11... Nxe5 { [%eval -0.33] } 12. dxe5 { [%eval -0.43] } 12... Bxb5 { [%eval -0.41] } 13. Qf3 { [%eval -0.56] } 13... Nh6 { [%eval -0.66] } 14. Qxh5 { [%eval -0.71] } 14... Qd7 { [%eval -0.24] } 15. Be3 { [%eval -0.76] } 15... a3 { [%eval -0.82] } 16. bxa3 { [%eval -1.16] } 16... Ba4 { [%eval -0.97] } 17. Bd1 { [%eval -1.13] } 17... Bxd1 { [%eval -1.28] } 18. Qxd1 { [%eval -2.24] } 18... Nf5 { [%eval -2.30] } 19. Bd4 { [%eval -4.69] } 19... Bxg5 { [%eval -4.43] } 20. g3 { [%eval -4.80] } 20... Be7 { [%eval -4.58] } 21. a4 { [%eval -5.22] } 21... Nxd4 { [%eval -4.67] } 22. Qxd4 { [%eval -4.70] } 22... Qc7 { [%eval -4.67] } 23. Rb1 { [%eval -4.83] } 23... Bc5 { [%eval -4.77] } 24. Qf4 { [%eval -4.96] } 24... Rh5 { [%eval -4.76] } 25. Rb5 { [%eval -5.79] } 25... Rf5 { [%eval -5.86] } 26. Qg4 { [%eval -7.62] } 26... Qxe5+ { [%eval -7.86] } 27. Kd1 { [%eval -7.90] } 27... Rxf2 { [%eval -8.62] } 28. Rxc5 { [%eval -99.20] } 28... Qe3 { [%eval -99.10] } 29. Rb5 { [%eval -99.90] } 29... Qd3+ { [%eval -99.90] } 30. Ke1 { [%eval -99.90] } 30... Qd2# { [%eval #0] } 0-1
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_ConvNet_6L_256C"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.24] } 1... d5 { [%eval 0.33] } 2. c4 { [%eval 0.23] } 2... dxc4 { [%eval 0.26] } 3. e4 { [%eval 0.27] } 3... b5 { [%eval 0.61] } 4. a4 { [%eval 0.65] } 4... a6 { [%eval 1.67] } 5. axb5 { [%eval 1.70] } 5... e6 { [%eval 1.70] } 6. Nf3 { [%eval 1.57] } 6... Bb7 { [%eval 1.67] } 7. Bxc4 { [%eval 1.74] } 7... Bb4+ { [%eval 2.10] } 8. Bd2 { [%eval 2.14] } 8... Bxd2+ { [%eval 2.23] } 9. Nbxd2 { [%eval 2.47] } 9... axb5 { [%eval 2.60] } 10. Bxb5+ { [%eval 2.73] } 10... Nd7 { [%eval 2.90] } 11. Bxd7+ { [%eval 2.60] } 11... Qxd7 { [%eval 2.43] } 12. Rxa8+ { [%eval 2.29] } 12... Bxa8 { [%eval 2.31] } 13. Qa1 { [%eval 2.40] } 13... Ne7 { [%eval 5.28] } 14. Qxa8+ { [%eval 5.40] } 14... Qd8 { [%eval 5.39] } 15. Qxd8+ { [%eval 5.51] } 15... Kxd8 { [%eval 5.47] } 16. Ke2 { [%eval 5.37] } 16... f6 { [%eval 5.50] } 17. Rc1 { [%eval 5.48] } 17... Kd7 { [%eval 5.67] } 18. Ra1 { [%eval 5.08] } 18... Rb8 { [%eval 5.16] } 19. h4 { [%eval 4.94] } 19... Rxb2 { [%eval 4.90] } 20. Rb1 { [%eval 4.66] } 20... Rxb1 { [%eval 4.59] } 21. Nxb1 { [%eval 4.74] } 21... Nc6 { [%eval 4.87] } 22. Kf1 { [%eval 4.58] } 22... Kd6 { [%eval 4.75] } 23. Nc3 { [%eval 4.71] } 23... e5 { [%eval 4.96] } 24. Nb5+ { [%eval 4.91] } 24... Kd7 { [%eval 4.98] } 25. dxe5 { [%eval 5.00] } 25... fxe5 { [%eval 5.02] } 26. Ke2 { [%eval 4.92] } 26... h6 { [%eval 4.98] } 27. Ke3 { [%eval 4.94] } 27... Ke6 { [%eval 4.98] } 28. Na3 { [%eval 4.94] } 28... Kd6 { [%eval 5.01] } 29. Ne1 { [%eval 4.91] } 29... Kc5 { [%eval 4.86] } 30. Kd2 { [%eval 4.69] } 30... Nd4 { [%eval 4.89] } 31. g3 { [%eval 4.76] } 31... Nb3+ { [%eval 4.85] } 32. Kc3 { [%eval 4.89] } 32... Nd4 { [%eval 5.15] } 33. Nd3+ { [%eval 5.01] } 33... Kd6 { [%eval 5.11] } 34. Nc4+ { [%eval 5.04] } 34... Ke6 { [%eval 5.37] } 35. Nc5+ { [%eval 5.19] } 35... Kf7 { [%eval 7.82] } 36. Nxe5+ { [%eval 8.18] } 36... Kf6 { [%eval 8.41] } 37. Kxd4 { [%eval 8.53] } 37... Ke7 { [%eval 8.60] } 38. Nc4 { [%eval 8.53] } 38... h5 { [%eval 8.91] } 39. f4 { [%eval 9.08] } 39... g6 { [%eval 9.24] } 40. Ne3 { [%eval 9.57] } 40... Kd6 { [%eval 13.87] } 41. Kc4 { [%eval 9.55] } 41... c6 { [%eval 12.08] } 42. Nf1 { [%eval 10.87] } 42... Ke7 { [%eval 15.00] } 43. Kd4 { [%eval 97.30] } 43... Kd6 { [%eval 97.30] } 44. Nb3 { [%eval 97.40] } 44... c5+ { [%eval 97.90] } 45. Kc3 { [%eval 97.70] } 45... Kc6 { [%eval 97.70] } 46. Na1 { [%eval 10.66] } 46... Kd6 { [%eval 97.60] } 47. Nb3 { [%eval 97.70] } 47... Kc6 { [%eval 97.70] } 48. Ne3 { [%eval 97.80] } 48... Kb5 { [%eval 98.00] } 49. Na1 { [%eval 97.70] } 49... Kc6 { [%eval 97.90] } 50. Kc4 { [%eval 98.00] } 50... Kd6 { [%eval 98.00] } 51. e5+ { [%eval 98.10] } 51... Ke6 { [%eval 98.20] } 52. Nb3 { [%eval 98.40] } 52... Ke7 { [%eval 98.60] } 53. Nxc5 { [%eval 98.80] } 53... Kf7 { [%eval 98.70] } 54. Kd4 { [%eval 98.80] } 54... Ke7 { [%eval 98.80] } 55. Kd5 { [%eval 98.90] } 55... Kf7 { [%eval 98.90] } 56. Kd6 { [%eval 99.10] } 56... g5 { [%eval 99.10] } 57. fxg5 { [%eval 99.20] } 57... Kg6 { [%eval 99.40] } 58. e6 { [%eval 99.50] } 58... Kg7 { [%eval 99.50] } 59. e7 { [%eval 99.60] } 59... Kf7 { [%eval 99.60] } 60. Nf1 { [%eval 99.50] } 60... Ke8 { [%eval 99.50] } 61. Nb3 { [%eval 99.40] } 61... Kf7 { [%eval 99.50] } 62. Kd7 { [%eval 99.60] } 62... Kg6 { [%eval 99.60] } 63. Ne3 { [%eval 99.70] } 63... Kf7 { [%eval 99.70] } 64. e8=Q+ { [%eval 99.80] } 64... Kg7 { [%eval 99.80] } 65. Nf5+ { [%eval 99.90] } 65... Kh7 { [%eval 99.90] } 66. Nh6 { [%eval 99.90] } 66... Kg7 { [%eval 99.90] } 67. Qg8# { [%eval #0] } 1-0
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_ConvNet_6L_256C"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.26] } 1... Nf6 { [%eval 0.17] } 2. Nf3 { [%eval 0.26] } 2... d5 { [%eval 0.29] } 3. e3 { [%eval -0.01] } 3... c5 { [%eval 0.08] } 4. c4 { [%eval 0.10] } 4... dxc4 { [%eval 0.35] } 5. Bxc4 { [%eval 0.28] } 5... e6 { [%eval 0.34] } 6. Nc3 { [%eval 0.21] } 6... a6 { [%eval 0.25] } 7. Qe2 { [%eval -0.26] } 7... Nc6 { [%eval 0.39] } 8. dxc5 { [%eval 0.18] } 8... Qc7 { [%eval 0.56] } 9. a3 { [%eval 0.45] } 9... Ne5 { [%eval 0.75] } 10. Nxe5 { [%eval 0.80] } 10... Qxe5 { [%eval 0.73] } 11. b4 { [%eval -5.49] } 11... Qxc3+ { [%eval -5.76] } 12. Bd2 { [%eval -7.01] } 12... Qxa1+ { [%eval -6.90] } 13. Bc1 { [%eval -9.56] } 13... Qxc1+ { [%eval -9.79] } 14. Qd1 { [%eval -9.94] } 14... Qc3+ { [%eval -9.70] } 15. Ke2 { [%eval -10.03] } 15... Qxc4+ { [%eval -10.17] } 16. Qd3 { [%eval -10.20] } 16... Qg4+ { [%eval -10.00] } 17. f3 { [%eval -11.11] } 17... Qxg2+ { [%eval -11.22] } 18. Kd1 { [%eval -11.33] } 18... Bd7 { [%eval -10.32] } 19. Re1 { [%eval -10.28] } 19... Qg6 { [%eval -10.24] } 20. Qxg6 { [%eval -10.44] } 20... Ba4+ { [%eval -8.90] } 21. Qc2 { [%eval -8.88] } 21... Rd8+ { [%eval -8.94] } 22. Ke2 { [%eval -10.56] } 22... Bxc2 { [%eval -10.53] } 23. Rc1 { [%eval -10.65] } 23... Bd3+ { [%eval -10.27] } 24. Kf2 { [%eval -10.59] } 24... Bb5 { [%eval -10.54] } 25. e4 { [%eval -10.70] } 25... Be7 { [%eval -10.68] } 26. Ke3 { [%eval -10.74] } 26... Nh5 { [%eval -10.84] } 27. a4 { [%eval -11.05] } 27... Rd3+ { [%eval -11.15] } 28. Kf2 { [%eval -11.14] } 28... Bxa4 { [%eval -11.08] } 29. Ra1 { [%eval -11.24] } 29... Bh4+ { [%eval -11.20] } 30. Ke2 { [%eval -99.60] } 30... Nf4+ { [%eval -99.20] } 31. Kf1 { [%eval -99.20] } 31... Bc6 { [%eval -11.45] } 32. b5 { [%eval -99.50] } 32... Rxf3+ { [%eval -99.60] } 33. Kg1 { [%eval -99.60] } 33... Bf2+ { [%eval -99.70] } 34. Kf1 { [%eval -99.90] } 34... Bxb5# { [%eval #0] } 0-1
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_ConvNet_6L_256C"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. e4 { [%eval 0.26] } 1... e5 { [%eval 0.22] } 2. Nc3 { [%eval 0.10] } 2... Nc6 { [%eval 0.07] } 3. Nf3 { [%eval 0.04] } 3... Nf6 { [%eval -0.04] } 4. Bd3 { [%eval -0.25] } 4... Bc5 { [%eval -0.24] } 5. O-O { [%eval -0.21] } 5... d6 { [%eval -0.28] } 6. Na4 { [%eval -0.41] } 6... Bb6 { [%eval -0.08] } 7. Re1 { [%eval -0.15] } 7... Bg4 { [%eval 0.01] } 8. c3 { [%eval -0.15] } 8... Bxf3 { [%eval 0.65] } 9. Qxf3 { [%eval 0.72] } 9... h6 { [%eval 0.78] } 10. b4 { [%eval 0.70] } 10... a6 { [%eval 0.91] } 11. b5 { [%eval 0.61] } 11... axb5 { [%eval 0.50] } 12. Nxb6 { [%eval 0.55] } 12... cxb6 { [%eval 0.62] } 13. Qg3 { [%eval 0.56] } 13... Nh5 { [%eval 0.72] } 14. Qf3 { [%eval 0.61] } 14... Nf4 { [%eval 0.84] } 15. Bxb5 { [%eval 0.83] } 15... Ne6 { [%eval 0.92] } 16. d3 { [%eval 0.82] } 16... Ra5 { [%eval 1.13] } 17. Rb1 { [%eval 0.90] } 17... Rxa2 { [%eval 1.27] } 18. Bc4 { [%eval 1.12] } 18... Ra5 { [%eval 1.42] } 19. Qg4 { [%eval 1.42] } 19... Qd7 { [%eval 1.75] } 20. h3 { [%eval 1.65] } 20... h5 { [%eval 1.62] } 21. Qe2 { [%eval 0.57] } 21... b5 { [%eval 0.58] } 22. Bxb5 { [%eval 0.35] } 22... Qc7 { [%eval 1.95] } 23. Qd1 { [%eval 1.74] } 23... h4 { [%eval 1.95] } 24. Re2 { [%eval 1.68] } 24... Ra8 { [%eval 3.20] } 25. Reb2 { [%eval 1.92] } 25... Ra5 { [%eval 3.70] } 26. d4 { [%eval 4.10] } 26... exd4 { [%eval 4.01] } 27. cxd4 { [%eval 4.15] } 27... Nxd4 { [%eval 4.84] } 28. Qxd4 { [%eval 4.71] } 28... Kf8 { [%eval 5.77] } 29. Qd1 { [%eval 5.46] } 29... Kg8 { [%eval 5.77] } 30. Be3 { [%eval 5.44] } 30... Ra3 { [%eval 6.22] } 31. Bc1 { [%eval 5.69] } 31... Ra8 { [%eval 5.83] } 32. Kh1 { [%eval 5.58] } 32... Rh6 { [%eval 6.47] } 33. Bxh6 { [%eval 6.54] } 33... gxh6 { [%eval 6.30] } 34. Bxc6 { [%eval 6.31] } 34... bxc6 { [%eval 6.88] } 35. Qg4+ { [%eval 7.14] } 35... Kh8 { [%eval 7.22] } 36. Qxh4 { [%eval 7.09] } 36... Kg7 { [%eval 7.60] } 37. Rb3 { [%eval 6.41] } 37... c5 { [%eval 7.55] } 38. Rg3+ { [%eval 7.74] } 38... Kf8 { [%eval 8.29] } 39. Qxh6+ { [%eval 8.21] } 39... Ke7 { [%eval 8.42] } 40. e5 { [%eval 7.22] } 40... dxe5 { [%eval 7.79] } 41. Qh4+ { [%eval 8.42] } 41... Ke6 { [%eval 9.05] } 42. Qc4+ { [%eval 8.68] } 42... Kf6 { [%eval 10.49] } 43. Qh4+ { [%eval 98.40] } 43... Ke6 { [%eval 98.40] } 44. Rf3 { [%eval 98.50] } 44... f5 { [%eval 98.50] } 45. Qh6+ { [%eval 98.80] } 45... Kd7 { [%eval 99.20] } 46. Rd1+ { [%eval 99.30] } 46... Ke7 { [%eval 99.60] } 47. Rxf5 { [%eval 99.70] } 47... Re8 { [%eval 99.90] } 48. Qh4+ { [%eval 99.90] } 48... Ke6 { [%eval 99.90] } 49. Qh6+ { [%eval 99.80] } 49... Kxf5 { [%eval 99.80] } 50. g4+ { [%eval 99.90] } 50... Ke4 { [%eval 99.90] } 51. Rd2 { [%eval 99.90] } 51... c4 { [%eval 99.90] } 52. Qg6+ { [%eval 99.90] } 52... Kf3 { [%eval 99.90] } 53. Qf5# { [%eval #0] } 1-0
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_ConvNet_6L_256C"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.17] } 1... Nf6 { [%eval 0.22] } 2. Nf3 { [%eval 0.22] } 2... g6 { [%eval 0.32] } 3. c4 { [%eval 0.31] } 3... Bg7 { [%eval 0.36] } 4. Nc3 { [%eval 0.26] } 4... d6 { [%eval 0.46] } 5. h3 { [%eval 0.59] } 5... O-O { [%eval 0.55] } 6. e4 { [%eval 0.48] } 6... a6 { [%eval 0.78] } 7. Be2 { [%eval 0.54] } 7... e5 { [%eval 0.91] } 8. d5 { [%eval 0.97] } 8... c6 { [%eval 1.14] } 9. Bg5 { [%eval 0.87] } 9... cxd5 { [%eval 1.01] } 10. cxd5 { [%eval 0.88] } 10... h6 { [%eval 1.07] } 11. Be3 { [%eval 0.98] } 11... b5 { [%eval 1.37] } 12. a3 { [%eval 0.63] } 12... Nh5 { [%eval 0.73] } 13. Rc1 { [%eval 0.39] } 13... Nd7 { [%eval 0.39] } 14. b4 { [%eval 0.36] } 14... Nb6 { [%eval 0.55] } 15. g3 { [%eval 0.34] } 15... Bd7 { [%eval 0.59] } 16. Nd2 { [%eval 0.53] } 16... Nf6 { [%eval 0.61] } 17. h4 { [%eval 0.49] } 17... h5 { [%eval 0.16] } 18. Bg5 { [%eval 0.12] } 18... Rc8 { [%eval 0.13] } 19. Nb3 { [%eval -0.27] } 19... Nc4 { [%eval 0.00] } 20. Nd2 { [%eval -0.52] } 20... Nxd2 { [%eval -0.22] } 21. Qxd2 { [%eval -0.10] } 21... Qe8 { [%eval -0.16] } 22. f3 { [%eval -0.08] } 22... Nh7 { [%eval -0.07] } 23. Be3 { [%eval -0.16] } 23... f5 { [%eval -0.16] } 24. Bd3 { [%eval -1.55] } 24... f4 { [%eval -1.96] } 25. gxf4 { [%eval -1.86] } 25... exf4 { [%eval -1.94] } 26. Bxf4 { [%eval -3.84] } 26... Rxc3 { [%eval -4.26] } 27. Rxc3 { [%eval -4.28] } 27... Bxc3 { [%eval -4.34] } 28. Qxc3 { [%eval -4.31] } 28... Rxf4 { [%eval -4.30] } 29. Kf2 { [%eval -4.58] } 29... Qe7 { [%eval -4.05] } 30. Be2 { [%eval -4.75] } 30... Nf6 { [%eval -4.33] } 31. Ke3 { [%eval -7.84] } 31... Nxd5+ { [%eval -8.22] } 32. Kd2 { [%eval -8.31] } 32... Nxc3 { [%eval -8.64] } 33. Kxc3 { [%eval -9.01] } 33... Rxf3+ { [%eval -9.71] } 34. Bxf3 { [%eval -11.45] } 34... Qf6+ { [%eval -11.71] } 35. Kd3 { [%eval -98.80] } 35... Qxf3+ { [%eval -98.90] } 36. Kd2 { [%eval -99.00] } 36... Bg4 { [%eval -98.90] } 37. Rc1 { [%eval -98.90] } 37... Qg2+ { [%eval -11.46] } 38. Ke3 { [%eval -99.10] } 38... Qe2+ { [%eval -99.20] } 39. Kd4 { [%eval -99.90] } 39... Qd2# { [%eval #0] } 0-1
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_ConvNet_6L_256C"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.20] } 1... d5 { [%eval 0.25] } 2. c4 { [%eval 0.27] } 2... dxc4 { [%eval 0.32] } 3. Nf3 { [%eval 0.24] } 3... Nf6 { [%eval 0.25] } 4. Nc3 { [%eval 0.08] } 4... e6 { [%eval 0.23] } 5. e4 { [%eval 0.26] } 5... b5 { [%eval 0.27] } 6. Nxb5 { [%eval 0.10] } 6... Bb4+ { [%eval 0.69] } 7. Bd2 { [%eval 0.36] } 7... Bxd2+ { [%eval 0.33] } 8. Qxd2 { [%eval -0.10] } 8... Nxe4 { [%eval -0.13] } 9. Qa5 { [%eval -0.16] } 9... Bb7 { [%eval 1.30] } 10. Qxc7 { [%eval 1.35] } 10... Qxc7 { [%eval 2.98] } 11. Nxc7+ { [%eval 3.33] } 11... Ke7 { [%eval 3.17] } 12. Rc1 { [%eval 3.04] } 12... Rc8 { [%eval 3.45] } 13. Nxa8 { [%eval 3.40] } 13... Bxa8 { [%eval 3.85] } 14. Nd2 { [%eval 3.26] } 14... Nxd2 { [%eval 3.61] } 15. Kxd2 { [%eval 3.59] } 15... Be4 { [%eval 4.27] } 16. f3 { [%eval 4.45] } 16... Bd5 { [%eval 4.32] } 17. b3 { [%eval 4.45] } 17... cxb3 { [%eval 5.79] } 18. Rxc8 { [%eval 6.25] } 18... Nc6 { [%eval 6.20] } 19. Rxc6 { [%eval 5.58] } 19... Bxc6 { [%eval 6.17] } 20. axb3 { [%eval 6.21] } 20... a5 { [%eval 6.28] } 21. Be2 { [%eval 6.54] } 21... Kd6 { [%eval 6.79] } 22. Ba6 { [%eval 5.91] } 22... Bd5 { [%eval 6.44] } 23. Bc4 { [%eval 6.79] } 23... Bxc4 { [%eval 7.16] } 24. bxc4 { [%eval 7.21] } 24... a4 { [%eval 7.66] } 25. f4 { [%eval 7.18] } 25... a3 { [%eval 7.48] } 26. Ra1 { [%eval 7.47] } 26... Kc6 { [%eval 7.70] } 27. Rxa3 { [%eval 7.82] } 27... h5 { [%eval 8.04] } 28. Ra7 { [%eval 8.13] } 28... Kd6 { [%eval 8.77] } 29. Kd3 { [%eval 8.52] } 29... g6 { [%eval 8.83] } 30. c5+ { [%eval 8.91] } 30... Kd5 { [%eval 9.04] } 31. Rxf7 { [%eval 8.94] } 31... h4 { [%eval 9.18] } 32. Rg7 { [%eval 9.20] } 32... h3 { [%eval 9.61] } 33. Rd7+ { [%eval 12.37] } 33... Kc6 { [%eval 98.30] } 34. Rd6+ { [%eval 98.50] } 34... Kc7 { [%eval 98.50] } 35. g3 { [%eval 98.50] } 35... g5 { [%eval 98.80] } 36. fxg5 { [%eval 98.90] } 36... e5 { [%eval 99.20] } 37. dxe5 { [%eval 99.30] } 37... Kc8 { [%eval 99.30] } 38. g4 { [%eval 99.40] } 38... Kc7 { [%eval 99.40] } 39. Kc4 { [%eval 99.30] } 39... Kc8 { [%eval 99.30] } 40. e6 { [%eval 99.60] } 40... Kc7 { [%eval 99.60] } 41. e7 { [%eval 99.70] } 41... Kc8 { [%eval 99.70] } 42. Rd8+ { [%eval 99.70] } 42... Kc7 { [%eval 99.70] } 43. e8=Q { [%eval 99.80] } 43... Kb7 { [%eval 99.80] } 44. Qb5+ { [%eval 99.90] } 44... Kc7 { [%eval 99.90] } 45. Qd7# { [%eval #0] } 1-0
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_ConvNet_6L_256C"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.28] } 1... Nf6 { [%eval 0.28] } 2. Nf3 { [%eval 0.23] } 2... e6 { [%eval 0.21] } 3. c4 { [%eval 0.24] } 3... d5 { [%eval 0.28] } 4. e3 { [%eval 0.05] } 4... Be7 { [%eval 0.07] } 5. Nc3 { [%eval 0.07] } 5... c5 { [%eval 0.31] } 6. dxc5 { [%eval 0.22] } 6... Nc6 { [%eval 0.40] } 7. cxd5 { [%eval 0.38] } 7... Nxd5 { [%eval 0.49] } 8. Bd2 { [%eval 0.31] } 8... O-O { [%eval 0.48] } 9. Be2 { [%eval 0.36] } 9... Bxc5 { [%eval 0.41] } 10. Rc1 { [%eval 0.12] } 10... Nf6 { [%eval 0.32] } 11. Na4 { [%eval -0.31] } 11... Be7 { [%eval 0.06] } 12. a3 { [%eval -0.34] } 12... e5 { [%eval -0.27] } 13. b4 { [%eval -1.23] } 13... e4 { [%eval -1.09] } 14. Nd4 { [%eval -1.12] } 14... Nxd4 { [%eval -1.10] } 15. exd4 { [%eval -1.09] } 15... Qxd4 { [%eval -1.10] } 16. Be3 { [%eval -1.71] } 16... Qd5 { [%eval -0.89] } 17. Qxd5 { [%eval -1.20] } 17... Nxd5 { [%eval -1.16] } 18. Bd4 { [%eval -2.32] } 18... Nf4 { [%eval -2.17] } 19. Bf1 { [%eval -2.24] } 19... Rd8 { [%eval -1.99] } 20. Be3 { [%eval -2.23] } 20... Nd5 { [%eval -2.15] } 21. Bc4 { [%eval -2.66] } 21... Nxe3 { [%eval -2.77] } 22. fxe3 { [%eval -2.80] } 22... Bh4+ { [%eval -2.73] } 23. g3 { [%eval -2.80] } 23... Bg5 { [%eval -2.78] } 24. Kf2 { [%eval -2.92] } 24... Rd2+ { [%eval -2.80] } 25. Kg1 { [%eval -7.76] } 25... Bxe3+ { [%eval -6.55] } 26. Kf1 { [%eval -6.48] } 26... Bh3+ { [%eval -6.69] } 27. Ke1 { [%eval -6.63] } 27... h5 { [%eval -5.65] } 28. Bxf7+ { [%eval -6.96] } 28... Kxf7 { [%eval -7.39] } 29. Nc3 { [%eval -8.09] } 29... Rb2 { [%eval -8.25] } 30. Rb1 { [%eval -8.26] } 30... Bd2+ { [%eval -8.29] } 31. Kd1 { [%eval -9.08] } 31... Bg4+ { [%eval -9.57] } 32. Ne2 { [%eval -9.63] } 32... Rxb1+ { [%eval -9.78] } 33. Kxd2 { [%eval -9.94] } 33... Rd8+ { [%eval -10.05] } 34. Kc2 { [%eval -10.38] } 34... Rxh1 { [%eval -11.32] } 35. Nc3 { [%eval -98.90] } 35... Bf5 { [%eval -10.16] } 36. g4 { [%eval -10.19] } 36... Bxg4 { [%eval -9.58] } 37. Nxe4 { [%eval -11.08] } 37... Bf5 { [%eval -13.96] } 38. Kc3 { [%eval -98.40] } 38... Bxe4 { [%eval -98.50] } 39. a4 { [%eval -99.60] } 39... Rd3+ { [%eval -99.70] } 40. Kc4 { [%eval -99.80] } 40... Ra1 { [%eval -99.50] } 41. b5 { [%eval -99.80] } 41... Rxa4+ { [%eval -99.90] } 42. Kc5 { [%eval -99.90] } 42... Rd5# { [%eval #0] } 0-1
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_ConvNet_6L_256C"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. c4 { [%eval 0.11] } 1... e5 { [%eval 0.20] } 2. d3 { [%eval 0.00] } 2... Nf6 { [%eval 0.01] } 3. Nc3 { [%eval 0.06] } 3... Bb4 { [%eval 0.01] } 4. g3 { [%eval -0.20] } 4... d5 { [%eval -0.11] } 5. Bg2 { [%eval -0.15] } 5... dxc4 { [%eval 3.37] } 6. Qa4+ { [%eval 3.29] } 6... Nc6 { [%eval 3.26] } 7. Bxc6+ { [%eval 3.54] } 7... bxc6 { [%eval 3.43] } 8. Qxb4 { [%eval 3.41] } 8... cxd3 { [%eval 3.38] } 9. Qc5 { [%eval 2.97] } 9... Qd6 { [%eval 2.84] } 10. Be3 { [%eval 2.87] } 10... Qxc5 { [%eval 3.32] } 11. Bxc5 { [%eval 3.36] } 11... Bf5 { [%eval 3.59] } 12. exd3 { [%eval 3.54] } 12... Bxd3 { [%eval 3.76] } 13. O-O-O { [%eval 3.70] } 13... Bf5 { [%eval 3.93] } 14. h4 { [%eval 3.31] } 14... h5 { [%eval 3.71] } 15. Nf3 { [%eval 3.65] } 15... Nd7 { [%eval 3.36] } 16. Rxd7 { [%eval 3.78] } 16... Kxd7 { [%eval 4.02] } 17. Nxe5+ { [%eval 4.23] } 17... Ke6 { [%eval 4.10] } 18. Re1 { [%eval 4.16] } 18... f6 { [%eval 5.45] } 19. Ng6+ { [%eval 5.51] } 19... Kf7 { [%eval 5.63] } 20. Nxh8+ { [%eval 5.47] } 20... Rxh8 { [%eval 5.77] } 21. Bxa7 { [%eval 5.32] } 21... Ra8 { [%eval 5.45] } 22. Bc5 { [%eval 5.39] } 22... g5 { [%eval 5.50] } 23. a4 { [%eval 5.41] } 23... gxh4 { [%eval 5.60] } 24. gxh4 { [%eval 5.57] } 24... Ra5 { [%eval 5.88] } 25. Re7+ { [%eval 5.94] } 25... Kg6 { [%eval 5.82] } 26. Be3 { [%eval 5.26] } 26... Bg4 { [%eval 5.76] } 27. Re8 { [%eval 5.26] } 27... Kf7 { [%eval 5.36] } 28. Rb8 { [%eval 5.23] } 28... Rf5 { [%eval 5.58] } 29. f4 { [%eval 5.64] } 29... Bf3 { [%eval 5.84] } 30. Kd2 { [%eval 6.06] } 30... c5 { [%eval 6.32] } 31. a5 { [%eval 5.20] } 31... Bc6 { [%eval 6.61] } 32. b3 { [%eval 6.83] } 32... c4 { [%eval 6.97] } 33. b4 { [%eval 7.10] } 33... Bg2 { [%eval 7.17] } 34. Rc8 { [%eval 6.53] } 34... Bb7 { [%eval 10.11] } 35. Rxc7+ { [%eval 11.42] } 35... Ke6 { [%eval 13.33] } 36. Rxb7 { [%eval 98.00] } 36... Kd6 { [%eval 98.90] } 37. a6 { [%eval 99.00] } 37... Kc6 { [%eval 99.00] } 38. b5+ { [%eval 99.10] } 38... Kd6 { [%eval 99.30] } 39. a7 { [%eval 99.40] } 39... Rd5+ { [%eval 99.40] } 40. Nxd5 { [%eval 99.50] } 40... Kxd5 { [%eval 99.50] } 41. a8=Q { [%eval 99.60] } 41... f5 { [%eval 99.90] } 42. Re7+ { [%eval 99.90] } 42... Kd6 { [%eval 99.90] } 43. Qd8# { [%eval #0] } 1-0
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_ConvNet_6L_256C"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.22] } 1... d5 { [%eval 0.24] } 2. Nf3 { [%eval 0.26] } 2... c6 { [%eval 0.31] } 3. c4 { [%eval 0.21] } 3... e6 { [%eval 0.30] } 4. Nc3 { [%eval 0.18] } 4... Nf6 { [%eval 0.15] } 5. e3 { [%eval 0.17] } 5... Nbd7 { [%eval 0.19] } 6. Bd3 { [%eval 0.10] } 6... dxc4 { [%eval 0.17] } 7. Bxc4 { [%eval 0.14] } 7... c5 { [%eval 0.41] } 8. Qe2 { [%eval 0.40] } 8... Nb6 { [%eval 0.73] } 9. Bb5+ { [%eval 0.37] } 9... Bd7 { [%eval 0.34] } 10. Bxd7+ { [%eval 0.36] } 10... Qxd7 { [%eval 0.43] } 11. a4 { [%eval -0.11] } 11... cxd4 { [%eval -0.10] } 12. exd4 { [%eval -0.06] } 12... Bb4 { [%eval -0.02] } 13. a5 { [%eval -0.20] } 13... Nbd5 { [%eval -0.27] } 14. Bd2 { [%eval -0.28] } 14... a6 { [%eval -0.15] } 15. Ne5 { [%eval -0.08] } 15... Qd8 { [%eval -0.07] } 16. Nxd5 { [%eval -0.25] } 16... Bxd2+ { [%eval -0.16] } 17. Qxd2 { [%eval -0.17] } 17... Nxd5 { [%eval -0.12] } 18. Ra4 { [%eval -0.28] } 18... O-O { [%eval -0.35] } 19. h4 { [%eval -0.97] } 19... Ne7 { [%eval -0.48] } 20. h5 { [%eval -0.65] } 20... Qd5 { [%eval -0.63] } 21. h6 { [%eval -2.69] } 21... Qxg2 { [%eval -2.70] } 22. Rf1 { [%eval -2.88] } 22... Qe4+ { [%eval -2.74] } 23. Qe2 { [%eval -3.03] } 23... Qf4 { [%eval -2.74] } 24. hxg7 { [%eval -2.64] } 24... Rfd8 { [%eval -2.92] } 25. Rg1 { [%eval -3.42] } 25... Rac8 { [%eval -3.56] } 26. Rg4 { [%eval -6.74] } 26... Rc1+ { [%eval -7.21] } 27. Qd1 { [%eval -7.38] } 27... Rxd1+ { [%eval -7.34] } 28. Ke2 { [%eval -99.80] } 28... Rd2+ { [%eval -99.90] } 29. Ke1 { [%eval -99.90] } 29... Qxf2# { [%eval #0] } 0-1
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_ConvNet_6L_256C"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. Nf3 { [%eval 0.15] } 1... d5 { [%eval 0.24] } 2. c4 { [%eval -0.13] } 2... d4 { [%eval -0.07] } 3. b4 { [%eval -0.06] } 3... Nf6 { [%eval -0.08] } 4. Bb2 { [%eval -0.12] } 4... a5 { [%eval 0.76] } 5. b5 { [%eval 0.68] } 5... c5 { [%eval 0.69] } 6. e3 { [%eval 0.71] } 6... g6 { [%eval 1.54] } 7. exd4 { [%eval 1.54] } 7... cxd4 { [%eval 1.61] } 8. Bxd4 { [%eval 1.62] } 8... Bg7 { [%eval 1.60] } 9. Nc3 { [%eval 1.73] } 9... Bg4 { [%eval 2.13] } 10. Be3 { [%eval 2.27] } 10... Nbd7 { [%eval 2.37] } 11. Be2 { [%eval 2.18] } 11... Rc8 { [%eval 1.90] } 12. O-O { [%eval 2.02] } 12... b6 { [%eval 2.50] } 13. Rc1 { [%eval 2.45] } 13... e6 { [%eval 3.26] } 14. Nd4 { [%eval 3.21] } 14... h5 { [%eval 3.30] } 15. Nc6 { [%eval 3.22] } 15... Bxe2 { [%eval 3.35] } 16. Qxe2 { [%eval 3.35] } 16... Qc7 { [%eval 3.81] } 17. h3 { [%eval 3.80] } 17... h4 { [%eval 4.11] } 18. Na4 { [%eval 3.37] } 18... Nh5 { [%eval 4.19] } 19. Qf3 { [%eval 4.05] } 19... f5 { [%eval 4.07] } 20. d4 { [%eval 3.91] } 20... Kf7 { [%eval 4.58] } 21. Rfe1 { [%eval 4.29] } 21... Ndf6 { [%eval 5.39] } 22. d5 { [%eval 5.15] } 22... exd5 { [%eval 5.16] } 23. cxd5 { [%eval 5.04] } 23... Rhe8 { [%eval 5.81] } 24. Nxb6 { [%eval 5.59] } 24... Ne4 { [%eval 5.60] } 25. Nxc8 { [%eval 5.74] } 25... Qxc8 { [%eval 5.82] } 26. Qd1 { [%eval 5.18] } 26... Qd7 { [%eval 5.45] } 27. Qd3 { [%eval 4.74] } 27... Nhf6 { [%eval 5.33] } 28. d6 { [%eval 5.20] } 28... g5 { [%eval 5.81] } 29. f3 { [%eval 5.34] } 29... Nxd6 { [%eval 6.37] } 30. Bf2 { [%eval 5.60] } 30... Rxe1+ { [%eval 6.69] } 31. Rxe1 { [%eval 6.58] } 31... Nh5 { [%eval 7.39] } 32. Qb3+ { [%eval 6.58] } 32... Kf8 { [%eval 6.62] } 33. Rd1 { [%eval 6.57] } 33... a4 { [%eval 6.95] } 34. Qd5 { [%eval 7.17] } 34... Bf6 { [%eval 7.73] } 35. Qxd6+ { [%eval 7.91] } 35... Qxd6 { [%eval 8.14] } 36. Rxd6 { [%eval 8.23] } 36... Kf7 { [%eval 8.79] } 37. b6 { [%eval 8.97] } 37... Nf4 { [%eval 9.33] } 38. Kf1 { [%eval 8.69] } 38... a3 { [%eval 10.46] } 39. b7 { [%eval 98.70] } 39... Be7 { [%eval 98.80] } 40. Ne5+ { [%eval 98.80] } 40... Kg7 { [%eval 98.80] } 41. b8=Q { [%eval 98.90] } 41... Bxd6 { [%eval 99.30] } 42. Qxd6 { [%eval 99.50] } 42... Nh5 { [%eval 99.80] } 43. Qg6+ { [%eval 99.90] } 43... Kh8 { [%eval 99.90] } 44. Qe8+ { [%eval 99.80] } 44... Kg7 { [%eval 99.80] } 45. Qf7+ { [%eval 99.90] } 45... Kh8 { [%eval 99.90] } 46. Ng6# { [%eval #0] } 1-0
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "Learning_ConvNet_6L_256C"]
+[Black "UCI_stockfish"]
+[Result "0-1"]
+[Termination "checkmate"]
+
+1. d4 { [%eval 0.30] } 1... d5 { [%eval 0.31] } 2. Nf3 { [%eval 0.31] } 2... e6 { [%eval 0.33] } 3. c4 { [%eval 0.28] } 3... Nf6 { [%eval 0.31] } 4. Nc3 { [%eval 0.22] } 4... Bb4 { [%eval 0.27] } 5. cxd5 { [%eval 0.25] } 5... exd5 { [%eval 0.16] } 6. Bg5 { [%eval 0.17] } 6... Nbd7 { [%eval 0.37] } 7. e3 { [%eval 0.22] } 7... c5 { [%eval 0.40] } 8. a3 { [%eval -0.24] } 8... Bxc3+ { [%eval -0.10] } 9. bxc3 { [%eval -0.08] } 9... Qa5 { [%eval -0.21] } 10. Qc2 { [%eval -0.13] } 10... Ne4 { [%eval -0.15] } 11. Rc1 { [%eval -1.06] } 11... Nxg5 { [%eval -1.19] } 12. Nxg5 { [%eval -1.16] } 12... Qxa3 { [%eval -1.14] } 13. Be2 { [%eval -1.08] } 13... c4 { [%eval -0.89] } 14. e4 { [%eval -0.92] } 14... Qe7 { [%eval -1.33] } 15. h4 { [%eval -1.46] } 15... h6 { [%eval -1.67] } 16. Nf3 { [%eval -1.44] } 16... O-O { [%eval -1.58] } 17. exd5 { [%eval -1.50] } 17... b5 { [%eval -1.38] } 18. Ra1 { [%eval -2.67] } 18... Re8 { [%eval -2.74] } 19. Qb2 { [%eval -2.63] } 19... a5 { [%eval -2.96] } 20. Ne5 { [%eval -4.56] } 20... Nxe5 { [%eval -4.69] } 21. dxe5 { [%eval -4.53] } 21... Qxe5 { [%eval -4.50] } 22. Kf1 { [%eval -5.09] } 22... Bd7 { [%eval -4.31] } 23. Bf3 { [%eval -4.13] } 23... Qf4 { [%eval -4.14] } 24. h5 { [%eval -5.13] } 24... b4 { [%eval -4.98] } 25. cxb4 { [%eval -6.05] } 25... c3 { [%eval -5.96] } 26. Qxc3 { [%eval -6.39] } 26... axb4 { [%eval -7.04] } 27. Qd3 { [%eval -98.90] } 27... Rxa1+ { [%eval -99.00] } 28. Qd1 { [%eval -99.70] } 28... Bb5+ { [%eval -99.80] } 29. Kg1 { [%eval -99.80] } 29... Re1+ { [%eval -99.90] } 30. Qxe1 { [%eval -99.90] } 30... Rxe1# { [%eval #0] } 0-1
+
+
+[Event "convnet vs SF GM-3100"]
+[Site "?"]
+[Date "2026.02.14"]
+[Round "?"]
+[White "UCI_stockfish"]
+[Black "Learning_ConvNet_6L_256C"]
+[Result "1-0"]
+[Termination "checkmate"]
+
+1. e4 { [%eval 0.19] } 1... e5 { [%eval 0.38] } 2. Nf3 { [%eval 0.34] } 2... Nc6 { [%eval 0.37] } 3. d4 { [%eval 0.32] } 3... exd4 { [%eval 0.08] } 4. Nxd4 { [%eval 0.11] } 4... Nf6 { [%eval 0.14] } 5. Nxc6 { [%eval 0.12] } 5... dxc6 { [%eval 0.47] } 6. Bd3 { [%eval -0.19] } 6... Bc5 { [%eval -0.28] } 7. h3 { [%eval -0.35] } 7... Qe7 { [%eval -0.30] } 8. Qe2 { [%eval -0.34] } 8... Be6 { [%eval -0.30] } 9. Nc3 { [%eval -0.30] } 9... Nd7 { [%eval -0.37] } 10. Bd2 { [%eval -1.10] } 10... Ne5 { [%eval -1.01] } 11. O-O-O { [%eval -0.91] } 11... Nxd3+ { [%eval -0.73] } 12. cxd3 { [%eval -0.80] } 12... Bd4 { [%eval -0.68] } 13. f4 { [%eval -0.74] } 13... a5 { [%eval -0.59] } 14. f5 { [%eval -0.98] } 14... Bxa2 { [%eval 2.64] } 15. Nxa2 { [%eval 2.80] } 15... a4 { [%eval 2.71] } 16. Kb1 { [%eval 2.73] } 16... a3 { [%eval 3.15] } 17. Bc3 { [%eval 3.01] } 17... Bxc3 { [%eval 3.04] } 18. bxc3 { [%eval 2.92] } 18... c5 { [%eval 3.05] } 19. e5 { [%eval 2.88] } 19... Qg5 { [%eval 3.70] } 20. Qf3 { [%eval 3.26] } 20... c6 { [%eval 3.75] } 21. d4 { [%eval 3.64] } 21... cxd4 { [%eval 3.67] } 22. h4 { [%eval 3.80] } 22... Qe7 { [%eval 3.78] } 23. Ka1 { [%eval 3.59] } 23... dxc3 { [%eval 4.20] } 24. Qg3 { [%eval 2.76] } 24... c2 { [%eval 2.80] } 25. Rd6 { [%eval 3.29] } 25... Kf8 { [%eval 6.57] } 26. f6 { [%eval 6.81] } 26... gxf6 { [%eval 8.13] } 27. exf6 { [%eval 10.25] } 27... Qe8 { [%eval 99.90] } 28. Rd4 { [%eval 99.60] } 28... c5 { [%eval 99.90] } 29. Qg7# { [%eval #0] } 1-0
+

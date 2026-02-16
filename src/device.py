@@ -8,7 +8,7 @@ def get_device(force_cpu: bool = False, verbose: bool = True) -> torch.device:
     """
     Get the best available device for PyTorch operations.
     
-    Priority order: MPS (Apple Silicon) > CUDA > CPU
+    Priority order: CUDA > MPS (Apple Silicon) > CPU
     
     Args:
         force_cpu: If True, always return CPU device.
@@ -23,6 +23,13 @@ def get_device(force_cpu: bool = False, verbose: bool = True) -> torch.device:
             print("Device: CPU (forced)")
         return device
     
+    # Check for CUDA
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        if verbose:
+            print(f"Device: CUDA ({torch.cuda.get_device_name(0)})")
+        return device
+    
     # Check for Apple Silicon MPS
     if torch.backends.mps.is_available():
         if torch.backends.mps.is_built():
@@ -30,13 +37,6 @@ def get_device(force_cpu: bool = False, verbose: bool = True) -> torch.device:
             if verbose:
                 print("Device: MPS (Apple Silicon)")
             return device
-    
-    # Check for CUDA
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-        if verbose:
-            print(f"Device: CUDA ({torch.cuda.get_device_name(0)})")
-        return device
     
     # Fallback to CPU
     device = torch.device("cpu")

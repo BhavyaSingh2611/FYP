@@ -100,8 +100,9 @@ class CNNEncoder(StateEncoder):
             tensor[16, row, col] = 1.0
         
         # Encode side to move (channel 17)
-        # 1.0 if it's our turn (after perspective flip, always 1)
-        tensor[17, :, :] = 1.0 if board.turn == us else 0.0
+        # User spec: 1.0 for White, -1.0 for Black
+        side_val = 1.0 if board.turn == chess.WHITE else -1.0
+        tensor[17, :, :] = side_val
         
         return torch.from_numpy(tensor)
     

@@ -57,6 +57,7 @@ class SquareTokenizer:
             Dictionary with:
                 - 'tokens': Token IDs of shape (64,)
                 - 'positions': Position indices of shape (64,)
+                - 'coordinates': Normalized (rank, file) of shape (64, 2)
                 - 'attention_mask': All ones of shape (64,)
                 - 'side_to_move': 0 for white, 1 for black
                 - 'castling': 4-element tensor for castling rights
@@ -72,6 +73,15 @@ class SquareTokenizer:
         
         # Position indices (always 0-63)
         positions = np.arange(64, dtype=np.int64)
+        
+        # Normalized coordinates
+        # Rank: 0-7 -> 0.0-1.0 (row/7)
+        # File: 0-7 -> 0.0-1.0 (col/7)
+        coords = np.zeros((64, 2), dtype=np.float32)
+        for i in range(64):
+            row = 7 - (i // 8)
+            col = i % 8
+            coords[i] = [row / 7.0, col / 7.0]
         
         # Attention mask (all ones for square tokenizer)
         attention_mask = np.ones(64, dtype=np.float32)
@@ -90,6 +100,7 @@ class SquareTokenizer:
         return {
             'tokens': torch.from_numpy(tokens),
             'positions': torch.from_numpy(positions),
+            'coordinates': torch.from_numpy(coords),
             'attention_mask': torch.from_numpy(attention_mask),
             'side_to_move': torch.tensor(side_to_move, dtype=torch.long),
             'castling': torch.from_numpy(castling),

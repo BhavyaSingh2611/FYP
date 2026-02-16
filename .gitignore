@@ -1,6 +1,10 @@
 .DS_Store
 .tmp*
 *.parquet
+*.zip
+.vscode
+pull_all.sh
+stockfish/**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
