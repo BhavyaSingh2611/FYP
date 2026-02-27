@@ -18,6 +18,7 @@ dependencies = [
     "pandas",
     "pyarrow",
     "torch_geometric",
+    "duckdb",
 ]
 
 [project.optional-dependencies]
