@@ -4,34 +4,38 @@ Chess ML Arena — Play against trained neural network models.
 Flask server that loads PyTorch checkpoints and exposes a JSON API
 for the Svelte frontend.
 """
+
 import atexit
 import sys
 import uuid
 from pathlib import Path
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
 
 import chess
 import chess.engine
 import torch
 from flask import Flask, jsonify, request, send_from_directory
 
-from src.config import load_config
-from src.models.factory import create_model, get_encoder_for_model
 from src.agents.learning_agent import LearningAgent
 from src.agents.random_agent import RandomAgent
+from src.config import settings
 from src.device import get_device
+from src.models.factory import create_model, get_encoder_for_model
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 app = Flask(__name__, static_folder="client/dist")
 
 RUNS_DIR = PROJECT_ROOT / "runs"
-CONFIG_PATH = PROJECT_ROOT / "config" / "default.yaml"
-DEVICE = get_device(verbose=True)
+DEVICE = get_device()
 
 MODEL_NAMES = [
-    "convnet", "resnet", "square_transformer",
-    "piece_transformer", "gcn", "gat",
+    "convnet",
+    "resnet",
+    "square_transformer",
+    "piece_transformer",
+    "gcn",
+    "gat",
 ]
 
 agent_cache: dict[str, LearningAgent] = {}
@@ -66,10 +70,7 @@ def scan_runs() -> list[dict]:
     for run_dir in sorted(RUNS_DIR.iterdir()):
         if not run_dir.is_dir() or run_dir.name.startswith("."):
             continue
-        models = [
-            p.stem for p in sorted(run_dir.glob("*.pt"))
-            if p.stem in MODEL_NAMES
-        ]
+        models = [p.stem for p in sorted(run_dir.glob("*.pt")) if p.stem in MODEL_NAMES]
         if models:
             results.append({"name": run_dir.name, "models": models})
     return results
@@ -84,11 +85,11 @@ def load_agent(model_name: str, run_name: str) -> LearningAgent:
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
-    config = load_config(str(CONFIG_PATH))
-    config.model.backbone = model_name
-    config.model.head = "dual"
+    model_cfg = settings.model.model_copy(
+        update={"backbone": model_name, "head": "dual"}
+    )
 
-    model = create_model(config.model)
+    model = create_model(model_cfg)
 
     ckpt = torch.load(checkpoint_path, map_location=DEVICE, weights_only=False)
     if "model_state_dict" in ckpt:
@@ -116,8 +117,9 @@ def load_agent(model_name: str, run_name: str) -> LearningAgent:
 
 
 class GameSession:
-    def __init__(self, game_id: str, agent, player_color: bool,
-                 model_name: str, run_name: str):
+    def __init__(
+        self, game_id: str, agent, player_color: bool, model_name: str, run_name: str
+    ):
         self.id = game_id
         self.board = chess.Board()
         self.agent = agent
@@ -133,7 +135,9 @@ class GameSession:
         if engine is None:
             return None
         infos = engine.analyse(
-            self.board, chess.engine.Limit(depth=16), multipv=3,
+            self.board,
+            chess.engine.Limit(depth=16),
+            multipv=3,
         )
         if not infos:
             return None
@@ -196,13 +200,11 @@ class GameSession:
         elif self.board.is_stalemate():
             status = "stalemate"
             result = "1/2-1/2"
-        elif self.board.is_insufficient_material():
-            status = "draw"
-            result = "1/2-1/2"
-        elif self.board.is_fifty_moves():
-            status = "draw"
-            result = "1/2-1/2"
-        elif self.board.is_repetition():
+        elif (
+            self.board.is_insufficient_material()
+            or self.board.is_fifty_moves()
+            or self.board.is_repetition()
+        ):
             status = "draw"
             result = "1/2-1/2"
 
@@ -228,9 +230,14 @@ class GameSession:
         self.board.push(move)
         eval_result = self._evaluate()
         self.evals.append(eval_result)
-        self.move_history.append({
-            "uci": move.uci(), "san": san, "by": side, "eval": eval_result,
-        })
+        self.move_history.append(
+            {
+                "uci": move.uci(),
+                "san": san,
+                "by": side,
+                "eval": eval_result,
+            }
+        )
 
     def is_player_turn(self) -> bool:
         return self.board.turn == self.player_color
@@ -244,6 +251,7 @@ class GameSession:
 
 
 # ---- API ----
+
 
 @app.route("/api/runs")
 def api_runs():
@@ -340,6 +348,7 @@ def api_resign(game_id):
 
 # ---- Static serving ----
 
+
 @app.route("/")
 def serve_index():
     return send_from_directory(app.static_folder, "index.html")
@@ -353,5 +362,5 @@ def serve_static(path):
 if __name__ == "__main__":
     print(f"\nAvailable runs: {scan_runs()}")
     print(f"Device: {DEVICE}")
-    print(f"\nChess ML Arena → http://localhost:5001\n")
+    print("\nChess ML Arena → http://localhost:5001\n")
     app.run(host="0.0.0.0", port=5001, debug=False)

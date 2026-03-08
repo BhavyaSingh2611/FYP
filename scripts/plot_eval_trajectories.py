@@ -13,8 +13,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-EVAL_PATTERN = re.compile(r'\[%eval ([^\]]+)\]')
+EVAL_PATTERN = re.compile(r"\[%eval ([^\]]+)\]")
 EVAL_CAP = 10.0
 SMOOTH_WINDOW = 5
 
@@ -45,7 +44,7 @@ def parse_game_info(game_text: str) -> tuple[list[float], str, bool]:
 
     all_evals: list[float] = []
     for i, raw in enumerate(raw_evals):
-        is_white_move = (i % 2 == 0)
+        is_white_move = i % 2 == 0
 
         if raw.startswith("#"):
             val = EVAL_CAP if is_white_move else -EVAL_CAP
@@ -67,7 +66,7 @@ def parse_games(pgn_path: Path) -> list[str]:
     with open(pgn_path) as f:
         for line in f:
             stripped = line.strip()
-            if stripped.startswith('[Event ') and current:
+            if stripped.startswith("[Event ") and current:
                 games.append("\n".join(current))
                 current = []
             current.append(line.rstrip())
@@ -118,7 +117,9 @@ def plot_pgn(pgn_path: Path, output_dir: Path) -> None:
     max_move = 0.0
 
     traces_by_outcome: dict[str, list[tuple[np.ndarray, np.ndarray]]] = {
-        "win": [], "loss": [], "draw": [],
+        "win": [],
+        "loss": [],
+        "draw": [],
     }
 
     for game_text in games:
@@ -145,18 +146,23 @@ def plot_pgn(pgn_path: Path, output_dir: Path) -> None:
             lbl = label if label not in seen_labels else None
             if lbl:
                 seen_labels.add(label)
-            ax.plot(half_moves, evals_arr, color=color, alpha=0.15, linewidth=0.8, label=lbl)
+            ax.plot(
+                half_moves, evals_arr, color=color, alpha=0.15, linewidth=0.8, label=lbl
+            )
 
         max_len = max(len(t[1]) for t in traces)
         padded = np.full((len(traces), max_len), np.nan)
         for i, (_, evals_arr) in enumerate(traces):
-            padded[i, :len(evals_arr)] = evals_arr
+            padded[i, : len(evals_arr)] = evals_arr
         mean_evals = np.nanmean(padded, axis=0)
         mean_moves = np.arange(1, max_len + 1) / 2.0
         valid = ~np.isnan(mean_evals)
         ax.plot(
-            mean_moves[valid], smooth(mean_evals[valid], window=7),
-            color=color, alpha=0.9, linewidth=2.5,
+            mean_moves[valid],
+            smooth(mean_evals[valid], window=7),
+            color=color,
+            alpha=0.9,
+            linewidth=2.5,
             label=f"{label} (avg)",
         )
 
@@ -168,7 +174,8 @@ def plot_pgn(pgn_path: Path, output_dir: Path) -> None:
     ax.set_ylabel("Evaluation (pawns, white perspective)", fontsize=12)
     ax.set_title(
         f"{model_name} vs Stockfish (Elo {elo}) — Eval Trajectories",
-        fontsize=14, fontweight="bold",
+        fontsize=14,
+        fontweight="bold",
     )
     ax.grid(True, alpha=0.2, color="#cccccc")
 
@@ -184,9 +191,15 @@ def plot_pgn(pgn_path: Path, output_dir: Path) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Plot eval trajectories for split PGN files")
-    parser.add_argument("--input-dir", type=Path, required=True, help="Directory with split PGN files")
-    parser.add_argument("--output-dir", type=Path, required=True, help="Output directory for figures")
+    parser = argparse.ArgumentParser(
+        description="Plot eval trajectories for split PGN files"
+    )
+    parser.add_argument(
+        "--input-dir", type=Path, required=True, help="Directory with split PGN files"
+    )
+    parser.add_argument(
+        "--output-dir", type=Path, required=True, help="Output directory for figures"
+    )
     args = parser.parse_args()
 
     pgn_files = sorted(args.input_dir.glob("*.pgn"))

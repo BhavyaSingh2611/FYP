@@ -37,9 +37,15 @@ def parse_games(pgn_path: Path) -> dict[str, list[str]]:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Split evaluation PGN by model and difficulty")
-    parser.add_argument("--input", type=Path, required=True, help="Path to all_evaluation_games.pgn")
-    parser.add_argument("--output-dir", type=Path, required=True, help="Output directory for split PGNs")
+    parser = argparse.ArgumentParser(
+        description="Split evaluation PGN by model and difficulty"
+    )
+    parser.add_argument(
+        "--input", type=Path, required=True, help="Path to all_evaluation_games.pgn"
+    )
+    parser.add_argument(
+        "--output-dir", type=Path, required=True, help="Output directory for split PGNs"
+    )
     args = parser.parse_args()
 
     args.output_dir.mkdir(parents=True, exist_ok=True)

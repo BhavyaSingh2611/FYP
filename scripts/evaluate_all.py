@@ -20,28 +20,29 @@ Difficulty levels based on community-tested Elo mappings:
   9      |  17   |  13   |  ~3100      | Super GM engine
   10     |  20   |  18   |  ~3200+     | Full strength
 """
+
 import argparse
 import json
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from pathlib import Path
 from datetime import datetime
-import time
+from pathlib import Path
 
 import chess
-import chess.pgn
 import chess.engine
-import torch
+import chess.pgn
 import matplotlib
+import torch
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.config import load_config
-from src.models.factory import create_model, get_encoder_for_model
 from src.agents.learning_agent import LearningAgent
 from src.agents.uci_agent import UCIAgent
+from src.config import settings
 from src.device import get_device
+from src.models.factory import create_model, get_encoder_for_model
 
 _print_lock = threading.Lock()
 
@@ -49,16 +50,16 @@ _print_lock = threading.Lock()
 MODELS = ["convnet", "resnet", "square_transformer", "piece_transformer", "gcn", "gat"]
 
 DIFFICULTY_LEVELS = [
-    {"name": "Beginner-800",    "skill":  0, "depth":  1, "elo":  800},
-    {"name": "Novice-1100",     "skill":  1, "depth":  2, "elo": 1100},
-    {"name": "Casual-1400",     "skill":  3, "depth":  3, "elo": 1400},
-    {"name": "Club-1700",       "skill":  5, "depth":  5, "elo": 1700},
-    {"name": "Strong-2000",     "skill":  7, "depth":  5, "elo": 2000},
-    {"name": "Expert-2300",     "skill":  9, "depth":  8, "elo": 2300},
-    {"name": "Master-2500",     "skill": 11, "depth":  8, "elo": 2500},
-    {"name": "IM-2800",         "skill": 14, "depth": 10, "elo": 2800},
-    {"name": "GM-3100",         "skill": 17, "depth": 13, "elo": 3100},
-    {"name": "Full-3200",       "skill": 20, "depth": 18, "elo": 3200},
+    {"name": "Beginner-800", "skill": 0, "depth": 1, "elo": 800},
+    {"name": "Novice-1100", "skill": 1, "depth": 2, "elo": 1100},
+    {"name": "Casual-1400", "skill": 3, "depth": 3, "elo": 1400},
+    {"name": "Club-1700", "skill": 5, "depth": 5, "elo": 1700},
+    {"name": "Strong-2000", "skill": 7, "depth": 5, "elo": 2000},
+    {"name": "Expert-2300", "skill": 9, "depth": 8, "elo": 2300},
+    {"name": "Master-2500", "skill": 11, "depth": 8, "elo": 2500},
+    {"name": "IM-2800", "skill": 14, "depth": 10, "elo": 2800},
+    {"name": "GM-3100", "skill": 17, "depth": 13, "elo": 3100},
+    {"name": "Full-3200", "skill": 20, "depth": 18, "elo": 3200},
 ]
 
 EVAL_DEPTH = 18
@@ -80,12 +81,14 @@ MODEL_LABELS = {
 }
 
 
-def load_model_agent(model_name: str, checkpoint_dir: Path, device: torch.device) -> LearningAgent:
-    config = load_config("config/default.yaml")
-    config.model.backbone = model_name
-    config.model.head = "dual"
+def load_model_agent(
+    model_name: str, checkpoint_dir: Path, device: torch.device
+) -> LearningAgent:
+    model_cfg = settings.model.model_copy(
+        update={"backbone": model_name, "head": "dual"}
+    )
 
-    model = create_model(config.model)
+    model = create_model(model_cfg)
     checkpoint_path = checkpoint_dir / f"{model_name}.pt"
 
     if not checkpoint_path.exists():
@@ -104,7 +107,9 @@ def load_model_agent(model_name: str, checkpoint_dir: Path, device: torch.device
     return LearningAgent(model=model, encoder=encoder, device=device, temperature=0.0)
 
 
-def evaluate_position(engine: chess.engine.SimpleEngine, board: chess.Board, depth: int = EVAL_DEPTH) -> int:
+def evaluate_position(
+    engine: chess.engine.SimpleEngine, board: chess.Board, depth: int = EVAL_DEPTH
+) -> int:
     try:
         info = engine.analyse(board, chess.engine.Limit(depth=depth))
         score = info["score"].white()
@@ -175,13 +180,12 @@ def compute_acpl(game_data: dict, model_color: str) -> float:
     for i in range(len(evals) - 1):
         move_num = i  # 0-indexed: move 0 is white's first, move 1 is black's first
         is_white_move = move_num % 2 == 0
-        if (model_color == "white" and is_white_move) or (model_color == "black" and not is_white_move):
+        if (model_color == "white" and is_white_move) or (
+            model_color == "black" and not is_white_move
+        ):
             before = evals[i]
             after = evals[i + 1]
-            if model_color == "white":
-                loss = before - after
-            else:
-                loss = after - before
+            loss = before - after if model_color == "white" else after - before
             losses.append(max(loss, 0))
     return sum(losses) / len(losses) if losses else 0.0
 
@@ -214,6 +218,7 @@ def create_pgn(game_data: dict, event: str) -> chess.pgn.Game:
 # ---------------------------------------------------------------------------
 # Per-level worker (runs in its own thread with its own Stockfish instances)
 # ---------------------------------------------------------------------------
+
 
 def _evaluate_level(
     agent: LearningAgent,
@@ -265,9 +270,21 @@ def _evaluate_level(
             game_lengths.append(gd["total_moves"])
             eval_trajectories.append(gd["evaluations"])
 
-            tag = "W" if (gd["result"] == "1-0" and model_color == "white") or (gd["result"] == "0-1" and model_color == "black") else ("L" if (gd["result"] == "1-0" and model_color == "black") or (gd["result"] == "0-1" and model_color == "white") else "D")
+            tag = (
+                "W"
+                if (gd["result"] == "1-0" and model_color == "white")
+                or (gd["result"] == "0-1" and model_color == "black")
+                else (
+                    "L"
+                    if (gd["result"] == "1-0" and model_color == "black")
+                    or (gd["result"] == "0-1" and model_color == "white")
+                    else "D"
+                )
+            )
             with _print_lock:
-                print(f"  [{model_name}] vs {lvl_name}  Game {g+1}/{games_per_level}: {gd['result']} ({tag}, {gd['total_moves']} moves, {gd['termination']})")
+                print(
+                    f"  [{model_name}] vs {lvl_name}  Game {g + 1}/{games_per_level}: {gd['result']} ({tag}, {gd['total_moves']} moves, {gd['termination']})"
+                )
 
             pgns.append(create_pgn(gd, f"{model_name} vs SF {lvl_name}"))
     finally:
@@ -294,7 +311,9 @@ def _evaluate_level(
     }
 
     with _print_lock:
-        print(f"  [{model_name}] vs {lvl_name}  => {wins}W / {draws}D / {losses}L  |  Score: {score_pct:.0f}%  |  Avg ACPL: {avg_acpl:.0f}")
+        print(
+            f"  [{model_name}] vs {lvl_name}  => {wins}W / {draws}D / {losses}L  |  Score: {score_pct:.0f}%  |  Avg ACPL: {avg_acpl:.0f}"
+        )
 
     return lvl_name, level_result, pgns
 
@@ -302,6 +321,7 @@ def _evaluate_level(
 # ---------------------------------------------------------------------------
 # Main evaluation loop (threaded)
 # ---------------------------------------------------------------------------
+
 
 def run_evaluation(
     checkpoint_dir: Path,
@@ -332,9 +352,9 @@ def run_evaluation(
     all_pgns: list[chess.pgn.Game] = []
 
     for model_name in models:
-        print(f"\n{'='*70}")
+        print(f"\n{'=' * 70}")
         print(f"  MODEL: {model_name.upper()}  ({workers} levels in parallel)")
-        print(f"{'='*70}")
+        print(f"{'=' * 70}")
 
         try:
             agent = load_model_agent(model_name, checkpoint_dir, device)
@@ -347,8 +367,12 @@ def run_evaluation(
         with ThreadPoolExecutor(max_workers=workers) as pool:
             futures = {
                 pool.submit(
-                    _evaluate_level, agent, model_name, lvl,
-                    games_per_level, stockfish_path,
+                    _evaluate_level,
+                    agent,
+                    model_name,
+                    lvl,
+                    games_per_level,
+                    stockfish_path,
                 ): lvl
                 for lvl in levels
             }
@@ -379,8 +403,7 @@ def run_evaluation(
         json_results[m] = {}
         for lvl_name, data in results[m].items():
             json_results[m][lvl_name] = {
-                k: v for k, v in data.items()
-                if k not in ("eval_trajectories",)
+                k: v for k, v in data.items() if k not in ("eval_trajectories",)
             }
     with open(output_dir / "evaluation_results.json", "w") as f:
         json.dump(json_results, f, indent=2)
@@ -405,6 +428,7 @@ def run_evaluation(
 # ---------------------------------------------------------------------------
 # Plotting helpers
 # ---------------------------------------------------------------------------
+
 
 def _level_names(results: dict) -> list[str]:
     for model_data in results.values():
@@ -432,8 +456,26 @@ def plot_win_rate(results: dict, out: Path):
     x = np.arange(len(levels))
 
     for model, level_data in results.items():
-        rates = [level_data[l]["wins"] / max(level_data[l]["wins"] + level_data[l]["draws"] + level_data[l]["losses"], 1) * 100 for l in levels]
-        ax.plot(x, rates, "o-", color=MODEL_COLORS[model], label=MODEL_LABELS[model], linewidth=2, markersize=6)
+        rates = [
+            level_data[l]["wins"]
+            / max(
+                level_data[l]["wins"]
+                + level_data[l]["draws"]
+                + level_data[l]["losses"],
+                1,
+            )
+            * 100
+            for l in levels
+        ]
+        ax.plot(
+            x,
+            rates,
+            "o-",
+            color=MODEL_COLORS[model],
+            label=MODEL_LABELS[model],
+            linewidth=2,
+            markersize=6,
+        )
 
     ax.set_xticks(x)
     ax.set_xticklabels([f"{e}" for e in elos], fontsize=9)
@@ -456,14 +498,28 @@ def plot_score_pct(results: dict, out: Path):
 
     for model, level_data in results.items():
         scores = [level_data[l]["score_pct"] for l in levels]
-        ax.plot(x, scores, "s-", color=MODEL_COLORS[model], label=MODEL_LABELS[model], linewidth=2, markersize=6)
+        ax.plot(
+            x,
+            scores,
+            "s-",
+            color=MODEL_COLORS[model],
+            label=MODEL_LABELS[model],
+            linewidth=2,
+            markersize=6,
+        )
 
-    ax.axhline(y=50, color="gray", linestyle="--", linewidth=1, alpha=0.5, label="50% baseline")
+    ax.axhline(
+        y=50, color="gray", linestyle="--", linewidth=1, alpha=0.5, label="50% baseline"
+    )
     ax.set_xticks(x)
     ax.set_xticklabels([f"{e}" for e in elos], fontsize=9)
     ax.set_xlabel("Opponent Elo", fontsize=12)
     ax.set_ylabel("Score (%)", fontsize=12)
-    ax.set_title("Score Percentage vs Opponent Strength (W=1, D=0.5, L=0)", fontsize=14, fontweight="bold")
+    ax.set_title(
+        "Score Percentage vs Opponent Strength (W=1, D=0.5, L=0)",
+        fontsize=14,
+        fontweight="bold",
+    )
     ax.legend(loc="best", fontsize=9)
     ax.grid(True, alpha=0.3)
     ax.set_ylim(-5, 105)
@@ -480,13 +536,23 @@ def plot_acpl(results: dict, out: Path):
 
     for model, level_data in results.items():
         acpls = [level_data[l]["avg_acpl"] for l in levels]
-        ax.plot(x, acpls, "^-", color=MODEL_COLORS[model], label=MODEL_LABELS[model], linewidth=2, markersize=6)
+        ax.plot(
+            x,
+            acpls,
+            "^-",
+            color=MODEL_COLORS[model],
+            label=MODEL_LABELS[model],
+            linewidth=2,
+            markersize=6,
+        )
 
     ax.set_xticks(x)
     ax.set_xticklabels([f"{e}" for e in elos], fontsize=9)
     ax.set_xlabel("Opponent Elo", fontsize=12)
     ax.set_ylabel("Average Centipawn Loss", fontsize=12)
-    ax.set_title("Average Centipawn Loss vs Opponent Strength", fontsize=14, fontweight="bold")
+    ax.set_title(
+        "Average Centipawn Loss vs Opponent Strength", fontsize=14, fontweight="bold"
+    )
     ax.legend(loc="best", fontsize=9)
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
@@ -499,7 +565,6 @@ def plot_acpl_boxplot(results: dict, out: Path):
     levels = _level_names(results)
 
     n_models = len(models_present)
-    n_levels = len(levels)
     fig, axes = plt.subplots(1, n_models, figsize=(4 * n_models, 6), sharey=True)
     if n_models == 1:
         axes = [axes]
@@ -523,7 +588,9 @@ def plot_acpl_boxplot(results: dict, out: Path):
             ax.set_ylabel("Centipawn Loss", fontsize=10)
         ax.grid(True, axis="y", alpha=0.3)
 
-    fig.suptitle("ACPL Distribution per Difficulty Level", fontsize=14, fontweight="bold")
+    fig.suptitle(
+        "ACPL Distribution per Difficulty Level", fontsize=14, fontweight="bold"
+    )
     plt.tight_layout()
     plt.savefig(out / "acpl_boxplot.png", dpi=150, bbox_inches="tight")
     plt.close()
@@ -537,13 +604,23 @@ def plot_game_length(results: dict, out: Path):
 
     for model, level_data in results.items():
         lengths = [level_data[l]["avg_game_length"] for l in levels]
-        ax.plot(x, lengths, "D-", color=MODEL_COLORS[model], label=MODEL_LABELS[model], linewidth=2, markersize=6)
+        ax.plot(
+            x,
+            lengths,
+            "D-",
+            color=MODEL_COLORS[model],
+            label=MODEL_LABELS[model],
+            linewidth=2,
+            markersize=6,
+        )
 
     ax.set_xticks(x)
     ax.set_xticklabels([f"{e}" for e in elos], fontsize=9)
     ax.set_xlabel("Opponent Elo", fontsize=12)
     ax.set_ylabel("Average Game Length (moves)", fontsize=12)
-    ax.set_title("Average Game Length vs Opponent Strength", fontsize=14, fontweight="bold")
+    ax.set_title(
+        "Average Game Length vs Opponent Strength", fontsize=14, fontweight="bold"
+    )
     ax.legend(loc="best", fontsize=9)
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
@@ -557,7 +634,9 @@ def plot_result_stacked(results: dict, out: Path):
     elos = _elo_ticks(results)
 
     n_levels = len(levels)
-    fig, axes = plt.subplots(1, len(models_present), figsize=(4 * len(models_present), 6), sharey=True)
+    fig, axes = plt.subplots(
+        1, len(models_present), figsize=(4 * len(models_present), 6), sharey=True
+    )
     if len(models_present) == 1:
         axes = [axes]
 
@@ -574,7 +653,13 @@ def plot_result_stacked(results: dict, out: Path):
 
         ax.bar(x, wp, color="#2ecc71", label="Win")
         ax.bar(x, dp, bottom=wp, color="#95a5a6", label="Draw")
-        ax.bar(x, lp, bottom=[wp[i] + dp[i] for i in range(n_levels)], color="#e74c3c", label="Loss")
+        ax.bar(
+            x,
+            lp,
+            bottom=[wp[i] + dp[i] for i in range(n_levels)],
+            color="#e74c3c",
+            label="Loss",
+        )
 
         ax.set_xticks(x)
         ax.set_xticklabels([str(e) for e in elos], fontsize=7, rotation=45)
@@ -600,7 +685,9 @@ def plot_heatmap(results: dict, out: Path):
         for j, lvl in enumerate(levels):
             score_matrix[i, j] = results[model][lvl]["score_pct"]
 
-    fig, ax = plt.subplots(figsize=(max(10, len(levels) * 1.2), max(5, len(models_present) * 0.9)))
+    fig, ax = plt.subplots(
+        figsize=(max(10, len(levels) * 1.2), max(5, len(models_present) * 0.9))
+    )
     im = ax.imshow(score_matrix, cmap="RdYlGn", aspect="auto", vmin=0, vmax=100)
 
     ax.set_xticks(np.arange(len(levels)))
@@ -612,7 +699,16 @@ def plot_heatmap(results: dict, out: Path):
         for j in range(len(levels)):
             val = score_matrix[i, j]
             color = "white" if val < 30 or val > 70 else "black"
-            ax.text(j, i, f"{val:.0f}%", ha="center", va="center", color=color, fontsize=9, fontweight="bold")
+            ax.text(
+                j,
+                i,
+                f"{val:.0f}%",
+                ha="center",
+                va="center",
+                color=color,
+                fontsize=9,
+                fontweight="bold",
+            )
 
     ax.set_xlabel("Opponent Elo", fontsize=12)
     ax.set_title("Score % Heatmap (Model × Difficulty)", fontsize=14, fontweight="bold")
@@ -626,7 +722,6 @@ def plot_heatmap(results: dict, out: Path):
 def plot_eval_trajectories(results: dict, out: Path):
     models_present = [m for m in MODELS if m in results]
     levels = _level_names(results)
-    elos = _elo_ticks(results)
 
     # Pick first, middle, and last difficulty level
     sample_indices = [0, len(levels) // 2, len(levels) - 1]
@@ -647,7 +742,13 @@ def plot_eval_trajectories(results: dict, out: Path):
                     vals = [t[move_idx] / 100 for t in trajs if move_idx < len(t)]
                     avg_traj.append(np.mean(vals))
                 avg_traj_clipped = np.clip(avg_traj, -10, 10)
-                ax.plot(avg_traj_clipped, color=MODEL_COLORS[model], label=MODEL_LABELS[model], linewidth=1.5, alpha=0.8)
+                ax.plot(
+                    avg_traj_clipped,
+                    color=MODEL_COLORS[model],
+                    label=MODEL_LABELS[model],
+                    linewidth=1.5,
+                    alpha=0.8,
+                )
 
         ax.axhline(y=0, color="gray", linestyle="-", linewidth=0.5)
         ax.set_ylim(-10, 10)
@@ -658,7 +759,11 @@ def plot_eval_trajectories(results: dict, out: Path):
         ax.grid(True, alpha=0.3)
         ax.legend(fontsize=7, loc="best")
 
-    fig.suptitle("Average Evaluation Trajectory (Model as White/Black)", fontsize=14, fontweight="bold")
+    fig.suptitle(
+        "Average Evaluation Trajectory (Model as White/Black)",
+        fontsize=14,
+        fontweight="bold",
+    )
     plt.tight_layout()
     plt.savefig(out / "eval_trajectories.png", dpi=150, bbox_inches="tight")
     plt.close()
@@ -672,7 +777,7 @@ def generate_report(results: dict, output_dir: Path):
     with open(report_path, "w") as f:
         f.write("# Comprehensive Model Evaluation Report\n\n")
         f.write(f"**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
-        f.write(f"**Checkpoint source:** runs/50_10M\n")
+        f.write("**Checkpoint source:** runs/50_10M\n")
         f.write(f"**Evaluation depth:** {EVAL_DEPTH}\n")
         f.write(f"**Models tested:** {len(models_present)}\n")
         f.write(f"**Difficulty levels:** {len(levels)}\n\n")
@@ -681,10 +786,16 @@ def generate_report(results: dict, output_dir: Path):
         f.write("| Level | Skill | Depth | ~Elo |\n")
         f.write("|-------|-------|-------|------|\n")
         for lvl in DIFFICULTY_LEVELS:
-            f.write(f"| {lvl['name']} | {lvl['skill']} | {lvl['depth']} | {lvl['elo']} |\n")
+            f.write(
+                f"| {lvl['name']} | {lvl['skill']} | {lvl['depth']} | {lvl['elo']} |\n"
+            )
 
         f.write("\n## Score Percentage Summary\n\n")
-        header = "| Model | " + " | ".join(str(results[models_present[0]][l]["elo"]) for l in levels) + " |\n"
+        header = (
+            "| Model | "
+            + " | ".join(str(results[models_present[0]][l]["elo"]) for l in levels)
+            + " |\n"
+        )
         sep = "|-------|" + "|".join("-------" for _ in levels) + "|\n"
         f.write(header)
         f.write(sep)
@@ -710,7 +821,9 @@ def generate_report(results: dict, output_dir: Path):
             f.write("|-------------|---|---|---|---------|----------|------------|\n")
             for l in levels:
                 d = results[model][l]
-                f.write(f"| {d['elo']} | {d['wins']} | {d['draws']} | {d['losses']} | {d['score_pct']:.0f}% | {d['avg_acpl']:.0f} | {d['avg_game_length']:.0f} |\n")
+                f.write(
+                    f"| {d['elo']} | {d['wins']} | {d['draws']} | {d['losses']} | {d['score_pct']:.0f}% | {d['avg_acpl']:.0f} | {d['avg_game_length']:.0f} |\n"
+                )
             f.write("\n")
 
         f.write("## Figures\n\n")
@@ -731,18 +844,37 @@ def generate_report(results: dict, output_dir: Path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate all models across escalating Stockfish difficulty")
+    parser = argparse.ArgumentParser(
+        description="Evaluate all models across escalating Stockfish difficulty"
+    )
     parser.add_argument("--checkpoint-dir", type=str, default="runs/50_10M")
     parser.add_argument("--stockfish", type=str, default="/opt/homebrew/bin/stockfish")
-    parser.add_argument("--games", type=int, default=4, help="Games per model per difficulty level (use even number)")
+    parser.add_argument(
+        "--games",
+        type=int,
+        default=4,
+        help="Games per model per difficulty level (use even number)",
+    )
     parser.add_argument("--output-dir", type=str, default="runs/50_10M/evaluation")
-    parser.add_argument("--levels", type=str, default=None,
-                        help="Comma-separated level indices to run (0-9). E.g. '0,1,2,3' for easy levels only.")
-    parser.add_argument("--models", type=str, default=None,
-                        help="Comma-separated model names to test. E.g. 'resnet,gat'")
-    parser.add_argument("--workers", type=int, default=4,
-                        help="Number of parallel threads (each spawns its own Stockfish). "
-                             "M1 Pro: 4-6 recommended.")
+    parser.add_argument(
+        "--levels",
+        type=str,
+        default=None,
+        help="Comma-separated level indices to run (0-9). E.g. '0,1,2,3' for easy levels only.",
+    )
+    parser.add_argument(
+        "--models",
+        type=str,
+        default=None,
+        help="Comma-separated model names to test. E.g. 'resnet,gat'",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="Number of parallel threads (each spawns its own Stockfish). "
+        "M1 Pro: 4-6 recommended.",
+    )
 
     args = parser.parse_args()
 

@@ -1,0 +1,31 @@
+- [ ] scripts/data_analysis.py
+- [ ] scripts/deep_dive.py
+- [ ] scripts/evaluate_all.py
+- [ ] scripts/plot_eval_trajectories.py
+- [ ] scripts/plot_individual_games.py
+- [ ] scripts/split_pgn.py
+- [ ] scripts/train.py
+- [ ] src/agents/base.py
+- [ ] src/agents/learning_agent.py
+- [ ] src/agents/random_agent.py
+- [ ] src/agents/uci_agent.py
+- [ ] src/chess_env/board_wrapper.py
+- [ ] src/chess_env/encoders/base.py
+- [ ] src/chess_env/encoders/cnn_encoder.py
+- [ ] src/chess_env/encoders/gnn_encoder.py
+- [ ] src/chess_env/encoders/transformer_encoder.py
+- [x] src/config.py
+- [ ] src/data/dataset.py
+- [x] src/device.py
+- [ ] src/models/base.py
+- [ ] src/models/cnn/convnet.py
+- [ ] src/models/cnn/resnet.py
+- [ ] src/models/factory.py
+- [ ] src/models/gnn/gat.py
+- [ ] src/models/gnn/gcn.py
+- [ ] src/models/heads.py
+- [ ] src/models/transformer/piece_transformer.py
+- [ ] src/models/transformer/square_transformer.py
+- [x] src/training/losses.py
+- [ ] src/training/trainer.py
+- [ ] web/server.py

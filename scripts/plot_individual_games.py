@@ -17,8 +17,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
-
-EVAL_PATTERN = re.compile(r'\[%eval ([^\]]+)\]')
+EVAL_PATTERN = re.compile(r"\[%eval ([^\]]+)\]")
 EVAL_CAP = 10.0
 
 
@@ -48,7 +47,7 @@ def parse_game_info(game_text: str) -> dict:
 
     all_evals: list[float] = []
     for i, raw in enumerate(raw_evals):
-        is_white_move = (i % 2 == 0)
+        is_white_move = i % 2 == 0
         if raw.startswith("#"):
             val = EVAL_CAP if is_white_move else -EVAL_CAP
         elif raw.startswith("-#"):
@@ -85,7 +84,7 @@ def parse_games(pgn_path: Path) -> list[str]:
     with open(pgn_path) as f:
         for line in f:
             stripped = line.strip()
-            if stripped.startswith('[Event ') and current:
+            if stripped.startswith("[Event ") and current:
                 games.append("\n".join(current))
                 current = []
             current.append(line.rstrip())
@@ -95,7 +94,9 @@ def parse_games(pgn_path: Path) -> list[str]:
     return games
 
 
-def plot_game(info: dict, game_num: int, model_name: str, elo: str, out_path: Path) -> None:
+def plot_game(
+    info: dict, game_num: int, model_name: str, elo: str, out_path: Path
+) -> None:
     evals = info["evals"]
     if not evals:
         return
@@ -107,10 +108,24 @@ def plot_game(info: dict, game_num: int, model_name: str, elo: str, out_path: Pa
     fig.patch.set_facecolor("white")
     ax.set_facecolor("white")
 
-    ax.fill_between(half_moves, 0, evals_arr, where=evals_arr >= 0,
-                    color="#2ecc71", alpha=0.2, interpolate=True)
-    ax.fill_between(half_moves, 0, evals_arr, where=evals_arr < 0,
-                    color="#e74c3c", alpha=0.2, interpolate=True)
+    ax.fill_between(
+        half_moves,
+        0,
+        evals_arr,
+        where=evals_arr >= 0,
+        color="#2ecc71",
+        alpha=0.2,
+        interpolate=True,
+    )
+    ax.fill_between(
+        half_moves,
+        0,
+        evals_arr,
+        where=evals_arr < 0,
+        color="#e74c3c",
+        alpha=0.2,
+        interpolate=True,
+    )
 
     ax.plot(half_moves, evals_arr, color="#2c3e50", linewidth=1.5)
 
@@ -120,13 +135,17 @@ def plot_game(info: dict, game_num: int, model_name: str, elo: str, out_path: Pa
     ax.set_xlabel("Move Number", fontsize=11)
     ax.set_ylabel("Eval (pawns)", fontsize=11)
 
-    outcome_color = "#2ecc71" if "wins" in info["outcome"] else (
-        "#e74c3c" if "loses" in info["outcome"] else "#95a5a6"
+    outcome_color = (
+        "#2ecc71"
+        if "wins" in info["outcome"]
+        else ("#e74c3c" if "loses" in info["outcome"] else "#95a5a6")
     )
     ax.set_title(
         f"Game {game_num}: {info['outcome']} ({info['result']}, {info['termination']})"
         f" — Model as {info['model_side']}",
-        fontsize=12, fontweight="bold", color=outcome_color,
+        fontsize=12,
+        fontweight="bold",
+        color=outcome_color,
     )
     ax.grid(True, alpha=0.2, color="#cccccc")
 
@@ -154,7 +173,7 @@ def build_pdf(
 
     y = page_h - margin - 55
 
-    for i, (info, img_path) in enumerate(zip(game_infos, img_paths), 1):
+    for i, (info, img_path) in enumerate(zip(game_infos, img_paths, strict=False), 1):
         text_height = 100
         img_height = usable_w * 0.4
         needed = text_height + img_height + 15
@@ -189,9 +208,13 @@ def build_pdf(
         y -= 5
         if img_path.exists():
             c.drawImage(
-                str(img_path), margin, y - img_height,
-                width=usable_w, height=img_height,
-                preserveAspectRatio=True, anchor="nw",
+                str(img_path),
+                margin,
+                y - img_height,
+                width=usable_w,
+                height=img_height,
+                preserveAspectRatio=True,
+                anchor="nw",
             )
             y -= img_height + 15
 
@@ -245,7 +268,9 @@ def process_pgn(pgn_path: Path, output_dir: Path) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Plot individual game eval trajectories")
+    parser = argparse.ArgumentParser(
+        description="Plot individual game eval trajectories"
+    )
     parser.add_argument("--input-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()

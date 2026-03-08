@@ -9,7 +9,9 @@ Features:
 - Step through moves one at a time or let the model auto-play
 - Side-by-side comparison of model vs Stockfish move rankings
 """
+
 import argparse
+import contextlib
 import os
 import sys
 import time
@@ -20,26 +22,41 @@ import chess.engine
 import torch
 import torch.nn.functional as F
 
-from src.config import load_config
-from src.models.factory import create_model, get_encoder_for_model
 from src.agents.learning_agent import LearningAgent
-from src.agents.mcts_agent import MCTSAgent
-from src.chess_env.board_wrapper import UCI_MOVE_TO_INDEX, INDEX_TO_UCI_MOVE
+from src.chess_env.board_wrapper import UCI_MOVE_TO_INDEX
+from src.config import settings
 from src.device import get_device
-
+from src.models.factory import create_model, get_encoder_for_model
 
 PIECE_SYMBOLS = {
-    'R': '♜', 'N': '♞', 'B': '♝', 'Q': '♛', 'K': '♚', 'P': '♟',
-    'r': '♖', 'n': '♘', 'b': '♗', 'q': '♕', 'k': '♔', 'p': '♙',
+    "R": "♜",
+    "N": "♞",
+    "B": "♝",
+    "Q": "♛",
+    "K": "♚",
+    "P": "♟",
+    "r": "♖",
+    "n": "♘",
+    "b": "♗",
+    "q": "♕",
+    "k": "♔",
+    "p": "♙",
 }
 
-TRAINED_MODELS = ["convnet", "resnet", "square_transformer", "piece_transformer", "gcn", "gat"]
+TRAINED_MODELS = [
+    "convnet",
+    "resnet",
+    "square_transformer",
+    "piece_transformer",
+    "gcn",
+    "gat",
+]
 
 EVAL_DEPTH = 18
 
 
 def clear_screen():
-    os.system('cls' if os.name == 'nt' else 'clear')
+    os.system("cls" if os.name == "nt" else "clear")
 
 
 def colorize(text: str, fg: int) -> str:
@@ -69,10 +86,7 @@ def render_board(board: chess.Board, last_move: chess.Move | None = None) -> str
             is_light = (rank + file) % 2 == 1
             is_highlight = sq in highlight_squares
 
-            if piece:
-                symbol = PIECE_SYMBOLS.get(piece.symbol(), piece.symbol())
-            else:
-                symbol = " "
+            symbol = PIECE_SYMBOLS.get(piece.symbol(), piece.symbol()) if piece else " "
 
             if is_highlight:
                 cell = colorize(f" {symbol} ", 43)  # yellow bg via escape
@@ -116,35 +130,39 @@ def eval_bar(cp: int, width: int = 30) -> str:
     return f"[{bar}] {label}"
 
 
-def evaluate_position(engine: chess.engine.SimpleEngine, board: chess.Board, depth: int = EVAL_DEPTH) -> dict:
+def evaluate_position(
+    engine: chess.engine.SimpleEngine, board: chess.Board, depth: int = EVAL_DEPTH
+) -> dict:
     try:
         info = engine.analyse(board, chess.engine.Limit(depth=depth), multipv=3)
         if isinstance(info, list):
             results = []
             for pv_info in info:
-                score = pv_info['score'].white()
+                score = pv_info["score"].white()
                 if score.is_mate():
                     mate_in = score.mate()
                     cp = (10000 - abs(mate_in) * 10) * (1 if mate_in > 0 else -1)
                 else:
                     cp = score.score()
-                pv_moves = [m.uci() for m in pv_info.get('pv', [])[:6]]
-                results.append({'cp': cp, 'pv': pv_moves})
-            return {'cp': results[0]['cp'], 'lines': results}
+                pv_moves = [m.uci() for m in pv_info.get("pv", [])[:6]]
+                results.append({"cp": cp, "pv": pv_moves})
+            return {"cp": results[0]["cp"], "lines": results}
         else:
-            score = info['score'].white()
+            score = info["score"].white()
             if score.is_mate():
                 mate_in = score.mate()
                 cp = (10000 - abs(mate_in) * 10) * (1 if mate_in > 0 else -1)
             else:
                 cp = score.score()
-            pv_moves = [m.uci() for m in info.get('pv', [])[:6]]
-            return {'cp': cp, 'lines': [{'cp': cp, 'pv': pv_moves}]}
+            pv_moves = [m.uci() for m in info.get("pv", [])[:6]]
+            return {"cp": cp, "lines": [{"cp": cp, "pv": pv_moves}]}
     except Exception:
-        return {'cp': 0, 'lines': []}
+        return {"cp": 0, "lines": []}
 
 
-def get_model_debug_info(agent: LearningAgent | MCTSAgent, board: chess.Board, device: torch.device) -> dict:
+def get_model_debug_info(
+    agent: LearningAgent, board: chess.Board, device: torch.device
+) -> dict:
     encoder = agent.encoder
     encoded = encoder.encode(board)
 
@@ -155,7 +173,7 @@ def get_model_debug_info(agent: LearningAgent | MCTSAgent, board: chess.Board, d
         for k, v in encoded.items():
             if not torch.is_tensor(v):
                 x[k] = v
-            elif k in ('edge_index', 'edge_attr'):
+            elif k in ("edge_index", "edge_attr"):
                 x[k] = v.to(device)
             else:
                 x[k] = v.unsqueeze(0).to(device)
@@ -167,11 +185,11 @@ def get_model_debug_info(agent: LearningAgent | MCTSAgent, board: chess.Board, d
 
     result = {}
 
-    if 'value' in output:
-        result['value'] = output['value'][0].item()
+    if "value" in output:
+        result["value"] = output["value"][0].item()
 
-    if 'policy' in output:
-        policy_logits = output['policy'][0]
+    if "policy" in output:
+        policy_logits = output["policy"][0]
 
         legal_moves = list(board.legal_moves)
         legal_pairs = []
@@ -182,7 +200,7 @@ def get_model_debug_info(agent: LearningAgent | MCTSAgent, board: chess.Board, d
 
         if legal_pairs:
             legal_indices = [i for _, i in legal_pairs]
-            mask = torch.full_like(policy_logits, float('-inf'))
+            mask = torch.full_like(policy_logits, float("-inf"))
             for i in legal_indices:
                 mask[i] = 0
             masked_logits = policy_logits + mask
@@ -190,18 +208,22 @@ def get_model_debug_info(agent: LearningAgent | MCTSAgent, board: chess.Board, d
 
             move_probs = []
             for m, idx in legal_pairs:
-                move_probs.append({
-                    'move': m,
-                    'san': board.san(m),
-                    'prob': probs[idx].item(),
-                    'logit': policy_logits[idx].item(),
-                })
-            move_probs.sort(key=lambda x: x['prob'], reverse=True)
-            result['move_probs'] = move_probs
+                move_probs.append(
+                    {
+                        "move": m,
+                        "san": board.san(m),
+                        "prob": probs[idx].item(),
+                        "logit": policy_logits[idx].item(),
+                    }
+                )
+            move_probs.sort(key=lambda x: x["prob"], reverse=True)
+            result["move_probs"] = move_probs
 
-            result['entropy'] = -(probs[probs > 0] * probs[probs > 0].log()).sum().item()
-            result['top1_prob'] = move_probs[0]['prob'] if move_probs else 0
-            result['num_legal'] = len(legal_moves)
+            result["entropy"] = (
+                -(probs[probs > 0] * probs[probs > 0].log()).sum().item()
+            )
+            result["top1_prob"] = move_probs[0]["prob"] if move_probs else 0
+            result["num_legal"] = len(legal_moves)
 
     return result
 
@@ -241,15 +263,15 @@ def display_state(
 
     # Stockfish evaluation
     print(bold("  ── Stockfish Evaluation ──────────────────────────────────────"))
-    cp = sf_eval.get('cp', 0)
+    cp = sf_eval.get("cp", 0)
     print(f"  Eval: {eval_bar(cp)}")
-    for i, line in enumerate(sf_eval.get('lines', [])[:3]):
-        label = format_eval(line['cp'])
+    for i, line in enumerate(sf_eval.get("lines", [])[:3]):
+        label = format_eval(line["cp"])
         prefix = "  ►" if i == 0 else "   "
         # Convert UCI moves to SAN for readability
         pv_board = board.copy()
         san_moves = []
-        for uci in line['pv'][:8]:
+        for uci in line["pv"][:8]:
             try:
                 m = chess.Move.from_uci(uci)
                 if m in pv_board.legal_moves:
@@ -271,13 +293,13 @@ def display_state(
             else:
                 pv_parts.append(san)
         pv_str = " ".join(pv_parts)
-        print(f"{prefix} PV{i+1}: {label:>8}  {pv_str}")
+        print(f"{prefix} PV{i + 1}: {label:>8}  {pv_str}")
     print()
 
     # Model debug info
     print(bold("  ── Model Debug ───────────────────────────────────────────────"))
-    if 'value' in model_debug:
-        v = model_debug['value']
+    if "value" in model_debug:
+        v = model_debug["value"]
         v_pct = (v + 1) / 2 * 100
         if v > 0.1:
             v_color = 32
@@ -285,27 +307,33 @@ def display_state(
             v_color = 31
         else:
             v_color = 33
-        print(f"  Value head: {colorize(f'{v:+.4f}', v_color)}  (White win prob ≈ {v_pct:.1f}%)")
+        print(
+            f"  Value head: {colorize(f'{v:+.4f}', v_color)}  (White win prob ≈ {v_pct:.1f}%)"
+        )
 
-    if 'entropy' in model_debug:
-        print(f"  Entropy:    {model_debug['entropy']:.3f}  │  Legal moves: {model_debug['num_legal']}")
+    if "entropy" in model_debug:
+        print(
+            f"  Entropy:    {model_debug['entropy']:.3f}  │  Legal moves: {model_debug['num_legal']}"
+        )
     print()
 
-    if 'move_probs' in model_debug:
-        top_n = model_debug['move_probs'][:10]
+    if "move_probs" in model_debug:
+        top_n = model_debug["move_probs"][:10]
         print(bold("  ── Policy Distribution (top 10) ──────────────────────────────"))
         print(f"  {'#':<4} {'Move':<8} {'Prob':>8}  {'Logit':>8}  Bar")
-        print(f"  {'─'*4} {'─'*8} {'─'*8}  {'─'*8}  {'─'*22}")
+        print(f"  {'─' * 4} {'─' * 8} {'─' * 8}  {'─' * 8}  {'─' * 22}")
         for i, mp in enumerate(top_n):
-            prob_str = f"{mp['prob']*100:.2f}%"
+            prob_str = f"{mp['prob'] * 100:.2f}%"
             logit_str = f"{mp['logit']:.2f}"
-            bar = render_policy_bar(mp['prob'])
+            bar = render_policy_bar(mp["prob"])
             marker = " ◄" if i == 0 else ""
-            print(f"  {i+1:<4} {mp['san']:<8} {prob_str:>8}  {logit_str:>8}  {bar}{marker}")
+            print(
+                f"  {i + 1:<4} {mp['san']:<8} {prob_str:>8}  {logit_str:>8}  {bar}{marker}"
+            )
 
-        remaining = model_debug['move_probs'][10:]
+        remaining = model_debug["move_probs"][10:]
         if remaining:
-            rest_prob = sum(m['prob'] for m in remaining) * 100
+            rest_prob = sum(m["prob"] for m in remaining) * 100
             print(f"  ...  ({len(remaining)} more moves, {rest_prob:.2f}% combined)")
     print()
 
@@ -315,7 +343,7 @@ def display_state(
         moves_line = "  "
         for i, san in enumerate(move_history):
             if i % 2 == 0:
-                moves_line += f"{i//2 + 1}. "
+                moves_line += f"{i // 2 + 1}. "
             moves_line += f"{san} "
             if len(moves_line) > 68:
                 print(moves_line)
@@ -335,21 +363,17 @@ def display_state(
 
 
 def load_agent(
-    model_name: str,
-    checkpoint_path: Path,
-    device: torch.device,
-    use_mcts: bool = False,
-    mcts_sims: int = 200,
-) -> LearningAgent | MCTSAgent:
-    config = load_config("config/default.yaml")
-    config.model.backbone = model_name
-    config.model.head = "dual"
+    model_name: str, checkpoint_path: Path, device: torch.device
+) -> LearningAgent:
+    model_cfg = settings.model.model_copy(
+        update={"backbone": model_name, "head": "dual"}
+    )
 
-    model = create_model(config.model)
+    model = create_model(model_cfg)
 
     checkpoint = torch.load(checkpoint_path, map_location=device)
-    state_dict = checkpoint['model_state_dict']
-    state_dict = {k.removeprefix('_orig_mod.'): v for k, v in state_dict.items()}
+    state_dict = checkpoint["model_state_dict"]
+    state_dict = {k.removeprefix("_orig_mod."): v for k, v in state_dict.items()}
     model.load_state_dict(state_dict)
     model = model.to(device)
     model.eval()
@@ -357,15 +381,6 @@ def load_agent(
     encoder_factory = get_encoder_for_model(model_name)
     encoder = encoder_factory() if callable(encoder_factory) else encoder_factory
 
-    if use_mcts:
-        return MCTSAgent(
-            model=model,
-            encoder=encoder,
-            device=device,
-            num_simulations=mcts_sims,
-            c_puct=1.4,
-            temperature=0.0,
-        )
     return LearningAgent(
         model=model,
         encoder=encoder,
@@ -375,7 +390,7 @@ def load_agent(
 
 
 def interactive_loop(
-    agent: LearningAgent | MCTSAgent,
+    agent: LearningAgent,
     evaluator: chess.engine.SimpleEngine,
     model_name: str,
     device: torch.device,
@@ -398,7 +413,18 @@ def interactive_loop(
     # Show initial state
     sf_eval = evaluate_position(evaluator, board, eval_depth)
     model_debug = get_model_debug_info(agent, board, device)
-    display_state(board, move_num, last_move, last_san, model_debug, sf_eval, model_name, elapsed, move_history, opp_info)
+    display_state(
+        board,
+        move_num,
+        last_move,
+        last_san,
+        model_debug,
+        sf_eval,
+        model_name,
+        elapsed,
+        move_history,
+        opp_info,
+    )
 
     model_is_white = model_color == "white"
 
@@ -406,9 +432,15 @@ def interactive_loop(
         is_model_turn = (board.turn == chess.WHITE) == model_is_white
 
         if is_model_turn:
-            print(bold("  Controls: ") + "[enter] model plays │ [m <uci>] force move │ [u] undo │ [q] quit")
+            print(
+                bold("  Controls: ")
+                + "[enter] model plays │ [m <uci>] force move │ [u] undo │ [q] quit"
+            )
         else:
-            print(bold("  Controls: ") + "[enter] stockfish plays │ [m <uci>] manual move │ [u] undo │ [q] quit")
+            print(
+                bold("  Controls: ")
+                + "[enter] stockfish plays │ [m <uci>] manual move │ [u] undo │ [q] quit"
+            )
 
         try:
             cmd = input("  > ").strip().lower()
@@ -416,11 +448,11 @@ def interactive_loop(
             print("\n  Goodbye!")
             return
 
-        if cmd == 'q':
+        if cmd == "q":
             print("  Goodbye!")
             return
 
-        if cmd == 'u':
+        if cmd == "u":
             if move_history:
                 board.pop()
                 move_history.pop()
@@ -429,10 +461,21 @@ def interactive_loop(
                 last_san = move_history[-1] if move_history else None
                 sf_eval = evaluate_position(evaluator, board, eval_depth)
                 model_debug = get_model_debug_info(agent, board, device)
-                display_state(board, move_num, last_move, last_san, model_debug, sf_eval, model_name, elapsed, move_history, opp_info)
+                display_state(
+                    board,
+                    move_num,
+                    last_move,
+                    last_san,
+                    model_debug,
+                    sf_eval,
+                    model_name,
+                    elapsed,
+                    move_history,
+                    opp_info,
+                )
             continue
 
-        if cmd.startswith('m '):
+        if cmd.startswith("m "):
             uci_str = cmd[2:].strip()
             try:
                 move = chess.Move.from_uci(uci_str)
@@ -447,8 +490,23 @@ def interactive_loop(
                 elapsed = 0.0
                 move_history.append(san)
                 sf_eval = evaluate_position(evaluator, board, eval_depth)
-                model_debug = get_model_debug_info(agent, board, device) if not board.is_game_over() else {}
-                display_state(board, move_num, last_move, last_san, model_debug, sf_eval, model_name, elapsed, move_history, opp_info)
+                model_debug = (
+                    get_model_debug_info(agent, board, device)
+                    if not board.is_game_over()
+                    else {}
+                )
+                display_state(
+                    board,
+                    move_num,
+                    last_move,
+                    last_san,
+                    model_debug,
+                    sf_eval,
+                    model_name,
+                    elapsed,
+                    move_history,
+                    opp_info,
+                )
                 continue
             except ValueError:
                 print(colorize(f"  Invalid UCI format: {uci_str}", 31))
@@ -471,28 +529,76 @@ def interactive_loop(
         move_history.append(san)
 
         sf_eval = evaluate_position(evaluator, board, eval_depth)
-        model_debug = get_model_debug_info(agent, board, device) if not board.is_game_over() else {}
-        display_state(board, move_num, last_move, last_san, model_debug, sf_eval, model_name, elapsed, move_history, opp_info)
+        model_debug = (
+            get_model_debug_info(agent, board, device)
+            if not board.is_game_over()
+            else {}
+        )
+        display_state(
+            board,
+            move_num,
+            last_move,
+            last_san,
+            model_debug,
+            sf_eval,
+            model_name,
+            elapsed,
+            move_history,
+            opp_info,
+        )
 
     print("\n  Press enter to exit...")
-    try:
+    with contextlib.suppress(EOFError, KeyboardInterrupt):
         input()
-    except (EOFError, KeyboardInterrupt):
-        pass
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Interactive deep-dive chess benchmark")
-    parser.add_argument("--model", type=str, required=True, choices=TRAINED_MODELS, help="Model architecture")
-    parser.add_argument("--checkpoint", type=str, default=None, help="Path to model checkpoint")
-    parser.add_argument("--stockfish", type=str, default="/opt/homebrew/bin/stockfish", help="Stockfish binary path")
-    parser.add_argument("--opponent-depth", type=int, default=5, help="Stockfish opponent search depth")
-    parser.add_argument("--eval-depth", type=int, default=EVAL_DEPTH, help="Stockfish evaluation depth")
-    parser.add_argument("--color", type=str, default="white", choices=["white", "black"], help="Model plays as")
-    parser.add_argument("--skill-level", type=int, default=None, help="Stockfish skill level (0-20, None for full strength)")
+    parser = argparse.ArgumentParser(
+        description="Interactive deep-dive chess benchmark"
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        required=True,
+        choices=TRAINED_MODELS,
+        help="Model architecture",
+    )
+    parser.add_argument(
+        "--checkpoint", type=str, default=None, help="Path to model checkpoint"
+    )
+    parser.add_argument(
+        "--stockfish",
+        type=str,
+        default="/opt/homebrew/bin/stockfish",
+        help="Stockfish binary path",
+    )
+    parser.add_argument(
+        "--opponent-depth", type=int, default=5, help="Stockfish opponent search depth"
+    )
+    parser.add_argument(
+        "--eval-depth", type=int, default=EVAL_DEPTH, help="Stockfish evaluation depth"
+    )
+    parser.add_argument(
+        "--color",
+        type=str,
+        default="white",
+        choices=["white", "black"],
+        help="Model plays as",
+    )
+    parser.add_argument(
+        "--skill-level",
+        type=int,
+        default=None,
+        help="Stockfish skill level (0-20, None for full strength)",
+    )
     parser.add_argument("--mcts", action="store_true", help="Use MCTS agent")
     parser.add_argument("--sims", type=int, default=200, help="MCTS simulations")
-    parser.add_argument("--name", type=str, default=None, help="Run name (loads from runs/<name>/training/<model>/final.pt)")
+    parser.add_argument(
+        "--name",
+        type=str,
+        default=None,
+        help="Run name (loads from runs/<name>/training/<model>/final.pt)",
+    )
 
     args = parser.parse_args()
 
@@ -517,10 +623,8 @@ def main():
 
     evaluator = chess.engine.SimpleEngine.popen_uci(args.stockfish)
     if args.skill_level is not None:
-        try:
+        with contextlib.suppress(chess.engine.EngineError):
             evaluator.configure({"Skill Level": args.skill_level})
-        except chess.engine.EngineError:
-            pass
     try:
         interactive_loop(
             agent=agent,
