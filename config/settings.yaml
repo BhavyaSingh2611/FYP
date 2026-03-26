@@ -19,8 +19,6 @@ paths:
 
 # Model Configuration
 model:
-  # Backbone type: convnet, resnet, square_transformer, piece_transformer, gcn, gat
-  backbone: resnet
   
   # Output head: policy, value, dual
   head: dual
@@ -52,6 +50,9 @@ training:
   epochs: 50
   policy_loss_weight: 1.0
   value_loss_weight: 1.0
+  gradient_accumulation_steps: 1
+  grad_clip_max_norm: 1.0
+  save_every: 5  # keep every Nth epoch checkpoint, prune the rest
   lr_scheduler:
     type: cosine  # step, cosine, none
     step_size: 10

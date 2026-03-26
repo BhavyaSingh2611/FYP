@@ -74,10 +74,10 @@ class ConvNet(ChessModel):
     def get_backbone_output_dim(self) -> int:
         return self.output_dim
 
-    def forward_backbone(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.conv_layers(x)  # (B, C, 8, 8)
+    def forward_backbone(self, x: torch.Tensor | dict) -> torch.Tensor:  # type: ignore[override]
+        assert isinstance(x, torch.Tensor), "ConvNet expects a Tensor input"
+        out = self.conv_layers(x)  # (B, C, 8, 8)
 
-        self._spatial_features = x
+        self._spatial_features = out
 
-        x = F.adaptive_avg_pool2d(x, 1).view(x.size(0), -1)  # (B, C)
-        return x
+        return F.adaptive_avg_pool2d(out, 1).view(out.size(0), -1)  # (B, C)

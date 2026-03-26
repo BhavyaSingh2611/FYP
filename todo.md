@@ -1,9 +1,6 @@
 - [ ] scripts/data_analysis.py
 - [ ] scripts/deep_dive.py
-- [ ] scripts/evaluate_all.py
-- [ ] scripts/plot_eval_trajectories.py
-- [ ] scripts/plot_individual_games.py
-- [ ] scripts/split_pgn.py
+- [ ] scripts/benchmark.py
 - [ ] scripts/train.py
 - [ ] src/agents/base.py
 - [ ] src/agents/learning_agent.py
@@ -27,5 +24,4 @@
 - [ ] src/models/transformer/piece_transformer.py
 - [ ] src/models/transformer/square_transformer.py
 - [x] src/training/losses.py
-- [ ] src/training/trainer.py
-- [ ] web/server.py
+- [x] src/training/trainer.py           # mostly done just go through it again

@@ -2,6 +2,8 @@
 Graph Attention Network (GAT) for chess.
 """
 
+from typing import cast
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -46,7 +48,7 @@ class GATLayer(nn.Module):
         self,
         x: torch.Tensor,
         edge_index: torch.Tensor,
-        edge_attr: torch.Tensor = None,
+        edge_attr: torch.Tensor | None = None,
     ) -> torch.Tensor:
         residual = x
         if self.residual is not None:
@@ -127,7 +129,8 @@ class GAT(ChessModel):
     def get_backbone_output_dim(self) -> int:
         return self.output_dim
 
-    def forward_backbone(self, x: dict) -> torch.Tensor:
+    def forward_backbone(self, x: torch.Tensor | dict) -> torch.Tensor:
+        assert isinstance(x, dict), "GAT expects a dict input"
         node_features = x["x"]
         edge_index = x["edge_index"]
         edge_attr = x.get("edge_attr")
@@ -170,4 +173,4 @@ class GAT(ChessModel):
 
         output = self.output_proj(output)
 
-        return output
+        return cast(torch.Tensor, output)

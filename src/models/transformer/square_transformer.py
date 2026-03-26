@@ -2,6 +2,8 @@
 Square-based Transformer (ChessFormer) - 64 fixed tokens.
 """
 
+from typing import cast
+
 import torch
 import torch.nn as nn
 
@@ -17,7 +19,7 @@ class PositionalEncoding(nn.Module):
 
     def forward(self, x: torch.Tensor, positions: torch.Tensor) -> torch.Tensor:
         """Add positional embeddings."""
-        return x + self.pos_embedding(positions)
+        return cast(torch.Tensor, x + self.pos_embedding(positions))
 
 
 class TransformerBlock(nn.Module):
@@ -145,7 +147,7 @@ class SquareTransformer(ChessModel):
     def get_backbone_output_dim(self) -> int:
         return self.output_dim
 
-    def forward_backbone(self, x: dict) -> torch.Tensor:
+    def forward_backbone(self, x: torch.Tensor | dict) -> torch.Tensor:
         """
         Forward pass through the backbone.
 
@@ -160,6 +162,7 @@ class SquareTransformer(ChessModel):
         Returns:
             Feature tensor of shape (B, embed_dim).
         """
+        assert isinstance(x, dict), "SquareTransformer expects a dict input"
         tokens = x["tokens"]  # (B, 64)
         positions = x["positions"]  # (B, 64)
         coordinates = x.get("coordinates")  # (B, 64, 2) - Normalized rank/file
@@ -172,11 +175,7 @@ class SquareTransformer(ChessModel):
         token_emb = self.token_embedding(tokens)  # (B, 64, D)
 
         # Add positional embeddings
-        if self.use_cls_token:
-            # Shift positions by 1 to account for CLS token
-            pos_emb = self.pos_embedding(positions + 1)
-        else:
-            pos_emb = self.pos_embedding(positions)
+        pos_emb = self.pos_embedding(positions + 1) if self.use_cls_token else self.pos_embedding(positions)
 
         embeddings = token_emb + pos_emb  # (B, 64, D)
 
@@ -211,4 +210,4 @@ class SquareTransformer(ChessModel):
         # Mean pooling (B, D)
         output = hidden[:, 0] if self.use_cls_token else hidden.mean(dim=1)
 
-        return output
+        return cast(torch.Tensor, output)

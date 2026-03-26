@@ -4,6 +4,7 @@ UCI Engine agent for wrapping external engines like Stockfish.
 
 import contextlib
 from pathlib import Path
+from typing import Any
 
 import chess
 import chess.engine
@@ -117,7 +118,7 @@ class UCIAgent:
 
         result = engine.play(board, limit, info=chess.engine.INFO_ALL)
 
-        info = {
+        info: dict[str, Any] = {
             "move": result.move or list(board.legal_moves)[0],
         }
 
@@ -125,10 +126,11 @@ class UCIAgent:
             if "score" in result.info:
                 score = result.info["score"].relative
                 if score.is_mate():
-                    info["mate_in"] = score.mate()
-                    info["score"] = 10000 if score.mate() > 0 else -10000
+                    mate = score.mate()
+                    info["mate_in"] = mate
+                    info["score"] = 10000 if (mate is not None and mate > 0) else -10000
                 else:
-                    info["score"] = score.score()
+                    info["score"] = score.score() or 0
 
             if "pv" in result.info:
                 info["pv"] = [m.uci() for m in result.info["pv"][:5]]
@@ -179,7 +181,7 @@ class UCIAgent:
                     continue
                 seen_moves.add(move.uci())
 
-                entry = {"move": move}
+                entry: dict[str, Any] = {"move": move}
 
                 if "score" in info:
                     score = info["score"].relative
@@ -187,12 +189,12 @@ class UCIAgent:
                         mate_score = score.mate()
                         entry["score"] = (
                             10000 - abs(mate_score)
-                            if mate_score > 0
-                            else -10000 + abs(mate_score)
+                            if (mate_score is not None and mate_score > 0)
+                            else -10000 + abs(mate_score or 0)
                         )
                         entry["mate_in"] = mate_score
                     else:
-                        entry["score"] = score.score()
+                        entry["score"] = score.score() or 0
                 else:
                     entry["score"] = 0
 
@@ -206,7 +208,7 @@ class UCIAgent:
             engine.configure({"MultiPV": 1})
 
         # Sort by score descending
-        results.sort(key=lambda x: x["score"], reverse=True)
+        results.sort(key=lambda x: int(x.get("score", 0)), reverse=True)
 
         return results or [{"move": list(board.legal_moves)[0], "score": 0}]
 

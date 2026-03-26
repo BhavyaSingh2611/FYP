@@ -1,16 +1,14 @@
 """
-Dataset analysis script – processes all Parquet files in parallel using
-multiprocessing (one file per worker), then merges results and produces
-summary statistics + plots.
+Dataset analysis script – reads a single Parquet file in batches and
+produces summary statistics + plots.
 
 Parquet schema: f (FEN), b (best move UCI), v (value -1 to +1).
 """
 
 from __future__ import annotations
 
+import logging
 import math
-import multiprocessing as mp
-from dataclasses import dataclass, field
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -19,129 +17,86 @@ import numpy as np
 import pyarrow.parquet as pq
 from tqdm import tqdm
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+DATA_FILE = Path(__file__).resolve().parent.parent / "data" / "chess_eval.parquet"
 OUT_DIR = Path(__file__).resolve().parent.parent / "runs" / "data_analysis"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 BATCH_SIZE = 100_000
-NUM_WORKERS = 8
-RESERVOIR_CAP_PER_FILE = 200_000
-
 VALUE_HIST_EDGES = np.linspace(-1.0, 1.0, 201)
 
+LOGGER = logging.getLogger(__name__)
 
-@dataclass
-class FileResult:
-    total_rows: int = 0
-    val_sum: float = 0.0
-    val_sq_sum: float = 0.0
-    val_count: int = 0
-    val_min: float = float("inf")
-    val_max: float = float("-inf")
-    val_hist: np.ndarray = field(default_factory=lambda: np.zeros(200, dtype=np.int64))
-    white_to_move: int = 0
-    black_to_move: int = 0
-
-
-def process_file(args: tuple[Path, int]) -> FileResult:
-    fpath, worker_idx = args
-    res = FileResult(
-        val_hist=np.zeros(len(VALUE_HIST_EDGES) - 1, dtype=np.int64),
-    )
-
-    pf = pq.ParquetFile(fpath)
+if __name__ == "__main__":
+    pf = pq.ParquetFile(DATA_FILE)
     num_batches = math.ceil(pf.metadata.num_rows / BATCH_SIZE)
+    LOGGER.info("Reading %s  (%s rows)", DATA_FILE.name, f"{pf.metadata.num_rows:,}")
 
-    pbar = tqdm(
-        pf.iter_batches(batch_size=BATCH_SIZE),
-        total=num_batches,
-        desc=fpath.name,
-        unit="batch",
-        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]",
-        position=worker_idx,
-        leave=False,
-    )
+    total_rows = 0
+    val_sum = 0.0
+    val_sq_sum = 0.0
+    val_count = 0
+    val_min = float("inf")
+    val_max = float("-inf")
+    val_hist = np.zeros(len(VALUE_HIST_EDGES) - 1, dtype=np.int64)
+    white_to_move = 0
+    black_to_move = 0
 
-    for batch in pbar:
+    for batch in tqdm(
+        pf.iter_batches(batch_size=BATCH_SIZE), total=num_batches, unit="batch"
+    ):
         n = batch.num_rows
-        res.total_rows += n
+        total_rows += n
 
         v_arr = batch.column("v").to_numpy(zero_copy_only=False).astype(np.float64)
         mask_v = ~np.isnan(v_arr)
         v_valid = v_arr[mask_v]
         if len(v_valid):
-            res.val_sum += v_valid.sum()
-            res.val_sq_sum += (v_valid**2).sum()
-            res.val_count += len(v_valid)
-            res.val_min = min(res.val_min, float(v_valid.min()))
-            res.val_max = max(res.val_max, float(v_valid.max()))
-            res.val_hist += np.histogram(v_valid, bins=VALUE_HIST_EDGES)[0]
+            val_sum += v_valid.sum()
+            val_sq_sum += (v_valid**2).sum()
+            val_count += len(v_valid)
+            val_min = min(val_min, float(v_valid.min()))
+            val_max = max(val_max, float(v_valid.max()))
+            val_hist += np.histogram(v_valid, bins=VALUE_HIST_EDGES)[0]
 
         fen_arr = batch.column("f").to_pylist()
         for fen in fen_arr:
             if fen and " w " in fen:
-                res.white_to_move += 1
+                white_to_move += 1
             elif fen:
-                res.black_to_move += 1
+                black_to_move += 1
 
-    return res
+    LOGGER.info("Total rows processed: %s", f"{total_rows:,}")
 
-
-def merge_results(results: list[FileResult]) -> FileResult:
-    merged = FileResult(
-        val_hist=np.zeros(len(VALUE_HIST_EDGES) - 1, dtype=np.int64),
+    val_mean = val_sum / val_count if val_count else 0
+    val_std = ((val_sq_sum / val_count) - val_mean**2) ** 0.5 if val_count else 0
+    LOGGER.info(
+        """\
+=================================================================
+VALUE DISTRIBUTION (v)
+=================================================================
+  Count (non-null) : %s
+  Mean             : %s
+  Std              : %s
+  Min              : %s
+  Max              : %s""",
+        f"{val_count:,}",
+        f"{val_mean:+.4f}",
+        f"{val_std:.4f}",
+        f"{val_min:+.4f}",
+        f"{val_max:+.4f}",
     )
 
-    for r in results:
-        merged.total_rows += r.total_rows
-        merged.val_sum += r.val_sum
-        merged.val_sq_sum += r.val_sq_sum
-        merged.val_count += r.val_count
-        merged.val_min = min(merged.val_min, r.val_min)
-        merged.val_max = max(merged.val_max, r.val_max)
-        merged.val_hist += r.val_hist
-        merged.white_to_move += r.white_to_move
-        merged.black_to_move += r.black_to_move
-
-    return merged
-
-
-if __name__ == "__main__":
-    parquet_files = sorted(DATA_DIR.glob("*.parquet"))
-    print(f"Found {len(parquet_files)} parquet files in {DATA_DIR}")
-    print(f"Using {NUM_WORKERS} worker processes\n")
-
-    mp.set_start_method("fork", force=True)
-    jobs = [(fpath, i % NUM_WORKERS) for i, fpath in enumerate(parquet_files)]
-    with mp.Pool(NUM_WORKERS) as pool:
-        results = pool.map(process_file, jobs)
-    print("\n" * NUM_WORKERS)
-
-    r = merge_results(results)
-    total_rows = r.total_rows
-
-    print(f"\nTotal rows processed: {total_rows:,}\n")
-
-    print("=" * 65)
-    print("VALUE DISTRIBUTION (v)")
-    print("=" * 65)
-    val_mean = r.val_sum / r.val_count if r.val_count else 0
-    val_std = ((r.val_sq_sum / r.val_count) - val_mean**2) ** 0.5 if r.val_count else 0
-    print(f"  Count (non-null) : {r.val_count:,}")
-    print(f"  Mean             : {val_mean:+.4f}")
-    print(f"  Std              : {val_std:.4f}")
-    print(f"  Min              : {r.val_min:+.4f}")
-    print(f"  Max              : {r.val_max:+.4f}")
-
-    print()
-    print("=" * 65)
-    print("ACTIVE COLOUR")
-    print("=" * 65)
-    print(
-        f"  White to move : {r.white_to_move:,}  ({100 * r.white_to_move / total_rows:.2f}%)"
-    )
-    print(
-        f"  Black to move : {r.black_to_move:,}  ({100 * r.black_to_move / total_rows:.2f}%)"
+    LOGGER.info(
+        """\
+=================================================================
+ACTIVE COLOUR
+=================================================================
+  White to move : %s  (%s%%)
+  Black to move : %s  (%s%%)""",
+        f"{white_to_move:,}",
+        f"{100 * white_to_move / total_rows:.2f}",
+        f"{black_to_move:,}",
+        f"{100 * black_to_move / total_rows:.2f}",
     )
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
@@ -149,7 +104,7 @@ if __name__ == "__main__":
 
     ax = axes[0]
     centres = (VALUE_HIST_EDGES[:-1] + VALUE_HIST_EDGES[1:]) / 2
-    ax.bar(centres, r.val_hist, width=0.01, color="steelblue", edgecolor="none")
+    ax.bar(centres, val_hist, width=0.01, color="steelblue", edgecolor="none")
     ax.set_xlabel("Value (v)")
     ax.set_ylabel("Count")
     ax.set_title("Value Distribution (-1 to +1)")
@@ -157,7 +112,7 @@ if __name__ == "__main__":
 
     ax = axes[1]
     ax.pie(
-        [r.white_to_move, r.black_to_move],
+        [white_to_move, black_to_move],
         labels=["White to move", "Black to move"],
         autopct="%1.1f%%",
         colors=["#f0d9b5", "#b58863"],
@@ -168,16 +123,14 @@ if __name__ == "__main__":
     plt.tight_layout()
     out_path = OUT_DIR / "dataset_analysis.png"
     plt.savefig(out_path, dpi=150)
-    print(f"\nFigure saved to {out_path}")
+    LOGGER.info("Figure saved to %s", out_path)
 
     report_path = OUT_DIR / "dataset_analysis.txt"
     with open(report_path, "w") as f:
         f.write(f"Total rows: {total_rows:,}\n\n")
         f.write(
             f"Value — mean: {val_mean:+.4f}, std: {val_std:.4f}, "
-            f"min: {r.val_min:+.4f}, max: {r.val_max:+.4f}, non-null: {r.val_count:,}\n"
+            f"min: {val_min:+.4f}, max: {val_max:+.4f}, non-null: {val_count:,}\n"
         )
-        f.write(
-            f"White to move: {r.white_to_move:,}, Black to move: {r.black_to_move:,}\n"
-        )
-    print(f"Text report saved to {report_path}")
+        f.write(f"White to move: {white_to_move:,}, Black to move: {black_to_move:,}\n")
+    LOGGER.info("Text report saved to %s", report_path)

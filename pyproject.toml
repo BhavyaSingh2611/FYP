@@ -35,11 +35,11 @@ include = ["src*"]
 
 [tool.ruff]
 target-version = "py310"
-line-length = 88
+line-length = 120
 src = ["src"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
 ignore = []
 
 [tool.ruff.lint.isort]

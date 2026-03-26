@@ -2,6 +2,8 @@
 Graph Convolutional Network (GCN) for chess.
 """
 
+from typing import cast
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -104,7 +106,8 @@ class GCN(ChessModel):
     def get_backbone_output_dim(self) -> int:
         return self.output_dim
 
-    def forward_backbone(self, x: dict) -> torch.Tensor:
+    def forward_backbone(self, x: torch.Tensor | dict) -> torch.Tensor:
+        assert isinstance(x, dict), "GCN expects a dict input"
         node_features = x["x"]
         edge_index = x["edge_index"]
         side_to_move = x["side_to_move"]
@@ -142,4 +145,4 @@ class GCN(ChessModel):
 
         output = self.output_proj(output)
 
-        return output
+        return cast(torch.Tensor, output)

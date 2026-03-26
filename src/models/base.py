@@ -17,9 +17,10 @@ class ChessModel(ABC, nn.Module):
         - get_backbone_output_dim(): Return the dimension of backbone output
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.head = None
+        self.head: nn.Module | None = None
+        self._spatial_features: torch.Tensor | None = None
 
     @abstractmethod
     def forward_backbone(self, x: torch.Tensor | dict) -> torch.Tensor:
@@ -53,9 +54,9 @@ class ChessModel(ABC, nn.Module):
         spatial = getattr(self, "_spatial_features", None)
         if spatial is not None:
             self._spatial_features = None
-            return self.head(features, spatial=spatial)
+            return dict(self.head(features, spatial=spatial))
 
-        return self.head(features)
+        return dict(self.head(features))
 
     def set_head(self, head: nn.Module) -> None:
         """

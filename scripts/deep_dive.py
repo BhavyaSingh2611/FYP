@@ -12,10 +12,12 @@ Features:
 
 import argparse
 import contextlib
+import logging
 import os
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 import chess
 import chess.engine
@@ -23,10 +25,12 @@ import torch
 import torch.nn.functional as F
 
 from src.agents.learning_agent import LearningAgent
-from src.chess_env.board_wrapper import UCI_MOVE_TO_INDEX
+from src.chess_env.move_index import UCI_MOVE_TO_INDEX
 from src.config import settings
 from src.device import get_device
 from src.models.factory import create_model, get_encoder_for_model
+
+LOGGER = logging.getLogger(__name__)
 
 PIECE_SYMBOLS = {
     "R": "♜",
@@ -68,66 +72,54 @@ def bold(text: str) -> str:
 
 
 def render_board(board: chess.Board, last_move: chess.Move | None = None) -> str:
-    lines = []
-    lines.append("")
-    lines.append(bold("     a   b   c   d   e   f   g   h"))
-    lines.append("   ┌───┬───┬───┬───┬───┬───┬───┬───┐")
-
-    highlight_squares = set()
-    if last_move:
-        highlight_squares.add(last_move.from_square)
-        highlight_squares.add(last_move.to_square)
+    highlight = {last_move.from_square, last_move.to_square} if last_move else set()
+    header = bold("     a   b   c   d   e   f   g   h")
+    lines = ["", header, "   ┌───┬───┬───┬───┬───┬───┬───┬───┐"]
 
     for rank in range(7, -1, -1):
         row = f" {rank + 1} │"
         for file in range(8):
             sq = chess.square(file, rank)
             piece = board.piece_at(sq)
-            is_light = (rank + file) % 2 == 1
-            is_highlight = sq in highlight_squares
-
             symbol = PIECE_SYMBOLS.get(piece.symbol(), piece.symbol()) if piece else " "
 
-            if is_highlight:
-                cell = colorize(f" {symbol} ", 43)  # yellow bg via escape
+            if sq in highlight:
                 cell = f"\033[43m {symbol} \033[0m"
-            elif is_light:
+            elif (rank + file) % 2 == 1:
                 cell = f"\033[47m\033[30m {symbol} \033[0m"
             else:
                 cell = f"\033[100m\033[97m {symbol} \033[0m"
 
             row += cell + "│"
-        row += f" {rank + 1}"
-        lines.append(row)
+        lines.append(f"{row} {rank + 1}")
         if rank > 0:
             lines.append("   ├───┼───┼───┼───┼───┼───┼───┼───┤")
 
-    lines.append("   └───┴───┴───┴───┴───┴───┴───┴───┘")
-    lines.append(bold("     a   b   c   d   e   f   g   h"))
-    lines.append("")
+    lines += ["   └───┴───┴───┴───┴───┴───┴───┴───┘", header, ""]
     return "\n".join(lines)
 
 
 def format_eval(cp: int) -> str:
     if abs(cp) >= 9000:
         mate_in = (10000 - abs(cp)) // 10
-        sign = "+" if cp > 0 else "-"
-        return f"#{sign}{mate_in}"
-    sign = "+" if cp >= 0 else ""
-    return f"{sign}{cp / 100:.2f}"
+        return f"#{'+' if cp > 0 else '-'}{mate_in}"
+    return f"{'+' if cp >= 0 else ''}{cp / 100:.2f}"
 
 
 def eval_bar(cp: int, width: int = 30) -> str:
-    clamped = max(-500, min(500, cp))
-    ratio = (clamped + 500) / 1000
-    filled = int(ratio * width)
-    bar = "█" * filled + "░" * (width - filled)
-    label = format_eval(cp)
+    filled = int(((max(-500, min(500, cp)) + 500) / 1000) * width)
+    bar = f"[{'█' * filled}{'░' * (width - filled)}] {format_eval(cp)}"
     if cp >= 100:
-        return colorize(f"[{bar}] {label}", 32)  # green
-    elif cp <= -100:
-        return colorize(f"[{bar}] {label}", 31)  # red
-    return f"[{bar}] {label}"
+        return colorize(bar, 32)
+    return colorize(bar, 31) if cp <= -100 else bar
+
+
+def _score_to_cp(score) -> int:
+    """Convert a chess.engine score to centipawns."""
+    if score.is_mate():
+        mate_in = score.mate()
+        return int((10000 - abs(mate_in) * 10) * (1 if mate_in > 0 else -1))
+    return int(score.score() or 0)
 
 
 def evaluate_position(
@@ -135,27 +127,15 @@ def evaluate_position(
 ) -> dict:
     try:
         info = engine.analyse(board, chess.engine.Limit(depth=depth), multipv=3)
-        if isinstance(info, list):
-            results = []
-            for pv_info in info:
-                score = pv_info["score"].white()
-                if score.is_mate():
-                    mate_in = score.mate()
-                    cp = (10000 - abs(mate_in) * 10) * (1 if mate_in > 0 else -1)
-                else:
-                    cp = score.score()
-                pv_moves = [m.uci() for m in pv_info.get("pv", [])[:6]]
-                results.append({"cp": cp, "pv": pv_moves})
-            return {"cp": results[0]["cp"], "lines": results}
-        else:
-            score = info["score"].white()
-            if score.is_mate():
-                mate_in = score.mate()
-                cp = (10000 - abs(mate_in) * 10) * (1 if mate_in > 0 else -1)
-            else:
-                cp = score.score()
-            pv_moves = [m.uci() for m in info.get("pv", [])[:6]]
-            return {"cp": cp, "lines": [{"cp": cp, "pv": pv_moves}]}
+        pv_list = info if isinstance(info, list) else [info]
+        results = [
+            {
+                "cp": _score_to_cp(pv["score"].white()),  # type: ignore
+                "pv": [m.uci() for m in pv.get("pv", [])[:6]],
+            }
+            for pv in pv_list
+        ]
+        return {"cp": results[0]["cp"], "lines": results}
     except Exception:
         return {"cp": 0, "lines": []}
 
@@ -163,67 +143,65 @@ def evaluate_position(
 def get_model_debug_info(
     agent: LearningAgent, board: chess.Board, device: torch.device
 ) -> dict:
-    encoder = agent.encoder
-    encoded = encoder.encode(board)
+    encoded = agent.encoder.encode(board)
 
     if isinstance(encoded, torch.Tensor):
         x = encoded.unsqueeze(0).to(device)
     elif isinstance(encoded, dict):
-        x = {}
-        for k, v in encoded.items():
-            if not torch.is_tensor(v):
-                x[k] = v
-            elif k in ("edge_index", "edge_attr"):
-                x[k] = v.to(device)
-            else:
-                x[k] = v.unsqueeze(0).to(device)
+        x = {
+            k: (
+                v.to(device)
+                if k in ("edge_index", "edge_attr")
+                else v.unsqueeze(0).to(device)
+            )
+            if torch.is_tensor(v)
+            else v
+            for k, v in encoded.items()
+        }
     else:
         x = encoded
 
     with torch.no_grad():
         output = agent.model(x)
 
-    result = {}
+    result: dict[str, Any] = {}
 
     if "value" in output:
         result["value"] = output["value"][0].item()
 
     if "policy" in output:
         policy_logits = output["policy"][0]
-
-        legal_moves = list(board.legal_moves)
-        legal_pairs = []
-        for m in legal_moves:
-            idx = UCI_MOVE_TO_INDEX.get(m.uci(), -1)
-            if idx >= 0:
-                legal_pairs.append((m, idx))
+        legal_pairs = [
+            (m, idx)
+            for m in board.legal_moves
+            if (idx := UCI_MOVE_TO_INDEX.get(m.uci(), -1)) >= 0
+        ]
 
         if legal_pairs:
-            legal_indices = [i for _, i in legal_pairs]
             mask = torch.full_like(policy_logits, float("-inf"))
-            for i in legal_indices:
+            for _, i in legal_pairs:
                 mask[i] = 0
-            masked_logits = policy_logits + mask
-            probs = F.softmax(masked_logits, dim=-1)
+            probs = F.softmax(policy_logits + mask, dim=-1)
 
-            move_probs = []
-            for m, idx in legal_pairs:
-                move_probs.append(
+            move_probs = sorted(
+                [
                     {
                         "move": m,
                         "san": board.san(m),
                         "prob": probs[idx].item(),
                         "logit": policy_logits[idx].item(),
                     }
-                )
-            move_probs.sort(key=lambda x: x["prob"], reverse=True)
+                    for m, idx in legal_pairs
+                ],
+                key=lambda x: x["prob"],  # type: ignore
+                reverse=True,
+            )  # type: ignore
             result["move_probs"] = move_probs
-
             result["entropy"] = (
                 -(probs[probs > 0] * probs[probs > 0].log()).sum().item()
             )
             result["top1_prob"] = move_probs[0]["prob"] if move_probs else 0
-            result["num_legal"] = len(legal_moves)
+            result["num_legal"] = len(list(board.legal_moves))
 
     return result
 
@@ -231,6 +209,37 @@ def get_model_debug_info(
 def render_policy_bar(prob: float, width: int = 20) -> str:
     filled = int(prob * width)
     return "█" * filled + "░" * (width - filled)
+
+
+def _pv_to_san(board: chess.Board, pv_uci: list[str]) -> list[str]:
+    """Convert a UCI PV line to SAN moves, stopping on illegal moves."""
+    pv_board = board.copy()
+    san_moves = []
+    for uci in pv_uci[:8]:
+        try:
+            m = chess.Move.from_uci(uci)
+            if m not in pv_board.legal_moves:
+                break
+            san_moves.append(pv_board.san(m))
+            pv_board.push(m)
+        except ValueError:
+            break
+    return san_moves
+
+
+def _format_pv_with_numbers(board: chess.Board, san_moves: list[str]) -> str:
+    """Format SAN moves with proper move numbers."""
+    ply = board.ply()
+    parts = []
+    for j, san in enumerate(san_moves):
+        cur_ply = ply + j
+        if cur_ply % 2 == 0:
+            parts.append(f"{cur_ply // 2 + 1}. {san}")
+        elif j == 0:
+            parts.append(f"{cur_ply // 2 + 1}... {san}")
+        else:
+            parts.append(san)
+    return " ".join(parts)
 
 
 def display_state(
@@ -251,49 +260,27 @@ def display_state(
     header = f"  ♔ Deep Dive — {bold(model_name)} │ Move {move_num} │ {turn} to play"
     if opponent_info:
         header += f" │ {opponent_info}"
-    print(bold("═" * 72))
-    print(header)
-    print(bold("═" * 72))
 
-    print(render_board(board, last_move))
+    print(f"""\
+{bold("═" * 72)}
+{header}
+{bold("═" * 72)}
+{render_board(board, last_move)}""")
 
     if last_san:
         print(f"  Last move: {bold(last_san)}  ({elapsed:.3f}s)")
     print()
 
     # Stockfish evaluation
-    print(bold("  ── Stockfish Evaluation ──────────────────────────────────────"))
     cp = sf_eval.get("cp", 0)
-    print(f"  Eval: {eval_bar(cp)}")
+    print(f"""\
+{bold("  ── Stockfish Evaluation ──────────────────────────────────────")}
+  Eval: {eval_bar(cp)}""")
     for i, line in enumerate(sf_eval.get("lines", [])[:3]):
-        label = format_eval(line["cp"])
         prefix = "  ►" if i == 0 else "   "
-        # Convert UCI moves to SAN for readability
-        pv_board = board.copy()
-        san_moves = []
-        for uci in line["pv"][:8]:
-            try:
-                m = chess.Move.from_uci(uci)
-                if m in pv_board.legal_moves:
-                    san_moves.append(pv_board.san(m))
-                    pv_board.push(m)
-                else:
-                    break
-            except ValueError:
-                break
-        # Format with move numbers
-        pv_parts = []
-        ply = board.ply()
-        for j, san in enumerate(san_moves):
-            cur_ply = ply + j
-            if cur_ply % 2 == 0:
-                pv_parts.append(f"{cur_ply // 2 + 1}. {san}")
-            elif j == 0:
-                pv_parts.append(f"{cur_ply // 2 + 1}... {san}")
-            else:
-                pv_parts.append(san)
-        pv_str = " ".join(pv_parts)
-        print(f"{prefix} PV{i + 1}: {label:>8}  {pv_str}")
+        san_moves = _pv_to_san(board, line["pv"])
+        pv_str = _format_pv_with_numbers(board, san_moves)
+        print(f"{prefix} PV{i + 1}: {format_eval(line['cp']):>8}  {pv_str}")
     print()
 
     # Model debug info
@@ -301,12 +288,7 @@ def display_state(
     if "value" in model_debug:
         v = model_debug["value"]
         v_pct = (v + 1) / 2 * 100
-        if v > 0.1:
-            v_color = 32
-        elif v < -0.1:
-            v_color = 31
-        else:
-            v_color = 33
+        v_color = 32 if v > 0.1 else (31 if v < -0.1 else 33)
         print(
             f"  Value head: {colorize(f'{v:+.4f}', v_color)}  (White win prob ≈ {v_pct:.1f}%)"
         )
@@ -319,16 +301,15 @@ def display_state(
 
     if "move_probs" in model_debug:
         top_n = model_debug["move_probs"][:10]
-        print(bold("  ── Policy Distribution (top 10) ──────────────────────────────"))
-        print(f"  {'#':<4} {'Move':<8} {'Prob':>8}  {'Logit':>8}  Bar")
-        print(f"  {'─' * 4} {'─' * 8} {'─' * 8}  {'─' * 8}  {'─' * 22}")
+        print(f"""\
+{bold("  ── Policy Distribution (top 10) ──────────────────────────────")}
+  {"#":<4} {"Move":<8} {"Prob":>8}  {"Logit":>8}  Bar
+  {"─" * 4} {"─" * 8} {"─" * 8}  {"─" * 8}  {"─" * 22}""")
         for i, mp in enumerate(top_n):
-            prob_str = f"{mp['prob'] * 100:.2f}%"
-            logit_str = f"{mp['logit']:.2f}"
             bar = render_policy_bar(mp["prob"])
             marker = " ◄" if i == 0 else ""
             print(
-                f"  {i + 1:<4} {mp['san']:<8} {prob_str:>8}  {logit_str:>8}  {bar}{marker}"
+                f"  {i + 1:<4} {mp['san']:<8} {mp['prob'] * 100:>7.2f}%  {mp['logit']:>8.2f}  {bar}{marker}"
             )
 
         remaining = model_debug["move_probs"][10:]
@@ -365,27 +346,59 @@ def display_state(
 def load_agent(
     model_name: str, checkpoint_path: Path, device: torch.device
 ) -> LearningAgent:
-    model_cfg = settings.model.model_copy(
-        update={"backbone": model_name, "head": "dual"}
-    )
-
-    model = create_model(model_cfg)
+    model_cfg = settings.model.model_copy(update={"head": "dual"})
+    model = create_model(model_name, model_cfg)
 
     checkpoint = torch.load(checkpoint_path, map_location=device)
-    state_dict = checkpoint["model_state_dict"]
-    state_dict = {k.removeprefix("_orig_mod."): v for k, v in state_dict.items()}
+    state_dict = {
+        k.removeprefix("_orig_mod."): v
+        for k, v in checkpoint["model_state_dict"].items()
+    }
     model.load_state_dict(state_dict)
     model = model.to(device)
     model.eval()
 
     encoder_factory = get_encoder_for_model(model_name)
-    encoder = encoder_factory() if callable(encoder_factory) else encoder_factory
+    encoder = encoder_factory()
 
     return LearningAgent(
         model=model,
         encoder=encoder,
         device=device,
         temperature=0.0,
+    )  # type: ignore
+
+
+def _refresh_display(
+    agent: LearningAgent,
+    evaluator: chess.engine.SimpleEngine,
+    board: chess.Board,
+    move_num: int,
+    last_move: chess.Move | None,
+    last_san: str | None,
+    model_name: str,
+    device: torch.device,
+    elapsed: float,
+    move_history: list[str],
+    opp_info: str,
+    eval_depth: int,
+):
+    """Evaluate position and refresh the TUI display."""
+    sf_eval = evaluate_position(evaluator, board, eval_depth)
+    model_debug = (
+        get_model_debug_info(agent, board, device) if not board.is_game_over() else {}
+    )
+    display_state(
+        board,
+        move_num,
+        last_move,
+        last_san,
+        model_debug,
+        sf_eval,
+        model_name,
+        elapsed,
+        move_history,
+        opp_info,
     )
 
 
@@ -406,9 +419,25 @@ def interactive_loop(
     elapsed = 0.0
     move_history: list[str] = []
 
-    opp_info = f"SF d{opponent_depth}"
-    if skill_level is not None:
-        opp_info += f" skill {skill_level}"
+    opp_info = f"SF d{opponent_depth}" + (
+        f" skill {skill_level}" if skill_level is not None else ""
+    )
+
+    def refresh():
+        return _refresh_display(
+            agent,
+            evaluator,
+            board,
+            move_num,
+            last_move,
+            last_san,
+            model_name,
+            device,
+            elapsed,
+            move_history,
+            opp_info,
+            eval_depth,
+        )
 
     # Show initial state
     sf_eval = evaluate_position(evaluator, board, eval_depth)
@@ -430,17 +459,11 @@ def interactive_loop(
 
     while not board.is_game_over():
         is_model_turn = (board.turn == chess.WHITE) == model_is_white
-
-        if is_model_turn:
-            print(
-                bold("  Controls: ")
-                + "[enter] model plays │ [m <uci>] force move │ [u] undo │ [q] quit"
-            )
-        else:
-            print(
-                bold("  Controls: ")
-                + "[enter] stockfish plays │ [m <uci>] manual move │ [u] undo │ [q] quit"
-            )
+        actor = "model" if is_model_turn else "stockfish"
+        print(
+            bold("  Controls: ")
+            + f"[enter] {actor} plays │ [m <uci>] {'force' if is_model_turn else 'manual'} move │ [u] undo │ [q] quit"
+        )
 
         try:
             cmd = input("  > ").strip().lower()
@@ -459,20 +482,7 @@ def interactive_loop(
                 move_num = len(move_history)
                 last_move = board.peek() if board.move_stack else None
                 last_san = move_history[-1] if move_history else None
-                sf_eval = evaluate_position(evaluator, board, eval_depth)
-                model_debug = get_model_debug_info(agent, board, device)
-                display_state(
-                    board,
-                    move_num,
-                    last_move,
-                    last_san,
-                    model_debug,
-                    sf_eval,
-                    model_name,
-                    elapsed,
-                    move_history,
-                    opp_info,
-                )
+                refresh()
             continue
 
         if cmd.startswith("m "):
@@ -485,28 +495,9 @@ def interactive_loop(
                 san = board.san(move)
                 board.push(move)
                 move_num += 1
-                last_move = move
-                last_san = san
-                elapsed = 0.0
+                last_move, last_san, elapsed = move, san, 0.0
                 move_history.append(san)
-                sf_eval = evaluate_position(evaluator, board, eval_depth)
-                model_debug = (
-                    get_model_debug_info(agent, board, device)
-                    if not board.is_game_over()
-                    else {}
-                )
-                display_state(
-                    board,
-                    move_num,
-                    last_move,
-                    last_san,
-                    model_debug,
-                    sf_eval,
-                    model_name,
-                    elapsed,
-                    move_history,
-                    opp_info,
-                )
+                refresh()
                 continue
             except ValueError:
                 print(colorize(f"  Invalid UCI format: {uci_str}", 31))
@@ -514,38 +505,21 @@ def interactive_loop(
 
         # Default: auto-play
         start = time.time()
-        if is_model_turn:
-            move = agent.get_move(board)
-        else:
-            result = evaluator.play(board, chess.engine.Limit(depth=opponent_depth))
-            move = result.move
+        move = (
+            agent.get_move(board)
+            if is_model_turn
+            else evaluator.play(board, chess.engine.Limit(depth=opponent_depth)).move
+        )
+        if move is None:
+            break
 
         elapsed = time.time() - start
-        san = board.san(move)
-        board.push(move)
+        san = board.san(move)  # type: ignore
+        board.push(move)  # type: ignore
         move_num += 1
-        last_move = move
-        last_san = san
+        last_move, last_san = move, san
         move_history.append(san)
-
-        sf_eval = evaluate_position(evaluator, board, eval_depth)
-        model_debug = (
-            get_model_debug_info(agent, board, device)
-            if not board.is_game_over()
-            else {}
-        )
-        display_state(
-            board,
-            move_num,
-            last_move,
-            last_san,
-            model_debug,
-            sf_eval,
-            model_name,
-            elapsed,
-            move_history,
-            opp_info,
-        )
+        refresh()
 
     print("\n  Press enter to exit...")
     with contextlib.suppress(EOFError, KeyboardInterrupt):
@@ -591,8 +565,6 @@ def main():
         default=None,
         help="Stockfish skill level (0-20, None for full strength)",
     )
-    parser.add_argument("--mcts", action="store_true", help="Use MCTS agent")
-    parser.add_argument("--sims", type=int, default=200, help="MCTS simulations")
     parser.add_argument(
         "--name",
         type=str,
@@ -605,21 +577,20 @@ def main():
     if not args.checkpoint and not args.name:
         parser.error("Either --checkpoint or --name is required")
 
-    eval_depth = args.eval_depth
-
-    if args.name and not args.checkpoint:
-        checkpoint_path = Path(f"runs/{args.name}/training/{args.model}/final.pt")
-    else:
-        checkpoint_path = Path(args.checkpoint)
+    checkpoint_path = (
+        Path(f"runs/{args.name}/training/{args.model}/final.pt")
+        if args.name and not args.checkpoint
+        else Path(args.checkpoint)
+    )
 
     if not checkpoint_path.exists():
-        print(f"Checkpoint not found: {checkpoint_path}")
+        LOGGER.error("Checkpoint not found: %s", checkpoint_path)
         sys.exit(1)
 
     device = get_device()
-    print(f"Loading {args.model} from {checkpoint_path} on {device}...")
+    LOGGER.info("Loading %s from %s on %s...", args.model, checkpoint_path, device)
 
-    agent = load_agent(args.model, checkpoint_path, device, args.mcts, args.sims)
+    agent = load_agent(args.model, checkpoint_path, device)
 
     evaluator = chess.engine.SimpleEngine.popen_uci(args.stockfish)
     if args.skill_level is not None:
@@ -634,11 +605,12 @@ def main():
             opponent_depth=args.opponent_depth,
             model_color=args.color,
             skill_level=args.skill_level,
-            eval_depth=eval_depth,
+            eval_depth=args.eval_depth,
         )
     finally:
         evaluator.quit()
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     main()

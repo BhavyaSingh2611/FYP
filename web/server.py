@@ -86,10 +86,10 @@ def load_agent(model_name: str, run_name: str) -> LearningAgent:
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
     model_cfg = settings.model.model_copy(
-        update={"backbone": model_name, "head": "dual"}
+        update={"head": "dual"}
     )
 
-    model = create_model(model_cfg)
+    model = create_model(model_name, model_cfg)
 
     ckpt = torch.load(checkpoint_path, map_location=DEVICE, weights_only=False)
     if "model_state_dict" in ckpt:

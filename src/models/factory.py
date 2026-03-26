@@ -2,6 +2,7 @@
 Model factory for hot-swapping neural network backbones.
 """
 
+from ..chess_env.encoders import CNNEncoder, GNNEncoder, TransformerEncoder
 from ..config import ModelConfig, settings
 from .base import ChessModel
 from .cnn import ConvNet, ResNet
@@ -10,11 +11,12 @@ from .heads import create_head
 from .transformer import PieceTransformer, SquareTransformer
 
 
-def create_model(config: ModelConfig | None = None) -> ChessModel:
+def create_model(backbone: str, config: ModelConfig | None = None) -> ChessModel:
     """
     Create a complete chess model from configuration.
 
     Args:
+        backbone: Backbone architecture name (e.g. "resnet", "convnet", "gat").
         config: Optional ModelConfig. Defaults to settings.model.
 
     Returns:
@@ -22,9 +24,10 @@ def create_model(config: ModelConfig | None = None) -> ChessModel:
     """
     if config is None:
         config = settings.model
-    backbone = config.backbone.lower()
+    backbone = backbone.lower()
 
     # Create backbone
+    model: ChessModel
     if backbone == "convnet":
         model = ConvNet(
             channels=config.cnn.channels,
@@ -92,36 +95,15 @@ def get_encoder_for_model(backbone_type: str):
     Returns:
         Encoder class (not instantiated).
     """
-    from ..chess_env.encoders import CNNEncoder, GNNEncoder, TransformerEncoder
-
     backbone_type = backbone_type.lower()
 
     if backbone_type in ["convnet", "resnet"]:
         return CNNEncoder
     elif backbone_type in ["square_transformer", "piece_transformer"]:
-        # Return the encoder with correct tokenizer type
         tokenizer_type = "square" if backbone_type == "square_transformer" else "piece"
+
         return lambda: TransformerEncoder(tokenizer_type=tokenizer_type)
     elif backbone_type in ["gcn", "gat"]:
         return GNNEncoder
     else:
         raise ValueError(f"Unknown backbone: {backbone_type}")
-
-
-def list_available_models() -> dict:
-    """
-    List all available model configurations.
-
-    Returns:
-        Dictionary with model information.
-    """
-    return {
-        "backbones": {
-            "cnn": ["convnet", "resnet"],
-            "transformer": ["square_transformer", "piece_transformer"],
-            "gnn": ["gcn", "gat"],
-        },
-        "heads": ["policy", "value", "dual"],
-        "gnn_edge_types": ["static", "dynamic", "hybrid"],
-        "total_configurations": 30,  # 10 backbones × 3 heads
-    }

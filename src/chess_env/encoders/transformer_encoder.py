@@ -163,10 +163,7 @@ class PieceTokenizer:
         piece_idx = 0
 
         # Collect all pieces (our pieces first, then opponent's)
-        if board.turn == chess.WHITE:
-            colors = [chess.WHITE, chess.BLACK]
-        else:
-            colors = [chess.BLACK, chess.WHITE]
+        colors = [chess.WHITE, chess.BLACK] if board.turn == chess.WHITE else [chess.BLACK, chess.WHITE]
 
         for color in colors:
             for square in chess.SQUARES:
@@ -219,6 +216,7 @@ class TransformerEncoder(StateEncoder):
         Args:
             tokenizer_type: Either "square" (64 tokens) or "piece" (variable-length).
         """
+        self.tokenizer: SquareTokenizer | PieceTokenizer
         if tokenizer_type == "square":
             self.tokenizer = SquareTokenizer()
             self._name = "SquareTransformerEncoder"

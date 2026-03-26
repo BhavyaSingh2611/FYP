@@ -6,10 +6,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..chess_env.board_wrapper import NUM_MOVES
+from ..chess_env.move_index import NUM_MOVES
 
 
-class SpatialPolicyHead(nn.Module):
+class PolicyHead(nn.Module):
     """
     Policy head that preserves spatial information from CNN feature maps.
 
@@ -36,11 +36,9 @@ class SpatialPolicyHead(nn.Module):
             s = F.relu(self.bn_conv(self.conv(spatial)))
             s = s.view(s.size(0), -1)
             return {"policy": self.fc(s)}
+
         x = F.relu(self.bn_fallback(self.fc_fallback(x)))
         return {"policy": self.fc_fallback2(x)}
-
-
-PolicyHead = SpatialPolicyHead
 
 
 class ValueHead(nn.Module):

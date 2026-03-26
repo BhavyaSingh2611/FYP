@@ -49,7 +49,6 @@ class GNNConfig(BaseModel):
 
 
 class ModelConfig(BaseModel):
-    backbone: str = "resnet"
     head: str = "dual"
     cnn: CNNConfig = CNNConfig()
     transformer: TransformerConfig = TransformerConfig()
@@ -69,6 +68,9 @@ class TrainingConfig(BaseModel):
     epochs: int = 50
     policy_loss_weight: float = 1.0
     value_loss_weight: float = 1.0
+    gradient_accumulation_steps: int = 1
+    grad_clip_max_norm: float = 1.0
+    save_every: int = 5
     lr_scheduler: LRSchedulerConfig = LRSchedulerConfig()
 
 

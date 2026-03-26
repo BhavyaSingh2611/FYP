@@ -6,7 +6,8 @@ import chess
 import torch
 import torch.nn.functional as F
 
-from ..chess_env.board_wrapper import INDEX_TO_UCI_MOVE, UCI_MOVE_TO_INDEX
+from ..chess_env.encoders.base import StateEncoder
+from ..chess_env.move_index import INDEX_TO_UCI_MOVE, UCI_MOVE_TO_INDEX
 from ..models.base import ChessModel
 from .base import ChessAgent
 
@@ -24,7 +25,7 @@ class LearningAgent(ChessAgent):
     def __init__(
         self,
         model: ChessModel,
-        encoder,
+        encoder: StateEncoder,
         device: torch.device,
         temperature: float = 0.0,
         top_k: int = 0,
@@ -55,6 +56,21 @@ class LearningAgent(ChessAgent):
     def name(self) -> str:
         return self._name
 
+    def _prepare_encoded(self, encoded: torch.Tensor | dict) -> torch.Tensor | dict:
+        """Move encoded board state to device, handling tensor and graph dict inputs."""
+        if isinstance(encoded, torch.Tensor):
+            return encoded.unsqueeze(0).to(self.device)
+
+        x: dict = {}
+        for k, v in encoded.items():
+            if not torch.is_tensor(v):
+                x[k] = v
+            elif k in ("edge_index", "edge_attr"):
+                x[k] = v.to(self.device)
+            else:
+                x[k] = v.unsqueeze(0).to(self.device)
+        return x
+
     @torch.no_grad()
     def get_move(
         self,
@@ -73,22 +89,8 @@ class LearningAgent(ChessAgent):
         """
         # Encode the board
         encoded = self.encoder.encode(board)
-
-        # Prepare input based on encoder type
-        if isinstance(encoded, torch.Tensor):
-            # CNN encoder
-            x = encoded.unsqueeze(0).to(self.device)
-        elif isinstance(encoded, dict):
-            # Transformer or GNN encoder
-            x = {}
-            for k, v in encoded.items():
-                if not torch.is_tensor(v):
-                    x[k] = v
-                elif k in ("edge_index", "edge_attr"):
-                    x[k] = v.to(self.device)
-                else:
-                    x[k] = v.unsqueeze(0).to(self.device)
-        else:
+        x = self._prepare_encoded(encoded)
+        if not isinstance(encoded, (torch.Tensor, dict)):
             raise ValueError(f"Unknown encoded type: {type(encoded)}")
 
         # Forward pass
@@ -131,7 +133,7 @@ class LearningAgent(ChessAgent):
                 move_idx = torch.multinomial(probs, 1).item()
 
         # Convert index to move
-        move_uci = INDEX_TO_UCI_MOVE.get(move_idx)
+        move_uci = INDEX_TO_UCI_MOVE.get(move_idx)  # type: ignore
         if move_uci is None:
             return legal_moves[0]
 
@@ -151,18 +153,7 @@ class LearningAgent(ChessAgent):
         """
         # Encode and forward
         encoded = self.encoder.encode(board)
-
-        if isinstance(encoded, torch.Tensor):
-            x = encoded.unsqueeze(0).to(self.device)
-        else:
-            x = {}
-            for k, v in encoded.items():
-                if not torch.is_tensor(v):
-                    x[k] = v
-                elif k in ("edge_index", "edge_attr"):
-                    x[k] = v.to(self.device)
-                else:
-                    x[k] = v.unsqueeze(0).to(self.device)
+        x = self._prepare_encoded(encoded)
 
         output = self.model(x)
 
@@ -177,7 +168,7 @@ class LearningAgent(ChessAgent):
             move_idx = UCI_MOVE_TO_INDEX.get(move.uci(), -1)
             if move_idx >= 0:
                 probs = F.softmax(output["policy"][0], dim=-1)
-                result["probability"] = probs[move_idx].item()
+                result["probability"] = probs[move_idx].item()  # type: ignore
 
         return result
 
@@ -193,18 +184,7 @@ class LearningAgent(ChessAgent):
         """
         # Encode and forward
         encoded = self.encoder.encode(board)
-
-        if isinstance(encoded, torch.Tensor):
-            x = encoded.unsqueeze(0).to(self.device)
-        else:
-            x = {}
-            for k, v in encoded.items():
-                if not torch.is_tensor(v):
-                    x[k] = v
-                elif k in ("edge_index", "edge_attr"):
-                    x[k] = v.to(self.device)
-                else:
-                    x[k] = v.unsqueeze(0).to(self.device)
+        x = self._prepare_encoded(encoded)
 
         output = self.model(x)
 

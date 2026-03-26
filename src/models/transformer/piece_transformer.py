@@ -2,6 +2,8 @@
 Piece-based Transformer - Variable-length sequence (up to 32 pieces).
 """
 
+from typing import cast
+
 import torch
 import torch.nn as nn
 
@@ -136,7 +138,7 @@ class PieceTransformer(ChessModel):
     def get_backbone_output_dim(self) -> int:
         return self.output_dim
 
-    def forward_backbone(self, x: dict) -> torch.Tensor:
+    def forward_backbone(self, x: torch.Tensor | dict) -> torch.Tensor:
         """
         Forward pass through the backbone.
 
@@ -151,6 +153,7 @@ class PieceTransformer(ChessModel):
         Returns:
             Feature tensor of shape (B, embed_dim).
         """
+        assert isinstance(x, dict), "PieceTransformer expects a dict input"
         tokens = x["tokens"]  # (B, 32)
         positions = x["positions"]  # (B, 32) - square positions
         attention_mask = x["attention_mask"]  # (B, 32) - 1 for valid, 0 for padding
@@ -208,4 +211,4 @@ class PieceTransformer(ChessModel):
         # CLS token output
         output = hidden[:, 0]  # (B, D)
 
-        return output
+        return cast(torch.Tensor, output)
