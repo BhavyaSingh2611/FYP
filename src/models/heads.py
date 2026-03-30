@@ -18,9 +18,7 @@ class PolicyHead(nn.Module):
     spatial features are available (non-CNN backbones).
     """
 
-    def __init__(
-        self, input_dim: int, hidden_dim: int = 256, spatial_channels: int = 32
-    ):
+    def __init__(self, input_dim: int, hidden_dim: int = 256, spatial_channels: int = 32):
         super().__init__()
         self.conv = nn.Conv2d(input_dim, spatial_channels, 1)
         self.bn_conv = nn.BatchNorm2d(spatial_channels)
@@ -34,7 +32,7 @@ class PolicyHead(nn.Module):
     def forward(self, x: torch.Tensor, spatial: torch.Tensor | None = None) -> dict:
         if spatial is not None:
             s = F.relu(self.bn_conv(self.conv(spatial)))
-            s = s.view(s.size(0), -1)
+            s = s.reshape(s.size(0), -1)
             return {"policy": self.fc(s)}
 
         x = F.relu(self.bn_fallback(self.fc_fallback(x)))
@@ -77,9 +75,7 @@ class DualHead(nn.Module):
     Uses spatial features for the policy branch when available.
     """
 
-    def __init__(
-        self, input_dim: int, hidden_dim: int = 256, spatial_channels: int = 32
-    ):
+    def __init__(self, input_dim: int, hidden_dim: int = 256, spatial_channels: int = 32):
         super().__init__()
 
         self.policy_conv = nn.Conv2d(input_dim, spatial_channels, 1)
@@ -99,7 +95,7 @@ class DualHead(nn.Module):
     def forward(self, x: torch.Tensor, spatial: torch.Tensor | None = None) -> dict:
         if spatial is not None:
             s = F.relu(self.policy_bn_conv(self.policy_conv(spatial)))
-            s = s.view(s.size(0), -1)
+            s = s.reshape(s.size(0), -1)
             policy_logits = self.policy_fc_spatial(s)
         else:
             p = F.relu(self.policy_bn1(self.policy_fc1(x)))

@@ -80,4 +80,4 @@ class ConvNet(ChessModel):
 
         self._spatial_features = out
 
-        return F.adaptive_avg_pool2d(out, 1).view(out.size(0), -1)  # (B, C)
+        return F.adaptive_avg_pool2d(out, 1).reshape(out.size(0), -1)  # (B, C)

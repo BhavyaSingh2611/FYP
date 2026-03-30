@@ -23,7 +23,7 @@ class SEBlock(nn.Module):
         s = x.mean(dim=(2, 3))
         s = F.silu(self.fc1(s))
         s = torch.sigmoid(self.fc2(s))
-        return x * s.view(b, c, 1, 1)
+        return x * s.reshape(b, c, 1, 1)
 
 
 class ResidualBlock(nn.Module):
@@ -88,9 +88,7 @@ class ResNet(ChessModel):
         self.initial_bn = nn.BatchNorm2d(channels)
 
         # Residual blocks
-        self.res_blocks = nn.Sequential(
-            *[ResidualBlock(channels) for _ in range(num_blocks)]
-        )
+        self.res_blocks = nn.Sequential(*[ResidualBlock(channels) for _ in range(num_blocks)])
 
         self.output_dim = channels
 
@@ -108,4 +106,4 @@ class ResNet(ChessModel):
 
         self._spatial_features = out
 
-        return F.adaptive_avg_pool2d(out, 1).view(out.size(0), -1)  # (B, C)
+        return F.adaptive_avg_pool2d(out, 1).reshape(out.size(0), -1)  # (B, C)
