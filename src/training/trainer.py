@@ -105,12 +105,8 @@ class Trainer:
         )
 
         # Grad scaler: only for float16 AMP on CUDA
-        use_scaler = (
-            self.use_amp and device.type == "cuda" and self.amp_dtype != torch.bfloat16
-        )
-        self.scaler = torch.amp.grad_scaler.GradScaler(
-            device=device.type, enabled=use_scaler
-        )
+        use_scaler = self.use_amp and device.type == "cuda" and self.amp_dtype != torch.bfloat16
+        self.scaler = torch.amp.grad_scaler.GradScaler(device=device.type, enabled=use_scaler)
 
         # ---- State ----
 
@@ -125,11 +121,7 @@ class Trainer:
             self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
         self.stats_history: list[dict] = []
-        self._stats_path = (
-            (self.checkpoint_dir / "training_stats.jsonl")
-            if self.checkpoint_dir
-            else None
-        )
+        self._stats_path = (self.checkpoint_dir / "training_stats.jsonl") if self.checkpoint_dir else None
 
     # ------------------------------------------------------------------
     # Stats persistence
@@ -179,17 +171,10 @@ class Trainer:
         """Move inputs to device, applying channels-last for CNN tensors."""
         if isinstance(inputs, torch.Tensor):
             t = inputs.to(self.device, non_blocking=True)
-            return (
-                t.to(memory_format=torch.channels_last)
-                if self._use_channels_last and t.ndim == 4
-                else t
-            )
+            return t.to(memory_format=torch.channels_last) if self._use_channels_last and t.ndim == 4 else t
 
         if isinstance(inputs, dict):
-            return {
-                k: v.to(self.device, non_blocking=True) if torch.is_tensor(v) else v
-                for k, v in inputs.items()
-            }
+            return {k: v.to(self.device, non_blocking=True) if torch.is_tensor(v) else v for k, v in inputs.items()}
 
         return inputs
 
@@ -277,9 +262,7 @@ class Trainer:
                 enabled=self.use_amp,
             ):
                 output = self.model(inputs)
-                loss, p_loss, v_loss = self._compute_loss(
-                    output, policy_target, value_target
-                )
+                loss, p_loss, v_loss = self._compute_loss(output, policy_target, value_target)
                 loss = loss / accum
 
             # Backward
@@ -287,9 +270,7 @@ class Trainer:
 
             if (batch_idx + 1) % accum == 0 or (batch_idx + 1) == num_total:
                 self.scaler.unscale_(self.optimizer)
-                torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(), max_norm=max_norm
-                )
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=max_norm)
                 self.scaler.step(self.optimizer)
                 self.scaler.update()
                 self.optimizer.zero_grad(set_to_none=True)
@@ -330,9 +311,7 @@ class Trainer:
                 enabled=self.use_amp,
             ):
                 output = self.model(inputs)
-                loss, p_loss, v_loss = self._compute_loss(
-                    output, policy_target, value_target
-                )
+                loss, p_loss, v_loss = self._compute_loss(output, policy_target, value_target)
 
             total_loss += loss.item()
             policy_sum += p_loss
@@ -345,9 +324,7 @@ class Trainer:
                 correct += (pred == policy_target.argmax(dim=-1)).sum().item()
                 total += pred.size(0)
 
-        return self._build_metrics(
-            total_loss, policy_sum, value_sum, num_batches, correct, total
-        )
+        return self._build_metrics(total_loss, policy_sum, value_sum, num_batches, correct, total)
 
     # ------------------------------------------------------------------
     # Full training loop (orchestration + logging)
@@ -377,17 +354,41 @@ class Trainer:
         model_name = getattr(self.model, "name", type(self.model).__name__)
 
         if continuous:
-            LOGGER.info(
-                "Continuous training mode — will run until "
-                "data is exhausted or stopped"
-            )
+            LOGGER.info("Continuous training mode — will run until data is exhausted or stopped")
 
         # ---- Signal handling ----
 
         orig_sigterm = signal.getsignal(signal.SIGTERM)
         orig_sigint = signal.getsignal(signal.SIGINT)
 
+        sigint_times: list[float] = []
+        sigint_window_seconds = 5.0
+        sigint_force_exit_count = 3
+
         def _handle_stop(signum, frame):
+            if signum == signal.SIGINT:
+                now = time.monotonic()
+                sigint_times[:] = [t for t in sigint_times if now - t <= sigint_window_seconds]
+                sigint_times.append(now)
+
+                if len(sigint_times) >= sigint_force_exit_count:
+                    LOGGER.warning(
+                        "Received Ctrl+C %d times within %.0f seconds; exiting immediately.",
+                        len(sigint_times),
+                        sigint_window_seconds,
+                    )
+                    raise KeyboardInterrupt
+
+                remaining = max(0, sigint_force_exit_count - len(sigint_times))
+                LOGGER.info(
+                    "Received Ctrl+C, will stop after current epoch. "
+                    "Press Ctrl+C %d more time(s) within %.0f seconds to exit immediately.",
+                    remaining,
+                    sigint_window_seconds,
+                )
+                self._should_stop = True
+                return
+
             LOGGER.info(f"Received signal {signum}, will stop after current epoch")
             self._should_stop = True
 
@@ -421,6 +422,7 @@ class Trainer:
 
         start_epoch = self.epoch + 1
         epoch = start_epoch - 1
+        forced_immediate_stop = False
 
         def _epoch_iter():
             """Yield epoch numbers: finite range or infinite counter."""
@@ -432,78 +434,88 @@ class Trainer:
             else:
                 yield from range(start_epoch, epochs + 1)
 
-        for epoch in _epoch_iter():
-            self.epoch = epoch
-            display_epochs = "∞" if continuous else str(epochs)
+        try:
+            for epoch in _epoch_iter():
+                self.epoch = epoch
+                display_epochs = "∞" if continuous else str(epochs)
 
-            epoch_start = time.time()
-            train_metrics = self._run_epoch(train_loader, epoch)
-            epoch_time = time.time() - epoch_start
+                epoch_start = time.time()
+                train_metrics = self._run_epoch(train_loader, epoch)
+                epoch_time = time.time() - epoch_start
 
-            # In continuous mode, an epoch with 0 batches means
-            # the dataset iterator is exhausted.
-            if math.isnan(train_metrics["loss"]):
-                LOGGER.info("Dataset exhausted (NaN loss) — stopping")
-                break
+                # In continuous mode, an epoch with 0 batches means
+                # the dataset iterator is exhausted.
+                if math.isnan(train_metrics["loss"]):
+                    LOGGER.info("Dataset exhausted (NaN loss) — stopping")
+                    break
 
-            history["train_loss"].append(train_metrics["loss"])
+                history["train_loss"].append(train_metrics["loss"])
 
-            # Validation
-            val_metrics = self.evaluate(val_loader) if val_loader else None
+                # Validation
+                val_metrics = self.evaluate(val_loader) if val_loader else None
 
-            if val_metrics:
-                history["val_loss"].append(val_metrics["loss"])
+                if val_metrics:
+                    history["val_loss"].append(val_metrics["loss"])
 
-                if "accuracy" in val_metrics:
-                    history["val_accuracy"].append(val_metrics["accuracy"])
+                    if "accuracy" in val_metrics:
+                        history["val_accuracy"].append(val_metrics["accuracy"])
 
-            # Checkpointing
-            tracked_loss = (
-                val_metrics["loss"] if val_metrics else train_metrics["loss"]
-            )
-            is_best = tracked_loss < self.best_loss
-            if is_best:
-                self.best_loss = tracked_loss
-                self.save_checkpoint("best.pt")
+                # Checkpointing
+                tracked_loss = val_metrics["loss"] if val_metrics else train_metrics["loss"]
+                is_best = tracked_loss < self.best_loss
+                if is_best:
+                    self.best_loss = tracked_loss
+                    self.save_checkpoint("best.pt")
 
-            self.save_checkpoint("latest.pt")
-            if epoch % cfg.save_every == 0:
-                self.save_checkpoint(f"epoch_{epoch}.pt")
-
-            # Logging
-            self._log_epoch(
-                epoch, display_epochs, train_metrics, val_metrics, model_name, is_best
-            )
-
-            self._save_stats_entry(epoch, train_metrics, val_metrics, epoch_time)
-
-            # Graceful stop on signal
-            if self._should_stop:
                 self.save_checkpoint("latest.pt")
-                _send_ntfy(
-                    title=f"{model_name} - Training Interrupted",
-                    message=f"Stopped after epoch {epoch}/{display_epochs}",
-                    priority="high",
-                )
-                break
+                if epoch % cfg.save_every == 0:
+                    self.save_checkpoint(f"epoch_{epoch}.pt")
+
+                # Logging
+                self._log_epoch(epoch, display_epochs, train_metrics, val_metrics, model_name, is_best)
+
+                self._save_stats_entry(epoch, train_metrics, val_metrics, epoch_time)
+
+                # Graceful stop on signal
+                if self._should_stop:
+                    self.save_checkpoint("latest.pt")
+                    _send_ntfy(
+                        title=f"{model_name} - Training Interrupted",
+                        message=f"Stopped after epoch {epoch}/{display_epochs}",
+                        priority="high",
+                    )
+                    break
+        except KeyboardInterrupt:
+            forced_immediate_stop = True
+            self.save_checkpoint("latest.pt")
+            _send_ntfy(
+                title=f"{model_name} - Training Force Stopped",
+                message=(
+                    "Exited immediately due to repeated Ctrl+C "
+                    f"(threshold: {sigint_force_exit_count} within {sigint_window_seconds:.0f}s)"
+                ),
+                priority="high",
+            )
+        finally:
+            signal.signal(signal.SIGTERM, orig_sigterm)
+            signal.signal(signal.SIGINT, orig_sigint)
 
         # ---- Finish ----
 
         total_time = time.time() - start_time
-        LOGGER.info(f"Training complete in {total_time / 60:.1f} minutes")
 
-        signal.signal(signal.SIGTERM, orig_sigterm)
-        signal.signal(signal.SIGINT, orig_sigint)
+        if forced_immediate_stop:
+            LOGGER.info(f"Training force-stopped in {total_time / 60:.1f} minutes")
+            return history
+
+        LOGGER.info(f"Training complete in {total_time / 60:.1f} minutes")
 
         final_loss = history["train_loss"][-1] if history["train_loss"] else float("nan")
         display_epochs = "∞" if continuous else str(epochs)
 
         _send_ntfy(
             title=f"{model_name} - Training Complete",
-            message=(
-                f"Finished {epoch} epochs in {total_time / 60:.1f} minutes\n"
-                f"Final loss: {final_loss:.4f}"
-            ),
+            message=(f"Finished {epoch} epochs in {total_time / 60:.1f} minutes\nFinal loss: {final_loss:.4f}"),
             priority="high",
         )
 
