@@ -6,6 +6,7 @@
 pull_all.sh
 stockfish/**
 web/client/node_modules/**
+runs/models/**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

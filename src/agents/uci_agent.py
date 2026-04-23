@@ -24,6 +24,7 @@ class UCIAgent:
         depth: int = 15,
         time_limit: float | None = None,
         skill_level: int | None = None,
+        uci_elo: int | None = None,
         threads: int = 1,
         hash_mb: int = 128,
         multipv: int = 5,
@@ -36,6 +37,7 @@ class UCIAgent:
             depth: Default search depth.
             time_limit: Default time limit per move (seconds).
             skill_level: Stockfish skill level (0-20). None for full strength.
+            uci_elo: Standard UCI Elo level to limit strength to.
             threads: Number of threads for engine.
             hash_mb: Hash table size in MB.
             multipv: Number of principal variations for move distribution.
@@ -44,6 +46,7 @@ class UCIAgent:
         self.depth = depth
         self.time_limit = time_limit
         self.skill_level = skill_level
+        self.uci_elo = uci_elo
         self.threads = threads
         self.hash_mb = hash_mb
         self.multipv = multipv
@@ -69,7 +72,9 @@ class UCIAgent:
                     }
                 )
 
-                if self.skill_level is not None:
+                if self.uci_elo is not None:
+                    self._engine.configure({"UCI_LimitStrength": True, "UCI_Elo": self.uci_elo})
+                elif self.skill_level is not None:
                     self._engine.configure({"Skill Level": self.skill_level})
             except chess.engine.EngineError:
                 # Some options may not be supported

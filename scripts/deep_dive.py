@@ -25,7 +25,7 @@ import torch
 import torch.nn.functional as F
 
 from src.agents.learning_agent import LearningAgent
-from src.chess_env.move_index import UCI_MOVE_TO_INDEX
+from src.chess_env.move_index import INDEX_TO_UCI_MOVE, UCI_MOVE_TO_INDEX
 from src.config import settings
 from src.device import get_device
 from src.models.factory import create_model, get_encoder_for_model
@@ -141,7 +141,10 @@ def evaluate_position(
 
 
 def get_model_debug_info(
-    agent: LearningAgent, board: chess.Board, device: torch.device
+    agent: LearningAgent,
+    board: chess.Board,
+    device: torch.device,
+    show_illegal: bool = False,
 ) -> dict:
     encoded = agent.encoder.encode(board)
 
@@ -178,6 +181,8 @@ def get_model_debug_info(
         ]
 
         if legal_pairs:
+            legal_indices_set = {idx for _, idx in legal_pairs}
+
             mask = torch.full_like(policy_logits, float("-inf"))
             for _, i in legal_pairs:
                 mask[i] = 0
@@ -190,6 +195,7 @@ def get_model_debug_info(
                         "san": board.san(m),
                         "prob": probs[idx].item(),
                         "logit": policy_logits[idx].item(),
+                        "legal": True,
                     }
                     for m, idx in legal_pairs
                 ],
@@ -202,6 +208,38 @@ def get_model_debug_info(
             )
             result["top1_prob"] = move_probs[0]["prob"] if move_probs else 0
             result["num_legal"] = len(list(board.legal_moves))
+
+            # --- Illegal move analysis (raw logits, no legal-move mask) ---
+            if show_illegal:
+                raw_probs = F.softmax(policy_logits, dim=-1)
+                # Gather top illegal moves by raw logit
+                illegal_entries: list[dict] = []
+                _, top_indices = policy_logits.topk(min(200, policy_logits.size(0)))
+                for idx_t in top_indices:
+                    idx = idx_t.item()
+                    if idx in legal_indices_set:
+                        continue
+                    uci = INDEX_TO_UCI_MOVE.get(idx)
+                    if uci is None:
+                        continue
+                    illegal_entries.append(
+                        {
+                            "uci": uci,
+                            "prob_raw": raw_probs[idx].item(),
+                            "logit": policy_logits[idx].item(),
+                            "legal": False,
+                        }
+                    )
+                    if len(illegal_entries) >= 10:
+                        break
+                result["illegal_move_probs"] = illegal_entries
+
+                # Raw (unmasked) entropy for comparison
+                result["entropy_raw"] = (
+                    -(raw_probs[raw_probs > 0] * raw_probs[raw_probs > 0].log())
+                    .sum()
+                    .item()
+                )
 
     return result
 
@@ -253,6 +291,7 @@ def display_state(
     elapsed: float,
     move_history: list[str],
     opponent_info: str = "",
+    show_illegal: bool = False,
 ):
     clear_screen()
 
@@ -294,9 +333,11 @@ def display_state(
         )
 
     if "entropy" in model_debug:
-        print(
-            f"  Entropy:    {model_debug['entropy']:.3f}  │  Legal moves: {model_debug['num_legal']}"
-        )
+        entropy_str = f"  Entropy:    {model_debug['entropy']:.3f}"
+        if "entropy_raw" in model_debug:
+            entropy_str += f"  (raw: {model_debug['entropy_raw']:.3f})"
+        entropy_str += f"  │  Legal moves: {model_debug['num_legal']}"
+        print(entropy_str)
     print()
 
     if "move_probs" in model_debug:
@@ -316,6 +357,36 @@ def display_state(
         if remaining:
             rest_prob = sum(m["prob"] for m in remaining) * 100
             print(f"  ...  ({len(remaining)} more moves, {rest_prob:.2f}% combined)")
+
+    # --- Illegal moves the model wants to play (greyed out) ---
+    if show_illegal and "illegal_move_probs" in model_debug:
+        illegal = model_debug["illegal_move_probs"]
+        if illegal:
+            print()
+            print(
+                colorize(
+                    bold("  ── Illegal Moves (raw logits, no mask) ──────────────────────"),
+                    90,
+                )
+            )
+            _h = "#"
+            _u = "UCI"
+            _r = "Raw %"
+            _l = "Logit"
+            _s = "─"
+            print(colorize(f"  {_h:<4} {_u:<8} {_r:>8}  {_l:>8}  Bar", 90))
+            print(colorize(f"  {_s * 4} {_s * 8} {_s * 8}  {_s * 8}  {_s * 22}", 90))
+            for j, ip in enumerate(illegal):
+                uci_str = ip["uci"]
+                raw_pct = ip["prob_raw"] * 100
+                logit_val = ip["logit"]
+                raw_bar = render_policy_bar(ip["prob_raw"])
+                print(
+                    colorize(
+                        f"  {j + 1:<4} {uci_str:<8} {raw_pct:>7.2f}%  {logit_val:>8.2f}  {raw_bar}",
+                        90,
+                    )
+                )
     print()
 
     # Move history
@@ -382,11 +453,14 @@ def _refresh_display(
     move_history: list[str],
     opp_info: str,
     eval_depth: int,
+    show_illegal: bool = False,
 ):
     """Evaluate position and refresh the TUI display."""
     sf_eval = evaluate_position(evaluator, board, eval_depth)
     model_debug = (
-        get_model_debug_info(agent, board, device) if not board.is_game_over() else {}
+        get_model_debug_info(agent, board, device, show_illegal=show_illegal)
+        if not board.is_game_over()
+        else {}
     )
     display_state(
         board,
@@ -399,6 +473,7 @@ def _refresh_display(
         elapsed,
         move_history,
         opp_info,
+        show_illegal=show_illegal,
     )
 
 
@@ -411,6 +486,7 @@ def interactive_loop(
     model_color: str = "white",
     skill_level: int | None = None,
     eval_depth: int = EVAL_DEPTH,
+    show_illegal: bool = False,
 ):
     board = chess.Board()
     move_num = 0
@@ -437,11 +513,12 @@ def interactive_loop(
             move_history,
             opp_info,
             eval_depth,
+            show_illegal=show_illegal,
         )
 
     # Show initial state
     sf_eval = evaluate_position(evaluator, board, eval_depth)
-    model_debug = get_model_debug_info(agent, board, device)
+    model_debug = get_model_debug_info(agent, board, device, show_illegal=show_illegal)
     display_state(
         board,
         move_num,
@@ -453,6 +530,7 @@ def interactive_loop(
         elapsed,
         move_history,
         opp_info,
+        show_illegal=show_illegal,
     )
 
     model_is_white = model_color == "white"
@@ -571,6 +649,12 @@ def main():
         default=None,
         help="Run name (loads from runs/<name>/training/<model>/final.pt)",
     )
+    parser.add_argument(
+        "--show-illegal",
+        action="store_true",
+        default=False,
+        help="Show greyed-out illegal moves the model wants to play (raw logit distribution without legal-move mask)",
+    )
 
     args = parser.parse_args()
 
@@ -606,6 +690,7 @@ def main():
             model_color=args.color,
             skill_level=args.skill_level,
             eval_depth=args.eval_depth,
+            show_illegal=args.show_illegal,
         )
     finally:
         evaluator.quit()

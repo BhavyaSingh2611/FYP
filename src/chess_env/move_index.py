@@ -37,3 +37,21 @@ ALL_UCI_MOVES = _generate_all_uci_moves()
 UCI_MOVE_TO_INDEX = {move: idx for idx, move in enumerate(ALL_UCI_MOVES)}
 INDEX_TO_UCI_MOVE = dict(enumerate(ALL_UCI_MOVES))
 NUM_MOVES = len(ALL_UCI_MOVES)
+
+# ---------------------------------------------------------------------------
+# Castling fix: the model was trained with Chess960 (UCI_Chess960) notation
+# where castling is encoded as king-captures-own-rook (e1h1, e1a1, e8h8, e8a8),
+# but python-chess outputs standard UCI (e1g1, e1c1, e8g8, e8c8).
+# Remap so the chess960 indices accept/return standard UCI strings.
+# ---------------------------------------------------------------------------
+_CASTLE_CHESS960_TO_STD = {
+    "e1h1": "e1g1",  # White O-O
+    "e1a1": "e1c1",  # White O-O-O
+    "e8h8": "e8g8",  # Black O-O
+    "e8a8": "e8c8",  # Black O-O-O
+}
+
+for _c960, _std in _CASTLE_CHESS960_TO_STD.items():
+    _idx = UCI_MOVE_TO_INDEX[_c960]
+    INDEX_TO_UCI_MOVE[_idx] = _std      # model index → standard UCI string
+    UCI_MOVE_TO_INDEX[_std] = _idx      # standard UCI string → model index

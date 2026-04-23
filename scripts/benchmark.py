@@ -30,6 +30,7 @@ import chess.pgn
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy import optimize
 import torch
 from chess.pgn import GameNode
 from reportlab.lib.pagesizes import A4
@@ -57,16 +58,16 @@ SMOOTH_WINDOW = 5
 MODELS = ["convnet", "resnet", "square_transformer", "piece_transformer", "gcn", "gat"]
 
 DIFFICULTY_LEVELS = [
-    {"name": "Beginner-800", "skill": 0, "depth": 1, "elo": 800},
-    {"name": "Novice-1100", "skill": 1, "depth": 2, "elo": 1100},
-    {"name": "Casual-1400", "skill": 3, "depth": 3, "elo": 1400},
-    {"name": "Club-1700", "skill": 5, "depth": 5, "elo": 1700},
-    {"name": "Strong-2000", "skill": 7, "depth": 5, "elo": 2000},
-    {"name": "Expert-2300", "skill": 9, "depth": 8, "elo": 2300},
-    {"name": "Master-2500", "skill": 11, "depth": 8, "elo": 2500},
-    {"name": "IM-2800", "skill": 14, "depth": 10, "elo": 2800},
-    {"name": "GM-3100", "skill": 17, "depth": 13, "elo": 3100},
-    {"name": "Full-3200", "skill": 20, "depth": 18, "elo": 3200},
+    {"name": "Beginner-800", "elo": 800},
+    {"name": "Novice-1100", "elo": 1100},
+    {"name": "Casual-1400", "elo": 1400},
+    {"name": "Club-1700", "elo": 1700},
+    {"name": "Strong-2000", "elo": 2000},
+    {"name": "Expert-2300", "elo": 2300},
+    {"name": "Master-2500", "elo": 2500},
+    {"name": "IM-2800", "elo": 2800},
+    {"name": "GM-3100", "elo": 3100},
+    {"name": "Full-3200", "elo": 3200},
 ]
 
 EVAL_DEPTH = 18
@@ -184,17 +185,16 @@ def smooth(values: np.ndarray, window: int = SMOOTH_WINDOW) -> np.ndarray:
 
 
 def load_model_agent(
-    model_name: str, checkpoint_dir: Path, device: torch.device
+    model_name: str, checkpoint_path: Path, device: torch.device
 ) -> LearningAgent:
     model_cfg = settings.model.model_copy(update={"head": "dual"})
     model = create_model(model_name, model_cfg)
-    checkpoint_path = checkpoint_dir / f"{model_name}.pt"
 
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
     checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)  # nosec: checkpoint may contain non-tensor objects
-    state_dict = checkpoint["model_state_dict"]
+    state_dict = checkpoint.get("model_state_dict", checkpoint)
     state_dict = {k.removeprefix("_orig_mod."): v for k, v in state_dict.items()}
     model.load_state_dict(state_dict)
     model = model.to(device)
@@ -323,7 +323,7 @@ def _evaluate_level(
     """Evaluate a single model against a single difficulty level."""
     lvl_name = lvl["name"]
     evaluator = chess.engine.SimpleEngine.popen_uci(stockfish_path)
-    opponent = UCIAgent(stockfish_path, depth=lvl["depth"], skill_level=lvl["skill"])
+    opponent = UCIAgent(stockfish_path, uci_elo=lvl["elo"])
 
     wins = draws = losses = 0
     acpl_list: list[float] = []
@@ -388,8 +388,6 @@ def _evaluate_level(
         "game_lengths": game_lengths,
         "eval_trajectories": eval_trajectories,
         "elo": lvl["elo"],
-        "skill": lvl["skill"],
-        "depth": lvl["depth"],
     }
 
     with _log_lock:
@@ -408,12 +406,12 @@ def _evaluate_level(
 
 
 def run_evaluation(
-    checkpoint_dir: Path,
+    backbone: str,
+    checkpoint_path: Path,
     stockfish_path: str,
     games_per_level: int,
     output_dir: Path,
     levels: list[dict] | None = None,
-    models: list[str] | None = None,
     workers: int = 4,
 ):
     device = get_device()
@@ -422,7 +420,7 @@ def run_evaluation(
     pgn_dir.mkdir(exist_ok=True)
 
     levels = levels or DIFFICULTY_LEVELS
-    models = models or MODELS
+    models = [backbone]
 
     LOGGER.info(
         """
@@ -452,7 +450,7 @@ def run_evaluation(
         )
 
         try:
-            agent = load_model_agent(model_name, checkpoint_dir, device)
+            agent = load_model_agent(model_name, checkpoint_path, device)
         except FileNotFoundError as e:
             LOGGER.warning("SKIP — %s", e)
             continue
@@ -513,6 +511,7 @@ def run_evaluation(
     plot_result_stacked(results, figures_dir)
     plot_heatmap(results, figures_dir)
     plot_eval_trajectories_from_results(results, figures_dir)
+    plot_elo_curve(results, figures_dir)
     generate_report(results, output_dir)
 
     LOGGER.info("All outputs saved to: %s", output_dir)
@@ -1213,6 +1212,44 @@ def plot_eval_trajectories_from_results(results: dict, out: Path):
     plt.close()
 
 
+def plot_elo_curve(results: dict, out: Path):
+    models_present = [m for m in MODELS if m in results]
+    levels, elos = _level_names(results), _elo_ticks(results)
+    x_data = np.array(elos)
+    
+    def logistic_function(x, k, x0):
+        return 1.0 / (1.0 + np.exp(-k * (x - x0)))
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    for model in models_present:
+        y_data = np.array([results[model][lvl]["score_pct"] / 100.0 for lvl in levels])
+        
+        ax.scatter(x_data, y_data, color=MODEL_COLORS[model], alpha=0.5)
+        
+        if np.max(y_data) == 0.0 or np.min(y_data) == 1.0:
+            continue
+            
+        try:
+            popt, _ = optimize.curve_fit(logistic_function, x_data, y_data, p0=[-0.01, 1500])
+            estimated_elo = popt[1]
+            x_smooth = np.linspace(min(x_data), max(x_data), 200)
+            y_smooth = logistic_function(x_smooth, *popt)
+            ax.plot(x_smooth, y_smooth, color=MODEL_COLORS[model], label=f"{MODEL_LABELS[model]} (Elo: {estimated_elo:.0f})")
+        except RuntimeError:
+            pass
+
+    ax.axhline(y=0.5, color='gray', linestyle='--')
+    ax.set_xlabel("Opponent Elo", fontsize=12)
+    ax.set_ylabel("Score %", fontsize=12)
+    ax.set_title("Estimated Playing Elo via Logistic Fit", fontsize=14, fontweight="bold")
+    ax.legend(loc="best", fontsize=10)
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(out / "estimated_elo_curve.png", dpi=150, bbox_inches="tight")
+    plt.close()
+
+
 def generate_report(results: dict, output_dir: Path):
     models_present = [m for m in MODELS if m in results]
     levels = _level_names(results)
@@ -1230,13 +1267,40 @@ def generate_report(results: dict, output_dir: Path):
 
 ## Difficulty Levels
 
-| Level | Skill | Depth | ~Elo |
-|-------|-------|-------|------|
+| Level | ~Elo |
+|-------|------|
 """)
         for lvl in DIFFICULTY_LEVELS:
             f.write(
-                f"| {lvl['name']} | {lvl['skill']} | {lvl['depth']} | {lvl['elo']} |\n"
+                f"| {lvl['name']} | {lvl['elo']} |\n"
             )
+
+        f.write("\n## Estimated Playing Elo\n\n")
+        f.write("| Model | Estimated Playing Elo | Logistic Fit k |\n")
+        f.write("|-------|----------------------|----------------|\n")
+        for model in models_present:
+            scores = np.array([results[model][lvl]['score_pct'] / 100.0 for lvl in levels])
+            x_data = np.array([results[model][lvl]['elo'] for lvl in levels])
+            
+            def logistic_function(x, k, x0):
+                return 1.0 / (1.0 + np.exp(-k * (x - x0)))
+                
+            if np.max(scores) == 0.0:
+                est_elo = 0
+                k_val = 0
+            elif np.min(scores) == 1.0:
+                est_elo = 4000
+                k_val = 0
+            else:
+                try:
+                    popt, _ = optimize.curve_fit(logistic_function, x_data, scores, p0=[-0.01, 1500])
+                    est_elo = popt[1]
+                    k_val = popt[0]
+                except RuntimeError:
+                    est_elo = 1500
+                    k_val = 0
+            
+            f.write(f"| {MODEL_LABELS[model]} | {est_elo:.1f} | {k_val:.4f} |\n")
 
         f.write("\n## Score Percentage Summary\n\n")
         header = (
@@ -1278,6 +1342,7 @@ def generate_report(results: dict, output_dir: Path):
         for fig_name, caption in [
             ("win_rate.png", "Win Rate vs Opponent Strength"),
             ("score_percentage.png", "Score % vs Opponent Strength"),
+            ("estimated_elo_curve.png", "Estimated Playing Elo Curve"),
             ("avg_centipawn_loss.png", "Average Centipawn Loss"),
             ("acpl_boxplot.png", "ACPL Distribution Boxplots"),
             ("game_length.png", "Average Game Length"),
@@ -1291,57 +1356,52 @@ def generate_report(results: dict, output_dir: Path):
 
 
 # ---------------------------------------------------------------------------
-# CLI: subcommands
+# CLI
 # ---------------------------------------------------------------------------
 
+def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s  %(levelname)-8s  %(message)s",
+        datefmt="%H:%M:%S",
+    )
 
-def cmd_evaluate(args):
+    parser = argparse.ArgumentParser(
+        description="Run comprehensive Elo benchmark pipeline for a chess model.",
+    )
+    parser.add_argument("--backbone", type=str, default="resnet", help="Network backbone architecture")
+    parser.add_argument("--weights", type=str, required=True, help="Path to model weights (.pt)")
+    parser.add_argument("--stockfish", type=str, default="/opt/homebrew/bin/stockfish")
+    parser.add_argument("--games", type=int, default=4, help="Games per difficulty level (use even number)")
+    parser.add_argument("--output-dir", type=str, default="runs/evaluation")
+    parser.add_argument("--levels", type=str, default=None, help="Comma-separated level indices (0-9)")
+    parser.add_argument("--workers", type=int, default=4, help="Parallel threads (each spawns its own Stockfish)")
+
+    args = parser.parse_args()
+
     levels = DIFFICULTY_LEVELS
     if args.levels:
         indices = [int(x.strip()) for x in args.levels.split(",")]
         levels = [DIFFICULTY_LEVELS[i] for i in indices]
 
-    models = MODELS
-    if args.models:
-        models = [m.strip() for m in args.models.split(",")]
-
-    LOGGER.info("=" * 70 + "\n  COMPREHENSIVE MODEL EVALUATION\n" + "=" * 70)
-
-    run_evaluation(
-        checkpoint_dir=Path(args.checkpoint_dir),
-        stockfish_path=args.stockfish,
-        games_per_level=args.games,
-        output_dir=Path(args.output_dir),
-        levels=levels,
-        models=models,
-        workers=args.workers,
-    )
-
-    LOGGER.info("=" * 70 + "\n  EVALUATION COMPLETE!\n" + "=" * 70)
-
-
-def cmd_split(args):
-    split_pgn(Path(args.input), Path(args.output_dir))
-
-
-def cmd_plot_games(args):
-    plot_individual_games(Path(args.input_dir), Path(args.output_dir))
-
-
-def cmd_plot_trajectories(args):
-    plot_trajectories(Path(args.input_dir), Path(args.output_dir))
-
-
-def cmd_all(args):
-    """Run the full pipeline: evaluate -> split -> plot-games -> plot-trajectories."""
     output_dir = Path(args.output_dir)
     pgn_dir = output_dir / "pgn"
     split_dir = pgn_dir / "split"
     figures_dir = output_dir / "figures"
 
+    LOGGER.info("=" * 70 + "\n  COMPREHENSIVE MODEL EVALUATION\n" + "=" * 70)
+
     # Step 1: evaluate
     LOGGER.info("Step 1/4: Running evaluation...")
-    cmd_evaluate(args)
+    run_evaluation(
+        backbone=args.backbone,
+        checkpoint_path=Path(args.weights),
+        stockfish_path=args.stockfish,
+        games_per_level=args.games,
+        output_dir=output_dir,
+        levels=levels,
+        workers=args.workers,
+    )
 
     # Step 2: split
     pgn_path = pgn_dir / "all_evaluation_games.pgn"
@@ -1365,96 +1425,8 @@ def cmd_all(args):
     else:
         LOGGER.warning("Skipping trajectory plots — %s not found", split_dir)
 
+    LOGGER.info("=" * 70 + "\n  EVALUATION COMPLETE!\n" + "=" * 70)
     LOGGER.info("Full pipeline complete. Outputs in: %s", output_dir)
-
-
-def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s  %(levelname)-8s  %(message)s",
-        datefmt="%H:%M:%S",
-    )
-
-    parser = argparse.ArgumentParser(
-        description="Unified benchmark: evaluate models, split PGNs, and generate plots",
-    )
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    # --- evaluate ---
-    p_eval = subparsers.add_parser("evaluate", help="Evaluate models against Stockfish")
-    p_eval.add_argument("--checkpoint-dir", type=str, default="runs/50_10M")
-    p_eval.add_argument("--stockfish", type=str, default="/opt/homebrew/bin/stockfish")
-    p_eval.add_argument(
-        "--games",
-        type=int,
-        default=4,
-        help="Games per model per difficulty level (use even number)",
-    )
-    p_eval.add_argument("--output-dir", type=str, default="runs/50_10M/evaluation")
-    p_eval.add_argument(
-        "--levels", type=str, default=None, help="Comma-separated level indices (0-9)"
-    )
-    p_eval.add_argument(
-        "--models",
-        type=str,
-        default=None,
-        help="Comma-separated model names, e.g. 'resnet,gat'",
-    )
-    p_eval.add_argument(
-        "--workers",
-        type=int,
-        default=4,
-        help="Parallel threads (each spawns its own Stockfish)",
-    )
-    p_eval.set_defaults(func=cmd_evaluate)
-
-    # --- split ---
-    p_split = subparsers.add_parser(
-        "split", help="Split combined PGN into per-model files"
-    )
-    p_split.add_argument(
-        "--input", type=str, required=True, help="Path to combined PGN"
-    )
-    p_split.add_argument(
-        "--output-dir", type=str, required=True, help="Output directory"
-    )
-    p_split.set_defaults(func=cmd_split)
-
-    # --- plot-games ---
-    p_pg = subparsers.add_parser(
-        "plot-games", help="Plot individual game eval curves to PDFs"
-    )
-    p_pg.add_argument(
-        "--input-dir", type=str, required=True, help="Directory with split PGNs"
-    )
-    p_pg.add_argument("--output-dir", type=str, required=True, help="Output directory")
-    p_pg.set_defaults(func=cmd_plot_games)
-
-    # --- plot-trajectories ---
-    p_pt = subparsers.add_parser(
-        "plot-trajectories", help="Plot overlaid eval trajectory charts"
-    )
-    p_pt.add_argument(
-        "--input-dir", type=str, required=True, help="Directory with split PGNs"
-    )
-    p_pt.add_argument("--output-dir", type=str, required=True, help="Output directory")
-    p_pt.set_defaults(func=cmd_plot_trajectories)
-
-    # --- all ---
-    p_all = subparsers.add_parser(
-        "all", help="Run full pipeline: evaluate + split + plots"
-    )
-    p_all.add_argument("--checkpoint-dir", type=str, default="runs/50_10M")
-    p_all.add_argument("--stockfish", type=str, default="/opt/homebrew/bin/stockfish")
-    p_all.add_argument("--games", type=int, default=4)
-    p_all.add_argument("--output-dir", type=str, default="runs/50_10M/evaluation")
-    p_all.add_argument("--levels", type=str, default=None)
-    p_all.add_argument("--models", type=str, default=None)
-    p_all.add_argument("--workers", type=int, default=4)
-    p_all.set_defaults(func=cmd_all)
-
-    args = parser.parse_args()
-    args.func(args)
 
 
 if __name__ == "__main__":

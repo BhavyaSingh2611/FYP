@@ -216,3 +216,11 @@ class LearningAgent(ChessAgent):
             results.append({"move": move, "score": score, "probability": prob})
 
         return results
+
+    def reset(self) -> None:
+        """Reset the agent's internal state (if any)."""
+        pass
+
+    def close(self) -> None:
+        """Clean up resources (if any)."""
+        pass
