@@ -97,9 +97,7 @@ def load_agent(model_name: str, run_name: str) -> LearningAgent:
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
-    model_cfg = settings.model.model_copy(
-        update={"head": "dual"}
-    )
+    model_cfg = settings.model.model_copy(update={"head": "dual"})
 
     model = create_model(arch_name, model_cfg)
 
@@ -129,9 +127,7 @@ def load_agent(model_name: str, run_name: str) -> LearningAgent:
 
 
 class GameSession:
-    def __init__(
-        self, game_id: str, white_agent, black_agent, white_info: dict, black_info: dict
-    ):
+    def __init__(self, game_id: str, white_agent, black_agent, white_info: dict, black_info: dict):
         self.id = game_id
         self.board = chess.Board()
         self.white_agent = white_agent
@@ -213,11 +209,7 @@ class GameSession:
         elif self.board.is_stalemate():
             status = "stalemate"
             result = "1/2-1/2"
-        elif (
-            self.board.is_insufficient_material()
-            or self.board.is_fifty_moves()
-            or self.board.is_repetition()
-        ):
+        elif self.board.is_insufficient_material() or self.board.is_fifty_moves() or self.board.is_repetition():
             status = "draw"
             result = "1/2-1/2"
 
@@ -260,11 +252,11 @@ class GameSession:
     def make_ai_move(self) -> str | None:
         if self.board.is_game_over() or self.resigned:
             return None
-            
+
         agent = self.white_agent if self.board.turn == chess.WHITE else self.black_agent
         if agent is None:
             return None
-            
+
         move = agent.get_move(self.board)
         self.push_move(move)
         return move.uci()
@@ -352,6 +344,7 @@ def api_make_move(game_id):
     session.push_move(move)
 
     return jsonify(session.to_dict())
+
 
 @app.route("/api/game/<game_id>/bot_move", methods=["POST"])
 def api_bot_move(game_id):

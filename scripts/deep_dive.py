@@ -122,9 +122,7 @@ def _score_to_cp(score) -> int:
     return int(score.score() or 0)
 
 
-def evaluate_position(
-    engine: chess.engine.SimpleEngine, board: chess.Board, depth: int = EVAL_DEPTH
-) -> dict:
+def evaluate_position(engine: chess.engine.SimpleEngine, board: chess.Board, depth: int = EVAL_DEPTH) -> dict:
     try:
         info = engine.analyse(board, chess.engine.Limit(depth=depth), multipv=3)
         pv_list = info if isinstance(info, list) else [info]
@@ -152,11 +150,7 @@ def get_model_debug_info(
         x = encoded.unsqueeze(0).to(device)
     elif isinstance(encoded, dict):
         x = {
-            k: (
-                v.to(device)
-                if k in ("edge_index", "edge_attr")
-                else v.unsqueeze(0).to(device)
-            )
+            k: (v.to(device) if k in ("edge_index", "edge_attr") else v.unsqueeze(0).to(device))
             if torch.is_tensor(v)
             else v
             for k, v in encoded.items()
@@ -174,11 +168,7 @@ def get_model_debug_info(
 
     if "policy" in output:
         policy_logits = output["policy"][0]
-        legal_pairs = [
-            (m, idx)
-            for m in board.legal_moves
-            if (idx := UCI_MOVE_TO_INDEX.get(m.uci(), -1)) >= 0
-        ]
+        legal_pairs = [(m, idx) for m in board.legal_moves if (idx := UCI_MOVE_TO_INDEX.get(m.uci(), -1)) >= 0]
 
         if legal_pairs:
             legal_indices_set = {idx for _, idx in legal_pairs}
@@ -203,9 +193,7 @@ def get_model_debug_info(
                 reverse=True,
             )  # type: ignore
             result["move_probs"] = move_probs
-            result["entropy"] = (
-                -(probs[probs > 0] * probs[probs > 0].log()).sum().item()
-            )
+            result["entropy"] = -(probs[probs > 0] * probs[probs > 0].log()).sum().item()
             result["top1_prob"] = move_probs[0]["prob"] if move_probs else 0
             result["num_legal"] = len(list(board.legal_moves))
 
@@ -235,11 +223,7 @@ def get_model_debug_info(
                 result["illegal_move_probs"] = illegal_entries
 
                 # Raw (unmasked) entropy for comparison
-                result["entropy_raw"] = (
-                    -(raw_probs[raw_probs > 0] * raw_probs[raw_probs > 0].log())
-                    .sum()
-                    .item()
-                )
+                result["entropy_raw"] = -(raw_probs[raw_probs > 0] * raw_probs[raw_probs > 0].log()).sum().item()
 
     return result
 
@@ -328,9 +312,7 @@ def display_state(
         v = model_debug["value"]
         v_pct = (v + 1) / 2 * 100
         v_color = 32 if v > 0.1 else (31 if v < -0.1 else 33)
-        print(
-            f"  Value head: {colorize(f'{v:+.4f}', v_color)}  (White win prob ≈ {v_pct:.1f}%)"
-        )
+        print(f"  Value head: {colorize(f'{v:+.4f}', v_color)}  (White win prob ≈ {v_pct:.1f}%)")
 
     if "entropy" in model_debug:
         entropy_str = f"  Entropy:    {model_debug['entropy']:.3f}"
@@ -349,9 +331,7 @@ def display_state(
         for i, mp in enumerate(top_n):
             bar = render_policy_bar(mp["prob"])
             marker = " ◄" if i == 0 else ""
-            print(
-                f"  {i + 1:<4} {mp['san']:<8} {mp['prob'] * 100:>7.2f}%  {mp['logit']:>8.2f}  {bar}{marker}"
-            )
+            print(f"  {i + 1:<4} {mp['san']:<8} {mp['prob'] * 100:>7.2f}%  {mp['logit']:>8.2f}  {bar}{marker}")
 
         remaining = model_debug["move_probs"][10:]
         if remaining:
@@ -414,17 +394,12 @@ def display_state(
             print(f"  Reason: {outcome.termination.name}")
 
 
-def load_agent(
-    model_name: str, checkpoint_path: Path, device: torch.device
-) -> LearningAgent:
+def load_agent(model_name: str, checkpoint_path: Path, device: torch.device) -> LearningAgent:
     model_cfg = settings.model.model_copy(update={"head": "dual"})
     model = create_model(model_name, model_cfg)
 
     checkpoint = torch.load(checkpoint_path, map_location=device)
-    state_dict = {
-        k.removeprefix("_orig_mod."): v
-        for k, v in checkpoint["model_state_dict"].items()
-    }
+    state_dict = {k.removeprefix("_orig_mod."): v for k, v in checkpoint["model_state_dict"].items()}
     model.load_state_dict(state_dict)
     model = model.to(device)
     model.eval()
@@ -458,9 +433,7 @@ def _refresh_display(
     """Evaluate position and refresh the TUI display."""
     sf_eval = evaluate_position(evaluator, board, eval_depth)
     model_debug = (
-        get_model_debug_info(agent, board, device, show_illegal=show_illegal)
-        if not board.is_game_over()
-        else {}
+        get_model_debug_info(agent, board, device, show_illegal=show_illegal) if not board.is_game_over() else {}
     )
     display_state(
         board,
@@ -495,9 +468,7 @@ def interactive_loop(
     elapsed = 0.0
     move_history: list[str] = []
 
-    opp_info = f"SF d{opponent_depth}" + (
-        f" skill {skill_level}" if skill_level is not None else ""
-    )
+    opp_info = f"SF d{opponent_depth}" + (f" skill {skill_level}" if skill_level is not None else "")
 
     def refresh():
         return _refresh_display(
@@ -605,9 +576,7 @@ def interactive_loop(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Interactive deep-dive chess benchmark"
-    )
+    parser = argparse.ArgumentParser(description="Interactive deep-dive chess benchmark")
     parser.add_argument(
         "--model",
         type=str,
@@ -615,21 +584,15 @@ def main():
         choices=TRAINED_MODELS,
         help="Model architecture",
     )
-    parser.add_argument(
-        "--checkpoint", type=str, default=None, help="Path to model checkpoint"
-    )
+    parser.add_argument("--checkpoint", type=str, default=None, help="Path to model checkpoint")
     parser.add_argument(
         "--stockfish",
         type=str,
         default="/opt/homebrew/bin/stockfish",
         help="Stockfish binary path",
     )
-    parser.add_argument(
-        "--opponent-depth", type=int, default=5, help="Stockfish opponent search depth"
-    )
-    parser.add_argument(
-        "--eval-depth", type=int, default=EVAL_DEPTH, help="Stockfish evaluation depth"
-    )
+    parser.add_argument("--opponent-depth", type=int, default=5, help="Stockfish opponent search depth")
+    parser.add_argument("--eval-depth", type=int, default=EVAL_DEPTH, help="Stockfish evaluation depth")
     parser.add_argument(
         "--color",
         type=str,

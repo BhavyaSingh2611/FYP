@@ -24,15 +24,6 @@ LOGGER = logging.getLogger(__name__)
 
 EVAL_DEPTH = 18
 
-MODELS = [
-    "convnet",
-    "resnet",
-    "square_transformer",
-    "piece_transformer",
-    "gcn",
-    "gat",
-]
-
 DIFFICULTY_LEVELS = [
     {"name": "Novice-1320", "elo": 1320},
     {"name": "Casual-1500", "elo": 1500},
@@ -51,23 +42,23 @@ MATE_SCORE_STEP = 10
 _log_lock = threading.Lock()
 
 
-def get_model_outcome(result: str, is_white: bool) -> str:
+def get_outcome(result: str, model_is_white: bool) -> str:
     """Return win/loss/draw from the model's perspective."""
     if result == "1-0":
-        return "win" if is_white else "loss"
+        return "win" if model_is_white else "loss"
 
     if result == "0-1":
-        return "loss" if is_white else "win"
+        return "loss" if model_is_white else "win"
 
     return "draw"
 
 
-def load_model_agent(
+def load_agent(
     model_name: str,
     checkpoint_path: Path,
     device: torch.device,
 ) -> LearningAgent:
-    """Load a trained model checkpoint and return a deterministic learning agent."""
+    """Load model checkpoint and return a deterministic learning agent."""
     model_config = settings.model.model_copy(update={"head": "dual"})
     model = create_model(model_name, model_config)
 
@@ -80,9 +71,9 @@ def load_model_agent(
         weights_only=False,
     )  # nosec: checkpoint may contain non-tensor objects
     state_dict = checkpoint.get("model_state_dict", checkpoint)
-    cleaned_state_dict = {key.removeprefix("_orig_mod."): value for key, value in state_dict.items()}
+    clean_state = {key.removeprefix("_orig_mod."): value for key, value in state_dict.items()}
 
-    model.load_state_dict(cleaned_state_dict)
+    model.load_state_dict(clean_state)
     model = model.to(device)
     model.eval()
 
@@ -96,15 +87,15 @@ def load_model_agent(
     )  # type: ignore[arg-type]
 
 
-def evaluate_position(
-    evaluator: chess.engine.SimpleEngine,
+def get_eval_cp(
+    engine: chess.engine.SimpleEngine,
     board: chess.Board,
     depth: int = EVAL_DEPTH,
 ) -> int:
-    """Return a centipawn-style evaluation from White's perspective."""
+    """Return centipawn-style evaluation from White's perspective."""
     try:
-        analysis = evaluator.analyse(board, chess.engine.Limit(depth=depth))
-        score = analysis["score"].white()  # type: ignore[assignment]
+        info = engine.analyse(board, chess.engine.Limit(depth=depth))
+        score = info["score"].white()  # type: ignore[assignment]
 
         if score.is_mate():
             mate_in = score.mate()
@@ -124,13 +115,12 @@ def evaluate_position(
         return 0
 
 
-def resolve_game_status(
+def get_game_result(
     board: chess.Board,
     move_count: int,
     max_moves: int,
 ) -> tuple[str, str]:
-    """Return game result and termination label."""
-
+    """Return game result and termination reason."""
     if board.is_checkmate():
         return ("0-1", "checkmate") if board.turn == chess.WHITE else ("1-0", "checkmate")
 
@@ -152,127 +142,122 @@ def resolve_game_status(
     return "*", "unknown"
 
 
-def play_game(
+def run_game(
     white_agent: Any,
     black_agent: Any,
-    evaluator: chess.engine.SimpleEngine,
+    engine: chess.engine.SimpleEngine,
     max_moves: int = 200,
 ) -> dict[str, Any]:
-    """Play one game between two agents and capture move-by-move metadata."""
+    """Play one game and return move-by-move metadata."""
     board = chess.Board()
-    game_data: dict[str, Any] = {
+    game: dict[str, Any] = {
         "moves": [],
         "san_moves": [],
-        "evaluations": [evaluate_position(evaluator, board)],
+        "evaluations": [get_eval_cp(engine, board)],
         "white_agent": getattr(white_agent, "name", str(white_agent)),
         "black_agent": getattr(black_agent, "name", str(black_agent)),
     }
 
-    while not board.is_game_over() and len(game_data["moves"]) < max_moves:
-        active_agent = white_agent if board.turn == chess.WHITE else black_agent
-        move = active_agent.get_move(board)
+    while not board.is_game_over() and len(game["moves"]) < max_moves:
+        active = white_agent if board.turn == chess.WHITE else black_agent
+        move = active.get_move(board)
 
-        game_data["san_moves"].append(board.san(move))
-        game_data["moves"].append(move.uci())
+        game["san_moves"].append(board.san(move))
+        game["moves"].append(move.uci())
 
         board.push(move)
-        game_data["evaluations"].append(evaluate_position(evaluator, board))
+        game["evaluations"].append(get_eval_cp(engine, board))
 
-    result, termination = resolve_game_status(board, len(game_data["moves"]), max_moves)
-    game_data.update(
+    result, termination = get_game_result(board, len(game["moves"]), max_moves)
+    game.update(
         {
             "result": result,
             "termination": termination,
-            "total_moves": len(game_data["moves"]),
+            "total_moves": len(game["moves"]),
             "final_fen": board.fen(),
         }
     )
-    return game_data
+    return game
 
 
-def compute_acpl(game_data: dict[str, Any], model_color: str) -> float:
-    """Return average centipawn loss across the model's moves."""
-    evaluations = game_data["evaluations"]
-    move_losses: list[int] = []
+def calc_acpl(game: dict[str, Any], model_color: str) -> float:
+    """Return average centipawn loss on model moves."""
+    evals = game["evaluations"]
+    losses: list[int] = []
 
-    for index in range(len(evaluations) - 1):
-        is_white_move = index % 2 == 0
+    for i in range(len(evals) - 1):
+        is_white_move = i % 2 == 0
         model_to_move = (model_color == "white" and is_white_move) or (model_color == "black" and not is_white_move)
 
         if not model_to_move:
             continue
 
-        eval_before = evaluations[index]
-        eval_after = evaluations[index + 1]
-
+        eval_before = evals[i]
+        eval_after = evals[i + 1]
         cp_loss = eval_before - eval_after if model_color == "white" else eval_after - eval_before
-        move_losses.append(max(cp_loss, 0))
+        losses.append(max(cp_loss, 0))
 
-    return sum(move_losses) / len(move_losses) if move_losses else 0.0
+    return sum(losses) / len(losses) if losses else 0.0
 
 
-def create_pgn(game_data: dict[str, Any], event_name: str) -> chess.pgn.Game:
-    """Create a PGN game with engine evaluations in comments."""
-    game = chess.pgn.Game()
-    game.headers.update(
+def build_pgn(game: dict[str, Any], event_name: str) -> chess.pgn.Game:
+    """Create PGN with engine evaluations in comments."""
+    pgn = chess.pgn.Game()
+    pgn.headers.update(
         {
             "Event": event_name,
             "Date": datetime.now().strftime("%Y.%m.%d"),
-            "White": game_data["white_agent"],
-            "Black": game_data["black_agent"],
-            "Result": game_data["result"],
-            "Termination": game_data.get("termination", "unknown"),
+            "White": game["white_agent"],
+            "Black": game["black_agent"],
+            "Result": game["result"],
+            "Termination": game.get("termination", "unknown"),
         }
     )
 
-    current_node: GameNode = game
+    node: GameNode = pgn
 
-    for move_index, uci_move in enumerate(game_data["moves"]):
+    for move_index, uci_move in enumerate(game["moves"]):
         move = chess.Move.from_uci(uci_move)
-        current_node = current_node.add_variation(move)
+        node = node.add_variation(move)
 
-        next_eval_index = move_index + 1
-        if next_eval_index >= len(game_data["evaluations"]):
+        eval_index = move_index + 1
+        if eval_index >= len(game["evaluations"]):
             continue
 
-        evaluation = game_data["evaluations"][next_eval_index]
+        evaluation = game["evaluations"][eval_index]
         if abs(evaluation) >= MATE_SCORE_BASE:
             mate_in = (MATE_SCORE_BASE - abs(evaluation)) // MATE_SCORE_STEP
-            current_node.comment = f"[%eval #{mate_in if evaluation > 0 else -mate_in}]"
+            node.comment = f"[%eval #{mate_in if evaluation > 0 else -mate_in}]"
         else:
-            current_node.comment = f"[%eval {evaluation / 100:.2f}]"
+            node.comment = f"[%eval {evaluation / 100:.2f}]"
 
-    return game
+    return pgn
 
 
-def _evaluate_level(
+def _run_level(
     agent: LearningAgent,
     model_name: str,
     level: dict[str, Any],
     games_per_level: int,
     stockfish_path: str,
-) -> tuple[str, dict[str, Any], dict[str, Any]]:
+) -> tuple[str, dict[str, Any]]:
     level_name = level["name"]
-    evaluator = chess.engine.SimpleEngine.popen_uci(stockfish_path)
+    engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
     opponent = UCIAgent(stockfish_path, uci_elo=level["elo"])
 
     wins = draws = losses = 0
     acpl_values: list[float] = []
     game_lengths: list[int] = []
-    eval_trajectories: list[list[int]] = []
     game_records: list[dict[str, Any]] = []
 
     try:
         for game_index in range(games_per_level):
             model_color = "white" if game_index % 2 == 0 else "black"
 
-            if model_color == "white":
-                game_data = play_game(agent, opponent, evaluator)
-            else:
-                game_data = play_game(opponent, agent, evaluator)
+            game = run_game(agent, opponent, engine) if model_color == "white" else run_game(opponent, agent, engine)
 
-            game_data["model_color"] = model_color
-            outcome = get_model_outcome(game_data["result"], model_color == "white")
+            game["model_color"] = model_color
+            outcome = get_outcome(game["result"], model_color == "white")
 
             if outcome == "win":
                 wins += 1
@@ -281,9 +266,8 @@ def _evaluate_level(
             else:
                 draws += 1
 
-            acpl_values.append(compute_acpl(game_data, model_color))
-            game_lengths.append(game_data["total_moves"])
-            eval_trajectories.append(game_data["evaluations"])
+            acpl_values.append(calc_acpl(game, model_color))
+            game_lengths.append(game["total_moves"])
 
             with _log_lock:
                 LOGGER.info(
@@ -292,46 +276,48 @@ def _evaluate_level(
                     level_name,
                     game_index + 1,
                     games_per_level,
-                    game_data["result"],
+                    game["result"],
                     outcome[0].upper(),
-                    game_data["total_moves"],
-                    game_data["termination"],
+                    game["total_moves"],
+                    game["termination"],
                 )
 
-            pgn_game = create_pgn(game_data, f"{model_name} vs SF {level_name}")
+            pgn = build_pgn(game, f"{model_name} vs SF {level_name}")
             game_records.append(
                 {
-                    "pgn": str(pgn_game),
-                    "result": game_data["result"],
-                    "termination": game_data["termination"],
-                    "total_moves": game_data["total_moves"],
-                    "evaluations": game_data["evaluations"],
+                    "pgn": str(pgn),
+                    "result": game["result"],
+                    "termination": game["termination"],
+                    "total_moves": game["total_moves"],
+                    "evaluations": game["evaluations"],
                     "model_color": model_color,
                     "outcome": outcome,
-                    "white": game_data["white_agent"],
-                    "black": game_data["black_agent"],
+                    "white": game["white_agent"],
+                    "black": game["black_agent"],
                 }
             )
     finally:
         opponent.close()
-        evaluator.quit()
+        engine.quit()
 
     total_games = wins + draws + losses
     score_pct = (wins + 0.5 * draws) / total_games * 100 if total_games else 0
-    average_acpl = sum(acpl_values) / len(acpl_values) if acpl_values else 0
-    average_game_length = sum(game_lengths) / len(game_lengths) if game_lengths else 0
+    avg_acpl = sum(acpl_values) / len(acpl_values) if acpl_values else 0
+    avg_game_length = sum(game_lengths) / len(game_lengths) if game_lengths else 0
 
-    level_summary = {
-        "wins": wins,
-        "draws": draws,
-        "losses": losses,
-        "score_pct": score_pct,
-        "avg_acpl": average_acpl,
-        "acpl_list": acpl_values,
-        "avg_game_length": average_game_length,
-        "game_lengths": game_lengths,
-        "eval_trajectories": eval_trajectories,
+    level_data = {
         "elo": level["elo"],
+        "summary": {
+            "wins": wins,
+            "draws": draws,
+            "losses": losses,
+            "score_pct": score_pct,
+            "avg_acpl": avg_acpl,
+            "avg_game_length": avg_game_length,
+            "acpl_list": acpl_values,
+            "game_lengths": game_lengths,
+        },
+        "games": game_records,
     }
 
     with _log_lock:
@@ -343,22 +329,18 @@ def _evaluate_level(
             draws,
             losses,
             score_pct,
-            average_acpl,
+            avg_acpl,
         )
 
-    level_bundle = {"elo": level["elo"], "games": game_records}
-    return level_name, level_summary, level_bundle
+    return level_name, level_data
 
 
-def reorder(
-    data: dict[str, Any],
-    levels: list[dict[str, Any]],
-) -> dict[str, Any]:
-    """Return a new dict whose keys follow the configured level ordering."""
+def order_levels(data: dict[str, Any], levels: list[dict[str, Any]]) -> dict[str, Any]:
+    """Return level-ordered dict based on configured difficulty order."""
     return {str(level["name"]): data[level["name"]] for level in levels if level["name"] in data}
 
 
-def run_evaluation(
+def run_benchmark(
     backbone: str,
     checkpoint_path: Path,
     stockfish_path: str,
@@ -366,8 +348,8 @@ def run_evaluation(
     output_dir: Path,
     levels: list[dict[str, Any]] | None = None,
     workers: int = 4,
-) -> dict[str, dict[str, dict[str, Any]]]:
-    """Run model-vs-Stockfish benchmarks and write all output artifacts."""
+) -> dict[str, Any]:
+    """Run model-vs-Stockfish benchmark and write artifacts + a single JSON file."""
     device = get_device()
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -377,14 +359,12 @@ def run_evaluation(
 
     LOGGER.info(
         """
-    Device: %s
-    Models: %s
-    Difficulty levels: %d
-    Games per model per level: %d
-    Total games: %d
-    Worker threads: %d
+Models: %s
+Difficulty levels: %d
+Games per model per level: %d
+Total games: %d
+Worker threads: %d
     """,
-        device,
         ", ".join(model_names),
         len(selected_levels),
         games_per_level,
@@ -392,29 +372,39 @@ def run_evaluation(
         workers,
     )
 
-    results_by_model: dict[str, dict[str, dict[str, Any]]] = {}
-    benchmark_store: dict[str, dict[str, dict[str, Any]]] = {}
+    results: dict[str, Any] = {
+        "meta": {
+            "generated_at": datetime.now().isoformat(timespec="seconds"),
+            "backbone": backbone,
+            "checkpoint": str(checkpoint_path),
+            "stockfish": stockfish_path,
+            "games_per_level": games_per_level,
+            "workers": workers,
+            "levels": selected_levels,
+            "device": str(device),
+        },
+        "models": {},
+    }
 
     for model_name in model_names:
         LOGGER.info(
-            "=" * 70 + "\n  MODEL: %s  (%d levels in parallel)\n" + "=" * 70,
-            model_name.upper(),
+            "Model: %s  (%d levels in parallel)",
+            model_name,
             workers,
         )
 
         try:
-            agent = load_model_agent(model_name, checkpoint_path, device)
+            agent = load_agent(model_name, checkpoint_path, device)
         except FileNotFoundError as exc:
             LOGGER.warning("SKIP — %s", exc)
             continue
 
-        results_by_model[model_name] = {}
-        benchmark_store[model_name] = {}
+        results["models"][model_name] = {"levels": {}}
 
         with ThreadPoolExecutor(max_workers=workers) as pool:
             future_by_level = {
                 pool.submit(
-                    _evaluate_level,
+                    _run_level,
                     agent,
                     model_name,
                     level,
@@ -425,43 +415,24 @@ def run_evaluation(
             }
 
             for future in as_completed(future_by_level):
-                level_name, level_result, level_bundle = future.result()
-                results_by_model[model_name][level_name] = level_result
-                benchmark_store[model_name][level_name] = {
-                    "summary": level_result,
-                    "elo": level_bundle["elo"],
-                    "games": level_bundle["games"],
-                }
+                level_name, level_data = future.result()
+                results["models"][model_name]["levels"][level_name] = level_data
 
-        results_by_model[model_name] = reorder(
-            results_by_model[model_name],
-            selected_levels,
-        )
-        benchmark_store[model_name] = reorder(
-            benchmark_store[model_name],
-            selected_levels,
+        ordered_levels = order_levels(results["models"][model_name]["levels"], selected_levels)
+        results["models"][model_name]["levels"] = ordered_levels
+
+        render_artifacts_from_store(
+            model_name,
+            results["models"][model_name]["levels"],
+            output_dir,
         )
 
-        render_artifacts_from_store(model_name, benchmark_store[model_name], output_dir)
-
-    benchmark_store_output_path = output_dir / "benchmark_store.json"
-    with open(benchmark_store_output_path, "w", encoding="utf-8") as output_file:
-        json.dump(benchmark_store, output_file, indent=2)
-
-    json_results = {
-        model_name: {
-            level_name: {key: value for key, value in level_result.items() if key != "eval_trajectories"}
-            for level_name, level_result in level_results.items()
-        }
-        for model_name, level_results in results_by_model.items()
-    }
-
-    json_output_path = output_dir / "evaluation_results.json"
+    json_output_path = output_dir / "benchmark_results.json"
     with open(json_output_path, "w", encoding="utf-8") as output_file:
-        json.dump(json_results, output_file, indent=2)
+        json.dump(results, output_file, indent=2)
 
     LOGGER.info("All outputs saved to: %s", output_dir)
-    return benchmark_store
+    return results
 
 
 def parse_selected_levels(level_argument: str | None) -> list[dict[str, Any]]:
@@ -529,10 +500,7 @@ def main() -> None:
     selected_levels = parse_selected_levels(args.levels)
     output_dir = Path(args.output_dir)
 
-    LOGGER.info("=" * 70 + "\n  COMPREHENSIVE MODEL EVALUATION\n" + "=" * 70)
-    LOGGER.info("Running in-memory benchmark + final artifact export...")
-
-    run_evaluation(
+    run_benchmark(
         backbone=args.backbone,
         checkpoint_path=Path(args.weights),
         stockfish_path=args.stockfish,
@@ -542,7 +510,6 @@ def main() -> None:
         workers=args.workers,
     )
 
-    LOGGER.info("=" * 70 + "\n  EVALUATION COMPLETE!\n" + "=" * 70)
     LOGGER.info("Final artifacts in: %s", output_dir)
 
 
