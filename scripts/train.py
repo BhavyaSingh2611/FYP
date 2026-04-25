@@ -48,11 +48,7 @@ def run_training(args):
     if args.head:
         model_overrides["head"] = args.head
 
-    model_cfg = (
-        settings.model.model_copy(update=model_overrides)
-        if model_overrides
-        else settings.model
-    )
+    model_cfg = settings.model.model_copy(update=model_overrides) if model_overrides else settings.model
 
     training_overrides = {}
 
@@ -75,9 +71,8 @@ def run_training(args):
     epoch_display = "∞ (continuous)" if continuous else str(training_cfg.epochs)
 
     banner = f"""\
-        {"=" * 60}
         {f"Run: {args.name}" if args.name else ""}
-        {"=" * 60}
+        {"-" * 60}
         Model:         {args.model} + {model_cfg.head} head ({model.name})
         Parameters:    {model.count_parameters():,}
         Database:      {db_path}
@@ -153,9 +148,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument("--model", type=str, required=True, choices=ALL_MODELS)
-    parser.add_argument(
-        "--head", type=str, default=None, choices=["policy", "value", "dual"]
-    )
+    parser.add_argument("--head", type=str, default=None, choices=["policy", "value", "dual"])
     parser.add_argument("--epochs", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument(
@@ -164,9 +157,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Run name; organises outputs under runs/<name>/",
     )
-    parser.add_argument(
-        "--output-dir", type=str, default=None, help="Override output directory"
-    )
+    parser.add_argument("--output-dir", type=str, default=None, help="Override output directory")
     parser.add_argument(
         "--database",
         type=str,
@@ -179,9 +170,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Limit training to N positions (default: use all)",
     )
-    parser.add_argument(
-        "--checkpoint", type=str, default=None, help="Resume from checkpoint"
-    )
+    parser.add_argument("--checkpoint", type=str, default=None, help="Resume from checkpoint")
     parser.add_argument(
         "--save-every",
         type=int,

@@ -17,6 +17,7 @@ from flask import Flask, jsonify, request, send_from_directory
 
 from src.agents.learning_agent import LearningAgent
 from src.agents.random_agent import RandomAgent
+from src.agents.uci_agent import UCIAgent
 from src.config import settings
 from src.device import get_device
 from src.models.factory import create_model, get_encoder_for_model
@@ -37,6 +38,8 @@ MODEL_NAMES = [
     "gcn",
     "gat",
 ]
+
+STOCKFISH_PATH = "/opt/homebrew/bin/stockfish"
 
 agent_cache: dict[str, LearningAgent] = {}
 games: dict[str, "GameSession"] = {}
@@ -65,23 +68,32 @@ def cors(response):
 
 def scan_runs() -> list[dict]:
     results = []
-    if not RUNS_DIR.exists():
+    models_dir = RUNS_DIR / "models"
+    if not models_dir.exists():
         return results
-    for run_dir in sorted(RUNS_DIR.iterdir()):
-        if not run_dir.is_dir() or run_dir.name.startswith("."):
+    for arch_dir in sorted(models_dir.iterdir()):
+        if not arch_dir.is_dir() or arch_dir.name.startswith("."):
             continue
-        models = [p.stem for p in sorted(run_dir.glob("*.pt")) if p.stem in MODEL_NAMES]
-        if models:
-            results.append({"name": run_dir.name, "models": models})
+        arch_name = arch_dir.name
+        if arch_name not in MODEL_NAMES:
+            continue
+        checkpoints = [p.stem for p in sorted(arch_dir.glob("**/*.pt"))]
+        if checkpoints:
+            results.append({"name": arch_name, "models": checkpoints})
     return results
 
 
 def load_agent(model_name: str, run_name: str) -> LearningAgent:
-    cache_key = f"{run_name}/{model_name}"
+    # Here run_name is the architecture (e.g. 'convnet')
+    # and model_name is the checkpoint (e.g. 'convnet_500M_e5')
+    arch_name = run_name
+    checkpoint_name = model_name
+
+    cache_key = f"{arch_name}/{checkpoint_name}"
     if cache_key in agent_cache:
         return agent_cache[cache_key]
 
-    checkpoint_path = RUNS_DIR / run_name / f"{model_name}.pt"
+    checkpoint_path = RUNS_DIR / "models" / arch_name / f"{checkpoint_name}.pt"
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
@@ -89,7 +101,7 @@ def load_agent(model_name: str, run_name: str) -> LearningAgent:
         update={"head": "dual"}
     )
 
-    model = create_model(model_name, model_cfg)
+    model = create_model(arch_name, model_cfg)
 
     ckpt = torch.load(checkpoint_path, map_location=DEVICE, weights_only=False)
     if "model_state_dict" in ckpt:
@@ -103,7 +115,7 @@ def load_agent(model_name: str, run_name: str) -> LearningAgent:
     model = model.to(DEVICE)
     model.eval()
 
-    encoder_factory = get_encoder_for_model(model_name)
+    encoder_factory = get_encoder_for_model(arch_name)
     encoder = encoder_factory() if callable(encoder_factory) else encoder_factory()
 
     agent = LearningAgent(
@@ -118,14 +130,14 @@ def load_agent(model_name: str, run_name: str) -> LearningAgent:
 
 class GameSession:
     def __init__(
-        self, game_id: str, agent, player_color: bool, model_name: str, run_name: str
+        self, game_id: str, white_agent, black_agent, white_info: dict, black_info: dict
     ):
         self.id = game_id
         self.board = chess.Board()
-        self.agent = agent
-        self.player_color = player_color
-        self.model_name = model_name
-        self.run_name = run_name
+        self.white_agent = white_agent
+        self.black_agent = black_agent
+        self.white_info = white_info
+        self.black_info = black_info
         self.move_history: list[dict] = []
         self.evals: list[dict | None] = []
         self.resigned = False
@@ -193,7 +205,8 @@ class GameSession:
         result = None
         if self.resigned:
             status = "resigned"
-            result = "0-1" if self.player_color == chess.WHITE else "1-0"
+            # Assume the player whose turn it is resigned
+            result = "0-1" if self.board.turn == chess.WHITE else "1-0"
         elif self.board.is_checkmate():
             status = "checkmate"
             result = "0-1" if self.board.turn == chess.WHITE else "1-0"
@@ -212,15 +225,14 @@ class GameSession:
             "id": self.id,
             "fen": self.board.fen(),
             "turn": "white" if self.board.turn == chess.WHITE else "black",
-            "player_color": "white" if self.player_color == chess.WHITE else "black",
+            "white_info": self.white_info,
+            "black_info": self.black_info,
             "legal_moves": legal_moves,
             "move_history": self.move_history,
             "status": status,
             "result": result,
             "is_check": self.board.is_check(),
             "last_move": last_move,
-            "model_name": self.model_name,
-            "run_name": self.run_name,
             "eval": self.evals[-1] if self.evals else self._evaluate(),
         }
 
@@ -240,12 +252,20 @@ class GameSession:
         )
 
     def is_player_turn(self) -> bool:
-        return self.board.turn == self.player_color
+        if self.board.turn == chess.WHITE:
+            return self.white_agent is None
+        else:
+            return self.black_agent is None
 
     def make_ai_move(self) -> str | None:
-        if self.board.is_game_over():
+        if self.board.is_game_over() or self.resigned:
             return None
-        move = self.agent.get_move(self.board)
+            
+        agent = self.white_agent if self.board.turn == chess.WHITE else self.black_agent
+        if agent is None:
+            return None
+            
+        move = agent.get_move(self.board)
         self.push_move(move)
         return move.uci()
 
@@ -258,33 +278,42 @@ def api_runs():
     return jsonify({"runs": scan_runs()})
 
 
+def get_agent(config: dict):
+    agent_type = config.get("type", "human")
+    if agent_type == "human":
+        return None
+    elif agent_type == "model":
+        model_name = config.get("model")
+        run_name = config.get("run")
+        if not model_name or not run_name:
+            raise ValueError("model and run are required for model agent")
+        if model_name == "random":
+            return RandomAgent()
+        return load_agent(model_name, run_name)
+    elif agent_type == "stockfish":
+        elo = config.get("elo", 1500)
+        return UCIAgent(engine_path=STOCKFISH_PATH, uci_elo=int(elo))
+    else:
+        raise ValueError(f"Unknown agent type: {agent_type}")
+
+
 @app.route("/api/game/new", methods=["POST"])
 def api_new_game():
     data = request.json or {}
-    model_name = data.get("model")
-    run_name = data.get("run")
-    player_color_str = data.get("player_color", "white")
-
-    if not model_name or not run_name:
-        return jsonify({"error": "model and run are required"}), 400
+    white_config = data.get("white", {"type": "human"})
+    black_config = data.get("black", {"type": "model", "model": "convnet", "run": "run_1"})
 
     try:
-        if model_name == "random":
-            agent = RandomAgent()
-        else:
-            agent = load_agent(model_name, run_name)
+        white_agent = get_agent(white_config)
+        black_agent = get_agent(black_config)
     except FileNotFoundError as exc:
         return jsonify({"error": str(exc)}), 404
     except Exception as exc:
-        return jsonify({"error": f"Failed to load model: {exc}"}), 500
+        return jsonify({"error": f"Failed to load agent: {exc}"}), 500
 
-    player_color = chess.WHITE if player_color_str == "white" else chess.BLACK
     game_id = str(uuid.uuid4())
-    session = GameSession(game_id, agent, player_color, model_name, run_name)
+    session = GameSession(game_id, white_agent, black_agent, white_config, black_config)
     games[game_id] = session
-
-    if not session.is_player_turn():
-        session.make_ai_move()
 
     return jsonify(session.to_dict())
 
@@ -322,8 +351,19 @@ def api_make_move(game_id):
 
     session.push_move(move)
 
-    if not session.board.is_game_over():
-        session.make_ai_move()
+    return jsonify(session.to_dict())
+
+@app.route("/api/game/<game_id>/bot_move", methods=["POST"])
+def api_bot_move(game_id):
+    session = games.get(game_id)
+    if not session:
+        return jsonify({"error": "Game not found"}), 404
+    if session.board.is_game_over() or session.resigned:
+        return jsonify({"error": "Game is over"}), 400
+    if session.is_player_turn():
+        return jsonify({"error": "It is a human's turn"}), 400
+
+    session.make_ai_move()
 
     return jsonify(session.to_dict())
 

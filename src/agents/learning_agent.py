@@ -47,7 +47,7 @@ class LearningAgent(ChessAgent):
         self.device = device
         self.temperature = temperature
         self.top_k = top_k
-        self._name = agent_name or f"Learning_{model.name}"
+        self._name = agent_name or f"{model.name}"
 
         # Set model to eval mode
         self.model.eval()

@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+#set -e
 cd "$(dirname "$0")/.."
 
 echo "=== Chess ML Arena ==="

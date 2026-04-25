@@ -41,9 +41,7 @@ if __name__ == "__main__":
     white_to_move = 0
     black_to_move = 0
 
-    for batch in tqdm(
-        pf.iter_batches(batch_size=BATCH_SIZE), total=num_batches, unit="batch"
-    ):
+    for batch in tqdm(pf.iter_batches(batch_size=BATCH_SIZE), total=num_batches, unit="batch"):
         n = batch.num_rows
         total_rows += n
 

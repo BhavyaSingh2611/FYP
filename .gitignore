@@ -7,6 +7,10 @@ pull_all.sh
 stockfish/**
 web/client/node_modules/**
 runs/models/**
+.agents/**
+skills-lock.json
+runs/evaluation
+SKILL*.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

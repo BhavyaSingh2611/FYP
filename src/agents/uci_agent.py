@@ -52,7 +52,7 @@ class UCIAgent:
         self.multipv = multipv
 
         self._engine: chess.engine.SimpleEngine | None = None
-        self._name = f"UCI_{self.engine_path.stem}"
+        self._name = f"{self.engine_path.stem}_{self.uci_elo}"
 
     @property
     def name(self) -> str:
@@ -241,9 +241,9 @@ class UCIAgent:
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self):
         self.close()
         return False
 
     def __repr__(self) -> str:
-        return f"UCIAgent('{self.engine_path.name}', depth={self.depth})"
+        return f"UCIAgent('{self.engine_path.name}')"

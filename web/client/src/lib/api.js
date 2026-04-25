@@ -14,10 +14,10 @@ export function getRuns() {
   return fetchJson(`${BASE}/api/runs`);
 }
 
-export function newGame(model, run, playerColor) {
+export function newGame(whiteConfig, blackConfig) {
   return fetchJson(`${BASE}/api/game/new`, {
     method: "POST",
-    body: JSON.stringify({ model, run, player_color: playerColor }),
+    body: JSON.stringify({ white: whiteConfig, black: blackConfig }),
   });
 }
 
@@ -28,6 +28,12 @@ export function makeMove(gameId, move) {
   });
 }
 
+export function makeBotMove(gameId) {
+  return fetchJson(`${BASE}/api/game/${gameId}/bot_move`, {
+    method: "POST",
+  });
+}
+
 export function resignGame(gameId) {
   return fetchJson(`${BASE}/api/game/${gameId}/resign`, { method: "POST" });
 }
@@ -35,3 +41,4 @@ export function resignGame(gameId) {
 export function getEval(gameId) {
   return fetchJson(`${BASE}/api/game/${gameId}/eval`);
 }
+
