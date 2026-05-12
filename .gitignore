@@ -11,6 +11,7 @@ runs/models/**
 skills-lock.json
 runs/evaluation
 SKILL*.md
+benchmarks/**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
