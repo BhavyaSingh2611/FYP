@@ -225,11 +225,17 @@ def main() -> None:
     puzzle_script = Path("scripts/benchmark_elo.py")
 
     for weights_path in models:
-        backbone = weights_path.parent.name
+        run_name = (
+            weights_path.parent.parent.name
+            if weights_path.parent.name == weights_path.parent.parent.name.split("_")[0]
+            or weights_path.parent.parent.name.startswith(weights_path.parent.name)
+            else weights_path.parent.name
+        )
+        backbone = args.backbone if args.backbone else weights_path.parent.name
         logging.info("=== Benchmarking %s (%s) ===", weights_path.name, backbone)
 
         if not args.skip_playing:
-            output_dir = Path(args.output_dir) / backbone / weights_path.stem
+            output_dir = Path(args.output_dir) / backbone / f"{run_name}_{weights_path.stem}"
             run_playing_benchmark(
                 python_exe=args.python,
                 benchmark_script=benchmark_script,
@@ -244,7 +250,7 @@ def main() -> None:
             )
 
         if not args.skip_puzzles:
-            puzzle_output_dir = Path(args.puzzle_output_dir) / backbone
+            puzzle_output_dir = Path(args.puzzle_output_dir) / backbone / f"{run_name}_{weights_path.stem}"
             run_puzzle_benchmark(
                 python_exe=args.python,
                 puzzle_script=puzzle_script,
