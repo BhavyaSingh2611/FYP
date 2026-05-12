@@ -26,13 +26,9 @@ EVAL_DEPTH = 18
 
 DIFFICULTY_LEVELS = [
     {"name": "Novice-1320", "elo": 1320},
-    {"name": "Casual-1500", "elo": 1500},
     {"name": "Club-1800", "elo": 1800},
-    {"name": "Strong-2000", "elo": 2000},
     {"name": "Expert-2300", "elo": 2300},
-    {"name": "Master-2500", "elo": 2500},
     {"name": "IM-2800", "elo": 2800},
-    {"name": "GM-3100", "elo": 3100},
     {"name": "Full-3200", "elo": 3200},
 ]
 

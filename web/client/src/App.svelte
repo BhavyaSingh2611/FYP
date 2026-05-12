@@ -45,6 +45,20 @@
       }
     : null;
 
+  // Determine which color the human is playing so we can orient the board correctly.
+  // If black is human (and white is not also human), flip the board so black is at bottom.
+  $: humanColor = (() => {
+    if (!game) return "white";
+    const whiteIsHuman = !game.white_info || game.white_info.type === "human";
+    const blackIsHuman = !game.black_info || game.black_info.type === "human";
+    if (blackIsHuman && !whiteIsHuman) return "black";
+    return "white"; // white-human, both-human, or bot-vs-bot → default white perspective
+  })();
+
+  // Labels: the player at bottom is always the human's color side; top is the opponent.
+  $: bottomColor = humanColor;
+  $: topColor = humanColor === "black" ? "white" : "black";
+
   function checkBotTurn() {
     if (game && game.status === "playing" && !error) {
       const isHuman =
@@ -145,9 +159,9 @@
           class="flex items-center gap-2.5 w-full px-2 py-1.5 bg-black/10 rounded-md min-h-[36px]"
         >
           <span class="text-sm font-semibold text-text-primary">
-            {getPlayerName(game.black_info, "Black")}
+            {getPlayerName(topColor === "black" ? game.black_info : game.white_info, topColor === "black" ? "Black" : "White")}
           </span>
-          {#if loading && game.turn === "black"}
+          {#if loading && game.turn === topColor}
             <span class="thinking-dot"></span>
           {/if}
         </div>
@@ -157,7 +171,7 @@
           legalMoves={game.legal_moves}
           lastMove={game.last_move}
           isCheck={game.is_check}
-          playerColor="white"
+          playerColor={humanColor}
           {isPlayerTurn}
           status={game.status}
           bestMove={showBestMove ? bestMoveSquares : null}
@@ -169,9 +183,9 @@
           class="flex items-center gap-2.5 w-full px-2 py-1.5 bg-black/10 rounded-md min-h-[36px]"
         >
           <span class="text-sm font-semibold text-text-primary">
-            {getPlayerName(game.white_info, "White")}
+            {getPlayerName(bottomColor === "black" ? game.black_info : game.white_info, bottomColor === "black" ? "Black" : "White")}
           </span>
-          {#if loading && game.turn === "white"}
+          {#if loading && game.turn === bottomColor}
             <span class="thinking-dot"></span>
           {/if}
         </div>
