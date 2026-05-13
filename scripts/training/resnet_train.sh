@@ -15,5 +15,3 @@ python3 scripts/train.py --database data/chess_eval.parquet --model resnet --epo
 
 echo "[resnet] Iteration 5/5: 1B samples, 1 epoch"
 python3 scripts/train.py --database data/chess_eval.parquet --model resnet --epochs 1 --num-samples 1000000000 --name resnet_1000M_e1
-
-echo "[resnet] All iterations completed."

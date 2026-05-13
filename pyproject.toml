@@ -21,6 +21,10 @@ dependencies = [
     "pyarrow",
     "torch_geometric",
     "duckdb",
+    "flask",
+    "pydantic",
+    "reportlab",
+    "requests",
 ]
 
 [project.optional-dependencies]

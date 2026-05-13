@@ -1,4 +1,3 @@
-# Models Module
 from .base import ChessModel as ChessModel
 from .factory import create_model as create_model
 from .heads import DualHead as DualHead

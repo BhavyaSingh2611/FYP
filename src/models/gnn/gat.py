@@ -21,9 +21,7 @@ except ImportError:
 class GATLayer(nn.Module):
     """Single GAT layer with multi-head attention and residual connection."""
 
-    def __init__(
-        self, in_channels: int, out_channels: int, heads: int = 4, edge_dim: int = 3
-    ):
+    def __init__(self, in_channels: int, out_channels: int, heads: int = 4, edge_dim: int = 3):
         super().__init__()
         if not HAS_TORCH_GEOMETRIC:
             raise ImportError("torch_geometric is required for GNN models")
@@ -77,7 +75,7 @@ class GAT(ChessModel):
         input_dim: int = 14,
         hidden_dim: int = 256,
         num_layers: int = 5,
-        edge_type: str = "hybrid",  # Kept for config compat, effectively unused
+        edge_type: str = "hybrid",
         heads: int = 4,
         dropout: float = 0.1,
     ):
@@ -87,9 +85,7 @@ class GAT(ChessModel):
             raise ImportError("torch_geometric is required for GNN models")
 
         if hidden_dim % heads != 0:
-            raise ValueError(
-                f"hidden_dim ({hidden_dim}) must be divisible by heads ({heads})"
-            )
+            raise ValueError(f"hidden_dim ({hidden_dim}) must be divisible by heads ({heads})")
 
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
@@ -98,12 +94,8 @@ class GAT(ChessModel):
         # Initial projection
         self.input_proj = nn.Linear(input_dim, hidden_dim)
 
-        # GAT layers
         self.gat_layers = nn.ModuleList(
-            [
-                GATLayer(hidden_dim, hidden_dim, heads=heads, edge_dim=3)
-                for _ in range(num_layers)
-            ]
+            [GATLayer(hidden_dim, hidden_dim, heads=heads, edge_dim=3) for _ in range(num_layers)]
         )
 
         # Side to move embedding
@@ -142,20 +134,22 @@ class GAT(ChessModel):
         elif node_features.dim() == 3:
             batch_size = node_features.size(0)
             node_features = node_features.view(-1, node_features.size(-1))
+
             batch = torch.arange(batch_size, device=node_features.device)
             batch = batch.unsqueeze(1).expand(-1, 64).reshape(-1)
             edge_indices, edge_attrs = [], []
+
             for i in range(batch_size):
                 edge_indices.append(edge_index + i * 64)
                 if edge_attr is not None:
                     edge_attrs.append(edge_attr)
+
             edge_index = torch.cat(edge_indices, dim=1)
+
             if edge_attrs:
                 edge_attr = torch.cat(edge_attrs, dim=0)
         else:
-            batch = torch.zeros(
-                node_features.size(0), dtype=torch.long, device=node_features.device
-            )
+            batch = torch.zeros(node_features.size(0), dtype=torch.long, device=node_features.device)
 
         h = self.input_proj(node_features)
         h = self.dropout(F.relu(h))

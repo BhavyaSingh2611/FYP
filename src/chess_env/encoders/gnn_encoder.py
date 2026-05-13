@@ -36,12 +36,15 @@ class GNNEncoder(StateEncoder):
         self._static_neighbors: list[list[int]] = [[] for _ in range(64)]
         self._static_edges: list[tuple[int, int]] = []
         self._static_dists: list[float] = []
+
         for sq in range(64):
             row, col = divmod(sq, 8)
+
             for dr in [-1, 0, 1]:
                 for dc in [-1, 0, 1]:
                     if dr == 0 and dc == 0:
                         continue
+
                     nr, nc = row + dr, col + dc
                     if 0 <= nr < 8 and 0 <= nc < 8:
                         target = nr * 8 + nc
@@ -60,9 +63,7 @@ class GNNEncoder(StateEncoder):
     def encode(self, board: chess.Board) -> dict:
         x = self._build_node_features(board)
 
-        legal_set: set[tuple[int, int]] = {
-            (m.from_square, m.to_square) for m in board.legal_moves
-        }
+        legal_set: set[tuple[int, int]] = {(m.from_square, m.to_square) for m in board.legal_moves}
 
         seen_edges: set[tuple[int, int]] = set()
         edges: list[list[int]] = []
@@ -73,21 +74,19 @@ class GNNEncoder(StateEncoder):
                 return
             seen_edges.add((u, v))
             legality = 1.0 if (u, v) in legal_set else 0.0
+
             edges.append([u, v])
             edge_attrs.append([dist, 1.0, legality])
 
-        for (sq, target), dist in zip(
-            self._static_edges, self._static_dists, strict=False
-        ):
+        for (sq, target), dist in zip(self._static_edges, self._static_dists, strict=False):
             add_edge(sq, target, dist)
 
         for sq in range(64):
-            attackers = board.attackers(chess.WHITE, sq) | board.attackers(
-                chess.BLACK, sq
-            )
+            attackers = board.attackers(chess.WHITE, sq) | board.attackers(chess.BLACK, sq)
             for attacker_sq in attackers:
                 u_row, u_col = divmod(attacker_sq, 8)
                 v_row, v_col = divmod(sq, 8)
+
                 dist = (abs(u_row - v_row) + abs(u_col - v_col)) / 14.0
                 add_edge(attacker_sq, sq, dist)
 
@@ -117,9 +116,7 @@ class GNNEncoder(StateEncoder):
             "x": x,
             "edge_index": torch.tensor(final_edges, dtype=torch.long).t().contiguous(),
             "edge_attr": torch.tensor(final_attrs, dtype=torch.float32),
-            "side_to_move": torch.tensor(
-                0 if board.turn == chess.WHITE else 1, dtype=torch.long
-            ),
+            "side_to_move": torch.tensor(0 if board.turn == chess.WHITE else 1, dtype=torch.long),
             "castling": torch.from_numpy(self._get_castling(board)),
         }
 

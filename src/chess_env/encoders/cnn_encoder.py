@@ -63,7 +63,6 @@ class CNNEncoder(StateEncoder):
         Returns:
             torch.Tensor of shape (18, 8, 8).
         """
-        # Initialize tensor
         tensor = np.zeros((self.NUM_CHANNELS, 8, 8), dtype=np.float32)
 
         # Determine perspective
@@ -108,7 +107,7 @@ class CNNEncoder(StateEncoder):
             tensor[16, row, col] = 1.0
 
         # Encode side to move (channel 17)
-        # User spec: 1.0 for White, -1.0 for Black
+        # 1.0 for White, -1.0 for Black
         side_val = 1.0 if board.turn == chess.WHITE else -1.0
         tensor[17, :, :] = side_val
 
@@ -140,11 +139,14 @@ class CNNEncoder(StateEncoder):
                     row = 7 - row
                     col = 7 - col
                 channel = piece_type_to_channel[piece.piece_type]
+
                 if piece.color != us:
                     channel += 6
+
                 tensor[b_idx, channel, row, col] = 1.0
 
             them = chess.BLACK if us == chess.WHITE else chess.WHITE
+
             if board.has_kingside_castling_rights(us):
                 tensor[b_idx, 12, :, :] = 1.0
             if board.has_queenside_castling_rights(us):
@@ -153,12 +155,15 @@ class CNNEncoder(StateEncoder):
                 tensor[b_idx, 14, :, :] = 1.0
             if board.has_queenside_castling_rights(them):
                 tensor[b_idx, 15, :, :] = 1.0
+
             if board.ep_square is not None:
                 row = 7 - (board.ep_square // 8)
                 col = board.ep_square % 8
+
                 if flip:
                     row = 7 - row
                     col = 7 - col
+
                 tensor[b_idx, 16, row, col] = 1.0
             tensor[b_idx, 17, :, :] = 1.0 if board.turn == chess.WHITE else -1.0
 

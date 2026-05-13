@@ -31,7 +31,6 @@ button, select, input {
   font-family: inherit;
 }
 
-/* Chess-specific colors that can't be done with utilities alone */
 .sq-light { background-color: #f0d9b5; }
 .sq-dark { background-color: #b58863; }
 .sq-light-last { background-color: #f7f769; }
@@ -43,12 +42,10 @@ button, select, input {
     rgba(255,0,0,.75) 0%, rgba(200,0,0,.35) 60%, transparent 100%) !important;
 }
 
-/* Eval colors used globally from App.svelte */
 .eval-good { color: #81b64c; }
 .eval-bad { color: #cc5454; }
 .eval-neutral { color: #888; }
 
-/* Toggle switch — tricky to do with pure Tailwind, keep as CSS */
 .switch {
   position: relative;
   display: inline-block;
@@ -85,7 +82,6 @@ input:checked + .slider:before {
   background-color: #fff;
 }
 
-/* Thinking dot animation */
 @keyframes pulse {
   from { opacity: 0.3; transform: scale(0.8); }
   to   { opacity: 1;   transform: scale(1.2); }

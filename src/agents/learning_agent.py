@@ -49,7 +49,6 @@ class LearningAgent(ChessAgent):
         self.top_k = top_k
         self._name = agent_name or f"{model.name}"
 
-        # Set model to eval mode
         self.model.eval()
 
     @property
@@ -69,6 +68,7 @@ class LearningAgent(ChessAgent):
                 x[k] = v.to(self.device)
             else:
                 x[k] = v.unsqueeze(0).to(self.device)
+
         return x
 
     @torch.no_grad()
@@ -87,7 +87,6 @@ class LearningAgent(ChessAgent):
         Returns:
             Selected move.
         """
-        # Encode the board
         encoded = self.encoder.encode(board)
         x = self._prepare_encoded(encoded)
         if not isinstance(encoded, (torch.Tensor, dict)):

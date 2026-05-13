@@ -1,7 +1,3 @@
-"""
-Device selection module with Apple Silicon MPS prioritization.
-"""
-
 import logging
 
 import torch

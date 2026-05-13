@@ -8,7 +8,7 @@
 
   const dispatch = createEventDispatcher();
 
-  const STOCKFISH_LEVELS = [1320, 1500, 1800, 2000, 2200, 2500, 3190];
+  const STOCKFISH_LEVELS = [1320, 1500, 1800, 2000, 2200, 2500, 3200];
 
   let whiteType = "human";
   let whiteRun = "";

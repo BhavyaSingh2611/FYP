@@ -2,8 +2,7 @@
 """
 Training script for chess models (supervised).
 
-Trains continuously by default (omit --epochs). A live control API
-starts on :5050 for adjusting hyperparameters mid-run.
+Trains continuously by default (omit --epochs).
 Stats are saved to <output>/training_stats.jsonl.
 
 Examples:
@@ -19,7 +18,7 @@ from src.config import settings
 from src.data.dataset import create_dataloader
 from src.device import get_device
 from src.models.factory import create_model, get_encoder_for_model
-from src.training import Trainer, start_control_server
+from src.training import Trainer
 
 LOGGER = logging.getLogger(__name__)
 
@@ -72,7 +71,7 @@ def run_training(args):
 
     banner = f"""\
         {f"Run: {args.name}" if args.name else ""}
-        {"-" * 60}
+
         Model:         {args.model} + {model_cfg.head} head ({model.name})
         Parameters:    {model.count_parameters():,}
         Database:      {db_path}
@@ -81,8 +80,7 @@ def run_training(args):
         Learning rate: {training_cfg.learning_rate}
         Samples:       {args.num_samples or "all"}
         Output:        {checkpoint_dir}
-        Control API:   http://0.0.0.0:{args.control_port}
-        {"=" * 60}"""
+ """
 
     LOGGER.info(banner)
 
@@ -117,8 +115,6 @@ def run_training(args):
         if trainer.try_auto_resume():
             LOGGER.info("Auto-resumed from epoch %s", trainer.epoch)
 
-    start_control_server(trainer, port=args.control_port)
-
     LOGGER.info("Starting training...")
     trainer.train(
         train_loader=train_loader,
@@ -136,15 +132,7 @@ def run_training(args):
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Train chess models (supervised)",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=(
-            "examples:\n"
-            "  python scripts/train.py --model resnet --name baseline\n"
-            "    → trains continuously, control API on :5050\n"
-            "  python scripts/train.py --model resnet --epochs 20 --name baseline\n"
-            "    → trains for 20 epochs then stops\n"
-        ),
+        description="Train chess models (supervised)", formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
     parser.add_argument("--model", type=str, required=True, choices=ALL_MODELS)
@@ -186,12 +174,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--continuous",
         action="store_true",
         help="Train continuously until dataset is exhausted or stopped",
-    )
-    parser.add_argument(
-        "--control-port",
-        type=int,
-        default=5050,
-        help="Port for the live hyperparameter control API (default: 5050)",
     )
 
     return parser

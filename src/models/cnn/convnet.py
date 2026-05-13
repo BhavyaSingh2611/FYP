@@ -52,7 +52,6 @@ class ConvNet(ChessModel):
         self.channels = channels
         self.num_layers = num_layers
 
-        # Build convolutional layers
         layers = []
 
         # First layer: input_channels -> channels

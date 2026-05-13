@@ -1,22 +1,20 @@
-#!/bin/bash
-#set -e
-cd "$(dirname "$0")/.."
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "=== Chess ML Arena ==="
-echo ""
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+VENV_PY="$ROOT_DIR/.venv/bin/python"
 
-# Install Flask
-echo "→ Installing Flask..."
-.venv/bin/pip install flask -q
+if [ ! -x "$VENV_PY" ]; then
+  echo "Virtual environment not found. Run setup.sh first."
+  exit 1
+fi
 
-# Build frontend
-echo "→ Building frontend..."
-cd web/client
+echo "Building frontend"
+
+cd "$ROOT_DIR/web/client"
 npm install --silent
 npm run build
-cd ../..
+cd "$ROOT_DIR"
 
-echo ""
-echo "→ Starting server..."
-echo ""
-.venv/bin/python web/server.py
+echo "Starting server"
+"$VENV_PY" web/server.py

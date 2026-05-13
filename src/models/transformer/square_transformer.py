@@ -1,5 +1,5 @@
 """
-Square-based Transformer (ChessFormer) - 64 fixed tokens.
+Square-based Transformer - 64 fixed tokens.
 """
 
 from typing import cast
@@ -35,9 +35,7 @@ class TransformerBlock(nn.Module):
         super().__init__()
 
         self.norm1 = nn.LayerNorm(embed_dim)
-        self.attn = nn.MultiheadAttention(
-            embed_dim, num_heads, dropout=dropout, batch_first=True
-        )
+        self.attn = nn.MultiheadAttention(embed_dim, num_heads, dropout=dropout, batch_first=True)
         self.norm2 = nn.LayerNorm(embed_dim)
 
         mlp_dim = int(embed_dim * mlp_ratio)
@@ -124,18 +122,11 @@ class SquareTransformer(ChessModel):
         # Coordinate projection
         self.coord_proj = nn.Linear(2, embed_dim)
 
-        # Transformer layers
         self.transformer_layers = nn.ModuleList(
-            [
-                TransformerBlock(embed_dim, num_heads, dropout=dropout)
-                for _ in range(num_layers)
-            ]
+            [TransformerBlock(embed_dim, num_heads, dropout=dropout) for _ in range(num_layers)]
         )
 
-        # Final layer norm
         self.norm = nn.LayerNorm(embed_dim)
-
-        # Dropout
         self.dropout = nn.Dropout(dropout)
 
         self.output_dim = embed_dim

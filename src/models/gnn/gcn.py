@@ -60,7 +60,7 @@ class GCN(ChessModel):
         - Global mean pooling over all nodes
         - Output dimension: hidden_dim
 
-    Note: GCN uses the graph structure provided by the encoder (Adjacency).
+    Note: GCN uses the graph structure provided by the encoder.
     """
 
     def __init__(
@@ -68,7 +68,7 @@ class GCN(ChessModel):
         input_dim: int = 14,
         hidden_dim: int = 256,
         num_layers: int = 6,
-        edge_type: str = "hybrid",  # Kept for compat
+        edge_type: str = "hybrid",
         dropout: float = 0.1,
     ):
         super().__init__()
@@ -82,10 +82,7 @@ class GCN(ChessModel):
         # Initial projection
         self.input_proj = nn.Linear(input_dim, hidden_dim)
 
-        # GCN layers
-        self.gcn_layers = nn.ModuleList(
-            [GCNLayer(hidden_dim, hidden_dim) for _ in range(num_layers)]
-        )
+        self.gcn_layers = nn.ModuleList([GCNLayer(hidden_dim, hidden_dim) for _ in range(num_layers)])
 
         # Side to move embedding
         self.side_embedding = nn.Embedding(2, hidden_dim)
@@ -93,7 +90,6 @@ class GCN(ChessModel):
         # Castling projection
         self.castling_proj = nn.Linear(4, hidden_dim)
 
-        # Final projection
         self.output_proj = nn.Linear(hidden_dim, hidden_dim)
 
         self.dropout = nn.Dropout(dropout)
@@ -118,16 +114,17 @@ class GCN(ChessModel):
         elif node_features.dim() == 3:
             batch_size = node_features.size(0)
             node_features = node_features.view(-1, node_features.size(-1))
+
             batch = torch.arange(batch_size, device=node_features.device)
             batch = batch.unsqueeze(1).expand(-1, 64).reshape(-1)
+
             edge_indices = []
+
             for i in range(batch_size):
                 edge_indices.append(edge_index + i * 64)
             edge_index = torch.cat(edge_indices, dim=1)
         else:
-            batch = torch.zeros(
-                node_features.size(0), dtype=torch.long, device=node_features.device
-            )
+            batch = torch.zeros(node_features.size(0), dtype=torch.long, device=node_features.device)
 
         h = self.input_proj(node_features)
         h = self.dropout(F.relu(h))

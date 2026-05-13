@@ -1,4 +1,3 @@
-# Agents Module
 from .base import ChessAgent as ChessAgent
 from .learning_agent import LearningAgent as LearningAgent
 from .random_agent import RandomAgent as RandomAgent

@@ -47,6 +47,7 @@ class RandomAgent(ChessAgent):
             Random legal move.
         """
         legal_moves = list(board.legal_moves)
+
         return self._rng.choice(legal_moves)
 
     def get_move_distribution(
@@ -60,9 +61,14 @@ class RandomAgent(ChessAgent):
         """
         legal_moves = list(board.legal_moves)
         selected = self._rng.sample(legal_moves, min(num_moves, len(legal_moves)))
+
         return [{"move": m, "score": 0} for m in selected]
 
     def reset(self) -> None:
         """Reset the random generator with the original seed."""
         if self._seed is not None:
             self._rng = random.Random(self._seed)
+
+    def close(self) -> None:
+        """Clean up resources (if any)."""
+        pass

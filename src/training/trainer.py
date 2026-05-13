@@ -43,17 +43,6 @@ def _send_ntfy(title: str, message: str, priority: str = "default") -> None:
 
 
 class Trainer:
-    """
-    Training loop for chess models.
-
-    Features:
-        - Support for all head types (policy, value, dual)
-        - Learning rate scheduling (driven by config)
-        - Checkpoint saving/loading
-        - Mixed-precision (float16) training for MPS / CUDA
-        - torch.compile support
-    """
-
     def __init__(
         self,
         model: ChessModel,
@@ -66,8 +55,6 @@ class Trainer:
         self.head_type = model_cfg.head
         self.device = device
 
-        # ---- Mixed precision ----
-
         self.use_amp = device.type in ("cuda", "mps")
 
         if device.type == "cuda" and torch.cuda.is_bf16_supported():
@@ -76,8 +63,6 @@ class Trainer:
             self.amp_dtype = torch.float16
         else:
             self.amp_dtype = torch.float32
-
-        # ---- Model setup ----
 
         self.model = model.to(device)
         arch = type(model).__name__
@@ -89,8 +74,6 @@ class Trainer:
         if arch not in _GNN_MODELS and hasattr(torch, "compile"):
             with contextlib.suppress(Exception):
                 self.model = cast(ChessModel, torch.compile(self.model))
-
-        # ---- Loss & optimiser ----
 
         self.loss_fn = create_loss(
             head_type=self.head_type,
@@ -104,11 +87,8 @@ class Trainer:
             weight_decay=training_cfg.weight_decay,
         )
 
-        # Grad scaler: only for float16 AMP on CUDA
         use_scaler = self.use_amp and device.type == "cuda" and self.amp_dtype != torch.bfloat16
         self.scaler = torch.amp.grad_scaler.GradScaler(device=device.type, enabled=use_scaler)
-
-        # ---- State ----
 
         self.scheduler: StepLR | CosineAnnealingLR | None = None
         self.epoch = 0
@@ -122,10 +102,6 @@ class Trainer:
 
         self.stats_history: list[dict] = []
         self._stats_path = (self.checkpoint_dir / "training_stats.jsonl") if self.checkpoint_dir else None
-
-    # ------------------------------------------------------------------
-    # Stats persistence
-    # ------------------------------------------------------------------
 
     def _save_stats_entry(
         self,
@@ -162,10 +138,6 @@ class Trainer:
         if self._stats_path:
             with open(self._stats_path, "a") as f:
                 f.write(json.dumps(entry) + "\n")
-
-    # ------------------------------------------------------------------
-    # Shared helpers
-    # ------------------------------------------------------------------
 
     def _prepare_inputs(self, inputs: torch.Tensor | dict) -> torch.Tensor | dict:
         """Move inputs to device, applying channels-last for CNN tensors."""
@@ -230,10 +202,6 @@ class Trainer:
 
         return metrics
 
-    # ------------------------------------------------------------------
-    # Single-epoch training (pure compute, no logging)
-    # ------------------------------------------------------------------
-
     def _run_epoch(self, dataloader: DataLoader, epoch: int) -> dict:
         """Run one training epoch. Returns metrics dict."""
         self.model.train()
@@ -290,10 +258,6 @@ class Trainer:
 
         return self._build_metrics(total_loss, policy_sum, value_sum, num_batches)
 
-    # ------------------------------------------------------------------
-    # Evaluation (pure compute, no logging)
-    # ------------------------------------------------------------------
-
     @torch.no_grad()
     def evaluate(self, dataloader: DataLoader) -> dict:
         """Evaluate the model. Returns metrics dict."""
@@ -326,37 +290,19 @@ class Trainer:
 
         return self._build_metrics(total_loss, policy_sum, value_sum, num_batches, correct, total)
 
-    # ------------------------------------------------------------------
-    # Full training loop (orchestration + logging)
-    # ------------------------------------------------------------------
-
     def train(
         self,
         train_loader: DataLoader,
         val_loader: DataLoader | None = None,
         continuous: bool = False,
     ) -> dict:
-        """
-        Full training loop.  All hyper-parameters come from ``self.training_cfg``.
-
-        Args:
-            train_loader: Training data loader.
-            val_loader: Validation data loader (optional).
-            continuous: If True, train indefinitely (ignoring ``epochs``)
-                until the dataset is exhausted or a stop signal is received.
-
-        Returns:
-            Training history.
-        """
         cfg = self.training_cfg
         sched_cfg = cfg.lr_scheduler
         epochs = cfg.epochs
         model_name = getattr(self.model, "name", type(self.model).__name__)
 
         if continuous:
-            LOGGER.info("Continuous training mode — will run until data is exhausted or stopped")
-
-        # ---- Signal handling ----
+            LOGGER.info("Continuous training mode - will run until data is exhausted or stopped")
 
         orig_sigterm = signal.getsignal(signal.SIGTERM)
         orig_sigint = signal.getsignal(signal.SIGINT)
@@ -395,8 +341,6 @@ class Trainer:
         signal.signal(signal.SIGTERM, _handle_stop)
         signal.signal(signal.SIGINT, _handle_stop)
 
-        # ---- Scheduler setup (skipped in continuous mode) ----
-
         if not continuous:
             if sched_cfg.type == "step":
                 self.scheduler = StepLR(
@@ -417,8 +361,6 @@ class Trainer:
             "val_accuracy": [],
         }
         start_time = time.time()
-
-        # ---- Epoch loop ----
 
         start_epoch = self.epoch + 1
         epoch = start_epoch - 1
@@ -443,10 +385,8 @@ class Trainer:
                 train_metrics = self._run_epoch(train_loader, epoch)
                 epoch_time = time.time() - epoch_start
 
-                # In continuous mode, an epoch with 0 batches means
-                # the dataset iterator is exhausted.
                 if math.isnan(train_metrics["loss"]):
-                    LOGGER.info("Dataset exhausted (NaN loss) — stopping")
+                    LOGGER.info("Dataset exhausted (NaN loss) - stopping")
                     break
 
                 history["train_loss"].append(train_metrics["loss"])
@@ -500,8 +440,6 @@ class Trainer:
             signal.signal(signal.SIGTERM, orig_sigterm)
             signal.signal(signal.SIGINT, orig_sigint)
 
-        # ---- Finish ----
-
         total_time = time.time() - start_time
 
         if forced_immediate_stop:
@@ -521,10 +459,6 @@ class Trainer:
 
         return history
 
-    # ------------------------------------------------------------------
-    # Logging
-    # ------------------------------------------------------------------
-
     def _log_epoch(
         self,
         epoch: int,
@@ -534,9 +468,6 @@ class Trainer:
         model_name: str,
         is_best: bool = False,
     ) -> None:
-        """Log epoch summary and send push notification."""
-
-        # Console / LOGGER
         lines = [
             f"Epoch {epoch}/{epochs}",
             f"  Train Loss: {train_metrics['loss']:.4f}",
@@ -572,10 +503,6 @@ class Trainer:
             title=f"{model_name} - Epoch {epoch}/{epochs}",
             message="\n".join(ntfy_lines),
         )
-
-    # ------------------------------------------------------------------
-    # Checkpointing
-    # ------------------------------------------------------------------
 
     def save_checkpoint(self, filename: str) -> None:
         """Save training checkpoint."""

@@ -129,7 +129,7 @@ def main():
     empirical_win_rates = []
     actual_evaluated_elos = []
 
-    logging.info(f"Starting Stratified Sampling. Brackets: {args.min_elo} to {args.max_elo} (Step {args.step_elo}).")
+    logging.info(f"Brackets: {args.min_elo} to {args.max_elo} (Step {args.step_elo}).")
 
     for bracket in brackets:
         lower_bound = bracket - args.step_elo / 2.0
@@ -150,7 +150,7 @@ def main():
             continue
 
         successes = 0
-        for puzzle_id, fen, moves, rating in results:
+        for _puzzle_id, fen, moves, _rating in results:
             outcome = evaluate_puzzle(agent, fen, moves)
             successes += outcome
 
@@ -186,7 +186,6 @@ def main():
             popt, _ = optimize.curve_fit(logistic_function, x_data, y_data, p0=[-0.01, 1500])
             estimated_elo = popt[1]
             k_val = popt[0]
-            logging.info("=== Final Result ===")
             logging.info(f"Estimated 50% Puzzle Elo: {estimated_elo:.1f}")
             logging.info(f"Logistic falloff param k:  {k_val:.4f}")
         except RuntimeError:

@@ -23,9 +23,7 @@ class PieceTransformerBlock(nn.Module):
         super().__init__()
 
         self.norm1 = nn.LayerNorm(embed_dim)
-        self.attn = nn.MultiheadAttention(
-            embed_dim, num_heads, dropout=dropout, batch_first=True
-        )
+        self.attn = nn.MultiheadAttention(embed_dim, num_heads, dropout=dropout, batch_first=True)
         self.norm2 = nn.LayerNorm(embed_dim)
 
         mlp_dim = int(embed_dim * mlp_ratio)
@@ -44,9 +42,7 @@ class PieceTransformerBlock(nn.Module):
     ) -> torch.Tensor:
         # Self-attention with pre-norm
         x_norm = self.norm1(x)
-        attn_out, _ = self.attn(
-            x_norm, x_norm, x_norm, key_padding_mask=key_padding_mask
-        )
+        attn_out, _ = self.attn(x_norm, x_norm, x_norm, key_padding_mask=key_padding_mask)
         x = x + attn_out
 
         # MLP with pre-norm
@@ -57,7 +53,7 @@ class PieceTransformerBlock(nn.Module):
 
 class PieceTransformer(ChessModel):
     """
-    Piece-based ChessFormer with variable-length sequence (≤32 pieces).
+    Piece-based Transformer with variable-length sequence (≤32 pieces).
 
     Architecture:
         - Piece type embedding (12 vocab: 6 pieces × 2 colors)
@@ -115,18 +111,11 @@ class PieceTransformer(ChessModel):
         # Castling embedding
         self.castling_proj = nn.Linear(4, embed_dim)
 
-        # Transformer layers
         self.transformer_layers = nn.ModuleList(
-            [
-                PieceTransformerBlock(embed_dim, num_heads, dropout=dropout)
-                for _ in range(num_layers)
-            ]
+            [PieceTransformerBlock(embed_dim, num_heads, dropout=dropout) for _ in range(num_layers)]
         )
 
-        # Final layer norm
         self.norm = nn.LayerNorm(embed_dim)
-
-        # Dropout
         self.dropout = nn.Dropout(dropout)
 
         self.output_dim = embed_dim
@@ -163,10 +152,8 @@ class PieceTransformer(ChessModel):
         batch_size = tokens.size(0)
         device = tokens.device
 
-        # Piece embeddings
         piece_emb = self.piece_embedding(tokens)  # (B, 32, D)
 
-        # Add square position embeddings
         pos_emb = self.pos_embedding(positions)  # (B, 32, D)
 
         # Add sequence position embeddings (token order: 1-32)
@@ -201,14 +188,12 @@ class PieceTransformer(ChessModel):
         key_padding_mask = torch.cat([cls_mask, 1 - attention_mask], dim=1)  # (B, 33)
         key_padding_mask = key_padding_mask.bool()
 
-        # Transformer layers
         hidden = embeddings
         for layer in self.transformer_layers:
             hidden = layer(hidden, key_padding_mask=key_padding_mask)
 
         hidden = self.norm(hidden)
 
-        # CLS token output
         output = hidden[:, 0]  # (B, D)
 
         return cast(torch.Tensor, output)

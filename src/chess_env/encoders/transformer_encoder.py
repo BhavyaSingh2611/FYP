@@ -84,7 +84,6 @@ class SquareTokenizer:
             col = i % 8
             coords[i] = [row / 7.0, col / 7.0]
 
-        # Attention mask (all ones for square tokenizer)
         attention_mask = np.ones(64, dtype=np.float32)
 
         # Side to move
@@ -168,14 +167,8 @@ class PieceTokenizer:
         for color in colors:
             for square in chess.SQUARES:
                 piece = board.piece_at(square)
-                if (
-                    piece is not None
-                    and piece.color == color
-                    and piece_idx < self.MAX_PIECES
-                ):
-                    tokens[piece_idx] = self.PIECE_TO_TOKEN[
-                        (piece.piece_type, piece.color)
-                    ]
+                if piece is not None and piece.color == color and piece_idx < self.MAX_PIECES:
+                    tokens[piece_idx] = self.PIECE_TO_TOKEN[(piece.piece_type, piece.color)]
                     positions[piece_idx] = square
                     attention_mask[piece_idx] = 1.0
                     piece_idx += 1

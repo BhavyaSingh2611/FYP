@@ -1,4 +1,4 @@
-# Chess ML Framework
+# Searchless Chess
 
 A framework for training and evaluating chess-playing neural networks across multiple architectures: CNNs, Transformers, and Graph Neural Networks.
 
@@ -30,98 +30,97 @@ pip install -e ".[dev]"
 
 All models support three head types: `policy` (move prediction), `value` (position evaluation), or `dual` (both).
 
-## Training
+## Script Execution
 
-### Supervised Training
-
-Train a model on labelled positions from Parquet files:
+All scripts are designed to be run from the **root directory** of the project, not from within the `scripts/` folder. This ensures the correct resolution of modules and relative paths for data and checkpoints.
 
 ```bash
-# Train a ResNet for 20 epochs
-python scripts/train.py supervised --model resnet --epochs 20 --name baseline
+# Good
+./scripts/benchmark/resnet_benchmark.sh
+python scripts/train.py --model resnet --name baseline
 
-# Train on a specific dataset, limiting to 100k positions
-python scripts/train.py supervised --model convnet --epochs 10 \
-  --database data/training.parquet --num-samples 100000 --name small_run
-
-# Train on a directory of Parquet files
-python scripts/train.py supervised --model square_transformer \
-  --database data/ --epochs 30 --name transformer_run
+# Bad (will cause issues)
+cd scripts/benchmark
+./resnet_benchmark.sh
 ```
 
-### Self-Play (Reinforcement Learning)
+## Training
 
-Improve a pre-trained model via MCTS self-play:
+Train a model on labelled positions from Parquet files (Supervised Training):
 
 ```bash
-# Run 5 iterations of self-play with 20 games each
-python scripts/train.py self-play --model resnet --games 20 --iterations 5 --name rl_run
+# We provide shell scripts to run training schedules for each model:
+./scripts/training/resnet_train.sh
 
-# Quick test to verify self-play works
-python scripts/train.py self-play --model convnet --dry-run --name test
+# Or you can use the train script manually:
+python scripts/train.py --model resnet --epochs 20 --name baseline
+python scripts/train.py --model resnet --name baseline  # Train continuously
 ```
 
 ### Device Selection
 
-The framework auto-detects the best available device (CUDA > MPS > CPU). Override with:
-
-```bash
-python scripts/train.py --device cpu supervised --model resnet --epochs 5
-```
+The framework auto-detects the best available device (CUDA > MPS > CPU).
 
 ## Benchmarking
 
-Benchmark models against Stockfish with move-by-move evaluation:
+We recommend using the provided benchmark run scripts for the respective model to maintain the same setup as initially tested. There are scripts for both Stockfish benchmarking and Puzzle benchmarking:
+
+### Stockfish Benchmarking
 
 ```bash
-# Benchmark all models from a named run
-python scripts/benchmark.py --name baseline --games 4
+# Benchmark a model against Stockfish using a predefined test script
+./scripts/benchmark/resnet_benchmark.sh
 
-# Benchmark a single model
-python scripts/benchmark.py --model resnet --name baseline --games 6
-
-# Benchmark with a specific checkpoint
-python scripts/benchmark.py --model convnet --checkpoint path/to/model.pt --games 4
-
-# Adjust Stockfish difficulty
-python scripts/benchmark.py --name baseline --opponent-depth 3 --skill-level 5
+# Or run manually with a specific checkpoint
+python scripts/benchmark.py --model resnet --checkpoint runs/models/resnet/resnet_100M_e15.pt
 ```
 
-Benchmark outputs include:
-- PGN files (viewable in Lichess, Chess.com, or any chess software)
-- Evaluation flow charts per game
-- Comparison plots across models
-- Markdown report with results summary
+### Puzzle Benchmarking
+
+Evaluate a model's Elo using Lichess Puzzles via Stratified Sampling:
+
+```bash
+# Recommended: use the predefined script for a model
+./scripts/puzzle_benchmark/resnet_puzzle_benchmark.sh
+
+# Or run manually
+python scripts/puzzle_benchmark.py --backbone resnet --weights runs/models/resnet/resnet_100M_e15.pt
+```
 
 ## Run Organisation
 
-Using `--name` organises all outputs under a single directory:
+Outputs (checkpoints, benchmarks, PGNs) are typically organised under directories within `runs/`:
+
+Please use `python3 scripts/download_models.sh` to populate the runs/models directory
 
 ```
-runs/<name>/
-├── training/
-│   ├── convnet/          # checkpoints, metrics
-│   ├── resnet/
-│   └── ...
-├── self_play/            # self-play checkpoints and logs
-└── benchmark/
-    ├── pgn/              # individual PGN files
-    ├── figures/          # evaluation charts
-    ├── all_games.pgn     # combined PGN
-    └── detailed_results.json
+runs/
+├── models/                       # Downloaded checkpoints
+├── <name>/
+│   ├── training/<model>/         # checkpoints, metrics
+│   └── benchmark/                # benchmark data, PGNs
+└── ...
 ```
 
 ## Project Structure
 
 ```
 ├── config/
-│   └── default.yaml              # default training/model configuration
+│   └── settings.yaml             # default training/model configuration
+├── data/
+│   ├── puzzles/                  # Lichess puzzle parquet dataset
+│   └── README.md
 ├── scripts/
-│   ├── train.py                  # unified training CLI (supervised + self-play)
-│   └── benchmark.py              # benchmark models against Stockfish
+│   ├── benchmark/                # Stockfish benchmark shell scripts
+│   ├── puzzle_benchmark/         # Puzzle benchmark shell scripts
+│   ├── training/                 # Training schedule shell scripts
+│   ├── benchmark.py              # stockfish benchmark script
+│   ├── download_models.sh        # download pre-trained checkpoints
+│   ├── puzzle_benchmark.py       # puzzle evaluation script
+│   └── train.py                  # unified training CLI
 ├── src/
 │   ├── chess_env/
-│   │   ├── board_wrapper.py      # board state wrapper, UCI move indexing
+│   │   ├── move_index.py         # UCI move indexing
 │   │   └── encoders/             # CNNEncoder, TransformerEncoder, GNNEncoder
 │   ├── models/
 │   │   ├── base.py               # ChessModel abstract base class
@@ -133,17 +132,19 @@ runs/<name>/
 │   ├── agents/
 │   │   ├── base.py               # ChessAgent abstract base class
 │   │   ├── learning_agent.py     # neural network agent
-│   │   ├── mcts_agent.py         # MCTS with neural network guidance
 │   │   ├── uci_agent.py          # Stockfish/UCI engine wrapper
 │   │   └── random_agent.py       # random move baseline
 │   ├── training/
 │   │   ├── trainer.py            # training loop
-│   │   ├── losses.py             # policy, value, and dual losses
-│   │   └── self_play.py          # MCTS self-play data generation
+│   │   └── losses.py             # policy, value, and dual losses
 │   ├── data/
 │   │   └── dataset.py            # Parquet-based streaming dataset
 │   ├── config.py                 # YAML config loader (dataclass-based)
 │   └── device.py                 # device auto-detection (CUDA > MPS > CPU)
+├── web/
+│   ├── client/                   # Svelte frontend
+│   ├── server.py                 # Flask server
+│   └── start.sh                  # Web app launch script
 ├── setup.sh                      # venv creation and install script
 ├── pyproject.toml
 └── requirements.txt
@@ -151,17 +152,9 @@ runs/<name>/
 
 ## Configuration
 
-Model and training parameters are set in `config/default.yaml` and can be overridden via CLI flags. Key settings:
+Model and training parameters are set in `config/settings.yaml` and can be overridden via CLI flags. Key settings:
 
 - **Model**: backbone architecture, head type, layer counts, embedding dimensions
 - **Training**: batch size, learning rate, weight decay, LR scheduler
 - **Hardware**: device selection, data loader workers
 
-## Requirements
-
-- Python 3.10+
-- PyTorch
-- python-chess
-- pyarrow (for Parquet data loading)
-- torch_geometric (for GNN models)
-- Stockfish binary (for benchmarking)

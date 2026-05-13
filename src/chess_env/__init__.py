@@ -1,4 +1,3 @@
-# Chess Environment Module
 from .encoders import CNNEncoder as CNNEncoder
 from .encoders import GNNEncoder as GNNEncoder
 from .encoders import TransformerEncoder as TransformerEncoder

@@ -15,5 +15,3 @@ python3 scripts/train.py --database data/chess_eval.parquet --model piece_transf
 
 echo "[piece_transformer] Iteration 5/5: 1B samples, 1 epoch"
 python3 scripts/train.py --database data/chess_eval.parquet --model piece_transformer --epochs 1 --num-samples 1000000000 --name piece_transformer_1000M_e1
-
-echo "[piece_transformer] All iterations completed."

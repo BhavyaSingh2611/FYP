@@ -59,6 +59,7 @@
   $: bottomColor = humanColor;
   $: topColor = humanColor === "black" ? "white" : "black";
 
+  // hacky fix to enable bot vs bot games, and not be stuck on the first move waiting for a bot to play
   function checkBotTurn() {
     if (game && game.status === "playing" && !error) {
       const isHuman =
@@ -66,6 +67,7 @@
           (!game.white_info || game.white_info.type === "human")) ||
         (game.turn === "black" &&
           (!game.black_info || game.black_info.type === "human"));
+
       if (!isHuman) setTimeout(triggerBotMove, 50);
     }
   }
@@ -90,7 +92,7 @@
       const data = await getRuns();
       runs = data.runs;
     } catch (e) {
-      error = "Failed to connect to server — is it running?";
+      error = "Failed to connect to server - is it running?";
     }
   }
 
@@ -142,24 +144,23 @@
 {#if !game}
   <Setup {runs} {loading} {error} on:start={handleSetupStart} />
 {:else}
-  <!-- ===== GAME SCREEN ===== -->
   <div class="flex-1 flex gap-6 justify-center items-start p-7 flex-wrap">
-    <!-- Board area: eval bar + player names + board -->
     <div class="flex items-stretch gap-3">
       {#if showEvalBar}
-        <!-- eval bar padded to align with the board (skip player-name rows ~36px each + 8px gap) -->
         <div class="flex" style="padding-top: 44px; padding-bottom: 44px;">
           <EvalBar score={currentEval?.score} mate={currentEval?.mate} />
         </div>
       {/if}
 
       <div class="flex flex-col items-center gap-2">
-        <!-- Opponent name (top) -->
         <div
           class="flex items-center gap-2.5 w-full px-2 py-1.5 bg-black/10 rounded-md min-h-[36px]"
         >
           <span class="text-sm font-semibold text-text-primary">
-            {getPlayerName(topColor === "black" ? game.black_info : game.white_info, topColor === "black" ? "Black" : "White")}
+            {getPlayerName(
+              topColor === "black" ? game.black_info : game.white_info,
+              topColor === "black" ? "Black" : "White",
+            )}
           </span>
           {#if loading && game.turn === topColor}
             <span class="thinking-dot"></span>
@@ -178,12 +179,14 @@
           on:move={handleMove}
         />
 
-        <!-- Player name (bottom) -->
         <div
           class="flex items-center gap-2.5 w-full px-2 py-1.5 bg-black/10 rounded-md min-h-[36px]"
         >
           <span class="text-sm font-semibold text-text-primary">
-            {getPlayerName(bottomColor === "black" ? game.black_info : game.white_info, bottomColor === "black" ? "Black" : "White")}
+            {getPlayerName(
+              bottomColor === "black" ? game.black_info : game.white_info,
+              bottomColor === "black" ? "Black" : "White",
+            )}
           </span>
           {#if loading && game.turn === bottomColor}
             <span class="thinking-dot"></span>
@@ -192,10 +195,6 @@
       </div>
     </div>
 
-    <!--
-      Sidebar: offset top so it aligns with the board itself, not the opponent name.
-      Player-name row = min-h-[36px] + gap-2 (8px) = 44px.
-    -->
     <div
       class="mt-[44px] w-80 min-w-[280px] bg-bg-card border border-border rounded-lg flex flex-col overflow-hidden shadow-lg self-start"
     >
@@ -205,7 +204,6 @@
         Match Info
       </div>
 
-      <!-- Status -->
       <div
         class="px-4 py-3.5 text-sm font-semibold border-b border-border text-center bg-black/10"
         class:text-danger={gameOver}
@@ -220,17 +218,16 @@
             Waiting…
           {/if}
         {:else if game.status === "checkmate"}
-          Checkmate — {game.result === "1-0" ? "White" : "Black"} wins
+          Checkmate - {game.result === "1-0" ? "White" : "Black"} wins
         {:else if game.status === "stalemate"}
-          Stalemate — Draw
+          Stalemate - Draw
         {:else if game.status === "draw"}
-          Draw — {game.result}
+          Draw - {game.result}
         {:else if game.status === "resigned"}
-          Resigned — {game.result}
+          Resigned - {game.result}
         {/if}
       </div>
 
-      <!-- Toggles -->
       <div
         class="flex items-center justify-between px-4 py-3 border-b border-border"
       >
@@ -262,7 +259,6 @@
         >
       </div>
 
-      <!-- Engine lines -->
       {#if showEngineLines && currentEval?.lines?.length}
         <div class="border-b border-border bg-bg-secondary">
           <div class="px-4 py-2 border-b border-border">
@@ -297,7 +293,6 @@
         </div>
       {/if}
 
-      <!-- Move list -->
       <div class="flex-1 overflow-y-auto max-h-[380px] py-2 bg-bg-card">
         {#if pairedMoves.length === 0}
           <p class="px-5 py-5 text-center text-text-secondary italic text-sm">
@@ -305,10 +300,6 @@
           </p>
         {/if}
         {#each pairedMoves as pair, i}
-          <!--
-            Columns: move# | white SAN | white eval | black SAN | black eval
-            Wider eval columns (64px) so "+2.3" doesn't bleed into the next SAN.
-          -->
           <div
             class="grid items-center px-4 py-1.5 text-sm"
             style="grid-template-columns: 32px 1fr 64px 1fr 64px;"
@@ -333,7 +324,6 @@
         {/each}
       </div>
 
-      <!-- Controls -->
       <div class="flex gap-2.5 p-4 border-t border-border bg-bg-secondary">
         {#if game.status === "playing" && (game.white_info?.type === "human" || game.black_info?.type === "human")}
           <button

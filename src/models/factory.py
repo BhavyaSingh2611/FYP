@@ -26,12 +26,11 @@ def create_model(backbone: str, config: ModelConfig | None = None) -> ChessModel
         config = settings.model
     backbone = backbone.lower()
 
-    # Create backbone
     model: ChessModel
     if backbone == "convnet":
         model = ConvNet(
             channels=config.cnn.channels,
-            num_layers=6,  # Fixed for ConvNet
+            num_layers=6,
         )
 
     elif backbone == "resnet":
@@ -74,7 +73,6 @@ def create_model(backbone: str, config: ModelConfig | None = None) -> ChessModel
     else:
         raise ValueError(f"Unknown backbone: {backbone}")
 
-    # Create and attach head
     head = create_head(
         head_type=config.head,
         input_dim=model.get_backbone_output_dim(),

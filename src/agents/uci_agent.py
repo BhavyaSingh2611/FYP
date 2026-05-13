@@ -74,6 +74,7 @@ class UCIAgent:
 
                 if self.uci_elo is not None:
                     self._engine.configure({"UCI_LimitStrength": True, "UCI_Elo": self.uci_elo})
+
                 elif self.skill_level is not None:
                     self._engine.configure({"Skill Level": self.skill_level})
             except chess.engine.EngineError:

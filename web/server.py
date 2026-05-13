@@ -1,6 +1,4 @@
 """
-Chess ML Arena — Play against trained neural network models.
-
 Flask server that loads PyTorch checkpoints and exposes a JSON API
 for the Svelte frontend.
 """
@@ -39,13 +37,14 @@ MODEL_NAMES = [
     "gat",
 ]
 
+# TODO: Change this to your local Stockfish path
 STOCKFISH_PATH = "/opt/homebrew/bin/stockfish"
 
 agent_cache: dict[str, LearningAgent] = {}
 games: dict[str, "GameSession"] = {}
 
 try:
-    engine = chess.engine.SimpleEngine.popen_uci("/opt/homebrew/bin/stockfish")
+    engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
 except Exception:
     engine = None
 
@@ -69,23 +68,28 @@ def cors(response):
 def scan_runs() -> list[dict]:
     results = []
     models_dir = RUNS_DIR / "models"
+
     if not models_dir.exists():
         return results
+
     for arch_dir in sorted(models_dir.iterdir()):
         if not arch_dir.is_dir() or arch_dir.name.startswith("."):
             continue
         arch_name = arch_dir.name
+
         if arch_name not in MODEL_NAMES:
             continue
+
         checkpoints = [p.stem for p in sorted(arch_dir.glob("**/*.pt"))]
         if checkpoints:
             results.append({"name": arch_name, "models": checkpoints})
+
     return results
 
 
 def load_agent(model_name: str, run_name: str) -> LearningAgent:
-    # Here run_name is the architecture (e.g. 'convnet')
-    # and model_name is the checkpoint (e.g. 'convnet_500M_e5')
+    # run_name is the architecture (e.g. 'convnet')
+    # model_name is the checkpoint (e.g. 'convnet_500M_e5')
     arch_name = run_name
     checkpoint_name = model_name
 
@@ -108,6 +112,7 @@ def load_agent(model_name: str, run_name: str) -> LearningAgent:
         state_dict = ckpt["state_dict"]
     else:
         state_dict = ckpt
+
     state_dict = {k.removeprefix("_orig_mod."): v for k, v in state_dict.items()}
     model.load_state_dict(state_dict)
     model = model.to(DEVICE)
@@ -142,22 +147,26 @@ class GameSession:
     def _evaluate(self) -> dict | None:
         if engine is None:
             return None
+
         infos = engine.analyse(
             self.board,
             chess.engine.Limit(depth=16),
             multipv=3,
         )
+
         if not infos:
             return None
+
         top = infos[0]
-        score = top["score"].white()
+        score = top["score"].white()  # type: ignore
         best = top.get("pv", [None])[0]
         ev = {}
+
         if score.is_mate():
             ev["score"] = None
             ev["mate"] = score.mate()
         else:
-            ev["score"] = score.score() / 100.0
+            ev["score"] = score.score() / 100.0  # type: ignore
             ev["mate"] = None
         if best:
             ev["best_move"] = best.uci()
@@ -168,22 +177,27 @@ class GameSession:
 
         lines = []
         for info in infos:
-            s = info["score"].white()
+            s = info["score"].white()  # type: ignore
             pv = info.get("pv", [])
             line = {}
+
             if s.is_mate():
                 line["score"] = None
                 line["mate"] = s.mate()
             else:
-                line["score"] = s.score() / 100.0
+                line["score"] = s.score() / 100.0  # type: ignore
                 line["mate"] = None
+
             san_moves = []
             tmp = self.board.copy()
+
             for m in pv[:6]:
                 san_moves.append(tmp.san(m))
                 tmp.push(m)
+
             line["moves"] = " ".join(san_moves)
             lines.append(line)
+
         ev["lines"] = lines
         return ev
 
@@ -199,6 +213,7 @@ class GameSession:
 
         status = "playing"
         result = None
+
         if self.resigned:
             status = "resigned"
             # Assume the player whose turn it is resigned
@@ -230,10 +245,13 @@ class GameSession:
 
     def push_move(self, move: chess.Move) -> None:
         side = "white" if self.board.turn == chess.WHITE else "black"
+
         san = self.board.san(move)
         self.board.push(move)
+
         eval_result = self._evaluate()
         self.evals.append(eval_result)
+
         self.move_history.append(
             {
                 "uci": move.uci(),
@@ -272,15 +290,19 @@ def api_runs():
 
 def get_agent(config: dict):
     agent_type = config.get("type", "human")
+
     if agent_type == "human":
         return None
     elif agent_type == "model":
         model_name = config.get("model")
         run_name = config.get("run")
+
         if not model_name or not run_name:
             raise ValueError("model and run are required for model agent")
+
         if model_name == "random":
             return RandomAgent()
+
         return load_agent(model_name, run_name)
     elif agent_type == "stockfish":
         elo = config.get("elo", 1500)
@@ -313,14 +335,17 @@ def api_new_game():
 @app.route("/api/game/<game_id>")
 def api_game_state(game_id):
     session = games.get(game_id)
+
     if not session:
         return jsonify({"error": "Game not found"}), 404
+
     return jsonify(session.to_dict())
 
 
 @app.route("/api/game/<game_id>/move", methods=["POST"])
 def api_make_move(game_id):
     session = games.get(game_id)
+
     if not session:
         return jsonify({"error": "Game not found"}), 404
     if session.board.is_game_over() or session.resigned:
@@ -349,6 +374,7 @@ def api_make_move(game_id):
 @app.route("/api/game/<game_id>/bot_move", methods=["POST"])
 def api_bot_move(game_id):
     session = games.get(game_id)
+
     if not session:
         return jsonify({"error": "Game not found"}), 404
     if session.board.is_game_over() or session.resigned:
@@ -364,8 +390,10 @@ def api_bot_move(game_id):
 @app.route("/api/game/<game_id>/eval")
 def api_eval(game_id):
     session = games.get(game_id)
+
     if not session:
         return jsonify({"error": "Game not found"}), 404
+
     ev = session._evaluate()
     return jsonify({"eval": ev})
 
@@ -373,27 +401,26 @@ def api_eval(game_id):
 @app.route("/api/game/<game_id>/resign", methods=["POST"])
 def api_resign(game_id):
     session = games.get(game_id)
+
     if not session:
         return jsonify({"error": "Game not found"}), 404
+
     session.resigned = True
     return jsonify(session.to_dict())
 
 
-# ---- Static serving ----
-
-
 @app.route("/")
 def serve_index():
-    return send_from_directory(app.static_folder, "index.html")
+    return send_from_directory(app.static_folder, "index.html")  # type: ignore
 
 
 @app.route("/<path:path>")
 def serve_static(path):
-    return send_from_directory(app.static_folder, path)
+    return send_from_directory(app.static_folder, path)  # type: ignore
 
 
 if __name__ == "__main__":
-    print(f"\nAvailable runs: {scan_runs()}")
+    print(f"Available runs: {scan_runs()}")
     print(f"Device: {DEVICE}")
-    print("\nChess ML Arena → http://localhost:5001\n")
+    print(" http://localhost:5001")
     app.run(host="0.0.0.0", port=5001, debug=False)

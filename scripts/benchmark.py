@@ -12,7 +12,6 @@ import chess.engine
 import chess.pgn
 import torch
 from chess.pgn import GameNode
-from render_benchmark import render_artifacts_from_store
 
 from src.agents.learning_agent import LearningAgent
 from src.agents.uci_agent import UCIAgent
@@ -392,7 +391,7 @@ Worker threads: %d
         try:
             agent = load_agent(model_name, checkpoint_path, device)
         except FileNotFoundError as exc:
-            LOGGER.warning("SKIP — %s", exc)
+            LOGGER.warning("SKIP - %s", exc)
             continue
 
         results["models"][model_name] = {"levels": {}}
@@ -416,12 +415,6 @@ Worker threads: %d
 
         ordered_levels = order_levels(results["models"][model_name]["levels"], selected_levels)
         results["models"][model_name]["levels"] = ordered_levels
-
-        render_artifacts_from_store(
-            model_name,
-            results["models"][model_name]["levels"],
-            output_dir,
-        )
 
     json_output_path = output_dir / "benchmark_results.json"
     with open(json_output_path, "w", encoding="utf-8") as output_file:

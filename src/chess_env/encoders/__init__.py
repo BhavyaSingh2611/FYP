@@ -1,4 +1,3 @@
-# State Encoders
 from .base import StateEncoder as StateEncoder
 from .cnn_encoder import CNNEncoder as CNNEncoder
 from .gnn_encoder import GNNEncoder as GNNEncoder

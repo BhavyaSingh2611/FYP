@@ -43,16 +43,10 @@ class ChessDataset(IterableDataset):
         self.include_value = include_value
 
         self._total_rows = pq.read_metadata(self.path).num_rows
-        self._effective_len = (
-            min(self.num_samples, self._total_rows)
-            if self.num_samples
-            else self._total_rows
-        )
+        self._effective_len = min(self.num_samples, self._total_rows) if self.num_samples else self._total_rows
 
     def __len__(self) -> int:
         return int(self._effective_len)
-
-    # ── iteration ───────────────────────────────────────────────────────
 
     def __iter__(self):
         worker_info = torch.utils.data.get_worker_info()
@@ -96,11 +90,7 @@ class ChessDataset(IterableDataset):
 
             # encode all boards at once or one-by-one
             boards = [r[0] for r in rows]
-            encoded = (
-                self.encoder.encode_batch(boards)
-                if use_batch
-                else [self.encoder.encode(b) for b in boards]
-            )
+            encoded = self.encoder.encode_batch(boards) if use_batch else [self.encoder.encode(b) for b in boards]
 
             for enc, (_, move, val) in zip(encoded, rows, strict=False):
                 if per_worker_limit and emitted >= per_worker_limit:
@@ -118,9 +108,6 @@ class ChessDataset(IterableDataset):
                 yield result
 
 
-# ── policy helper ───────────────────────────────────────────────────────
-
-
 def _build_policy(best_move: str | None) -> torch.Tensor:
     if best_move is not None and str(best_move) != "nan":
         idx = UCI_MOVE_TO_INDEX.get(str(best_move), -1)
@@ -128,9 +115,6 @@ def _build_policy(best_move: str | None) -> torch.Tensor:
             return torch.tensor(idx, dtype=torch.long)
 
     return torch.tensor(0, dtype=torch.long)
-
-
-# ── collation ───────────────────────────────────────────────────────────
 
 
 def _is_graph_input(first_input: dict) -> bool:
@@ -147,12 +131,11 @@ def _collate_graph_inputs(batch: list[dict]) -> dict:
     edge_indices, edge_attrs = [], []
     for i, b in enumerate(batch):
         edge_indices.append(b["input"]["edge_index"] + i * num_nodes)
+
         if "edge_attr" in b["input"]:
             edge_attrs.append(b["input"]["edge_attr"])
 
-    graph_batch = (
-        torch.arange(batch_size).unsqueeze(1).expand(-1, num_nodes).reshape(-1)
-    )
+    graph_batch = torch.arange(batch_size).unsqueeze(1).expand(-1, num_nodes).reshape(-1)
 
     result = {
         "x": node_features.view(-1, node_features.size(-1)),  # (B*64, F)
@@ -189,9 +172,6 @@ def collate_fn(batch: list[dict]) -> dict:
         result["value_target"] = torch.stack([b["value_target"] for b in batch])
 
     return result
-
-
-# ── factory ─────────────────────────────────────────────────────────────
 
 
 def create_dataloader(
