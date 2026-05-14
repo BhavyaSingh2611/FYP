@@ -7,6 +7,7 @@ You can start the web server by running the provided shell script from the proje
 ```
 
 **Note:** Before starting the web server, please make sure you have downloaded the pre-trained models. You can do this by running the download script from the project root:
+**Note:** Also change the stockfish path (in server.py) to the stockfish binary on the machine the project is being run.
 
 ```bash
 ./scripts/download_models.sh
