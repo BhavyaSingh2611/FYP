@@ -65,6 +65,8 @@ The framework auto-detects the best available device (CUDA > MPS > CPU).
 
 We recommend using the provided benchmark run scripts for the respective model to maintain the same setup as initially tested. There are scripts for both Stockfish benchmarking and Puzzle benchmarking:
 
+**Note:** Please change the STOCKFISH variable at the top of all the benchmark files in scripts/benchmark to the local stockfish binary path
+
 ### Stockfish Benchmarking
 
 ```bash
