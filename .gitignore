@@ -3,14 +3,8 @@
 *.parquet
 *.zip
 .vscode
-pull_all.sh
-stockfish/**
 web/client/node_modules/**
-runs/models/**
-.agents/**
-skills-lock.json
-runs/evaluation
-SKILL*.md
+runs/**
 benchmarks/**
 puzzle_benchmark/**
 
