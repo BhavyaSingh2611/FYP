@@ -3,9 +3,9 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "chess-ml-framework"
+name = "searchless-chess"
 version = "0.1.0"
-description = "Training Chess Bots with Various Machine Learning Techniques"
+description = "Chess Engine based on ML Models without search trees."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
