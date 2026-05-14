@@ -7,3 +7,10 @@ matplotlib
 pandas
 pyarrow
 torch_geometric
+duckdb
+flask
+pydantic
+pydantic-settings
+reportlab
+requests
+scipy

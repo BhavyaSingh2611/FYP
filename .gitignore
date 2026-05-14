@@ -3,9 +3,10 @@
 *.parquet
 *.zip
 .vscode
-pull_all.sh
-stockfish/**
 web/client/node_modules/**
+runs/**
+benchmarks/**
+puzzle_benchmark/**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

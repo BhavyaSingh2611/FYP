@@ -1,3 +1,2 @@
-# Transformer Models
-from .square_transformer import SquareTransformer
-from .piece_transformer import PieceTransformer
+from .piece_transformer import PieceTransformer as PieceTransformer
+from .square_transformer import SquareTransformer as SquareTransformer

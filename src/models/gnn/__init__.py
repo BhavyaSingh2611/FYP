@@ -1,3 +1,2 @@
-# GNN Models
-from .gcn import GCN
-from .gat import GAT
+from .gat import GAT as GAT
+from .gcn import GCN as GCN

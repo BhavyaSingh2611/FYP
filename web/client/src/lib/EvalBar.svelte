@@ -23,50 +23,16 @@
   }
 </script>
 
-<div class="eval-bar">
-  <div class="bar-track">
-    <div class="bar-black" style="height: {100 - whitePercent}%"></div>
-    <div class="bar-white" style="height: {whitePercent}%"></div>
+<div class="flex flex-col items-center gap-1.5 w-8 h-full">
+  <div class="flex-1 w-6 rounded-sm overflow-hidden flex flex-col border border-[#333]">
+    <div class="bg-[#333] transition-[height] duration-500 ease-in-out" style="height: {100 - whitePercent}%"></div>
+    <div class="bg-[#e8e8e8] transition-[height] duration-500 ease-in-out" style="height: {whitePercent}%"></div>
   </div>
-  <div class="eval-label" class:eval-black={score < 0 || (mate !== null && mate < 0)}>
+  <div
+    class="text-[0.7rem] font-bold whitespace-nowrap font-mono"
+    class:text-[#888]={score < 0 || (mate !== null && mate < 0)}
+    class:text-[#e0e0e0]={!(score < 0 || (mate !== null && mate < 0))}
+  >
     {displayScore}
   </div>
 </div>
-
-<style>
-  .eval-bar {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    width: 32px;
-    height: 100%;
-  }
-  .bar-track {
-    flex: 1;
-    width: 24px;
-    border-radius: 4px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid #333;
-  }
-  .bar-black {
-    background: #333;
-    transition: height 0.5s ease;
-  }
-  .bar-white {
-    background: #e8e8e8;
-    transition: height 0.5s ease;
-  }
-  .eval-label {
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: #e0e0e0;
-    font-family: "SF Mono", "Menlo", monospace;
-    white-space: nowrap;
-  }
-  .eval-black {
-    color: #888;
-  }
-</style>

@@ -1,2 +1,2 @@
-# Data Module
-from .dataset import ChessDataset, create_dataloader
+from .dataset import ChessDataset as ChessDataset
+from .dataset import create_dataloader as create_dataloader

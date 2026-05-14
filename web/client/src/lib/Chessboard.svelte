@@ -121,10 +121,17 @@
     promotionPending = null;
     selectedSquare = null;
   }
+
+  function sqClass(dark, selected, lastMv, inCheck) {
+    if (inCheck) return "sq-in-check";
+    if (selected) return dark ? "sq-dark-selected" : "sq-light-selected";
+    if (lastMv)   return dark ? "sq-dark-last"     : "sq-light-last";
+    return dark ? "sq-dark" : "sq-light";
+  }
 </script>
 
-<div class="board-wrap">
-  <div class="board">
+<div class="relative" style="width: min(560px, 88vw); aspect-ratio: 1;">
+  <div class="grid grid-cols-8 w-full h-full rounded-sm overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
     {#each Array(8) as _, vr}
       {#each Array(8) as _, vc}
         {@const row = flipped ? 7 - vr : vr}
@@ -137,32 +144,38 @@
         {@const lastMv = lastMove && (sq === lastMove.from || sq === lastMove.to)}
         {@const inCheck = sq === kingSquare}
         <button
-          class="sq"
-          class:dark
-          class:light={!dark}
-          class:selected
-          class:last-mv={lastMv && !selected}
-          class:in-check={inCheck}
+          class="relative flex items-center justify-center border-none p-0 m-0 cursor-pointer outline-none aspect-square focus-visible:outline-2 focus-visible:outline-white focus-visible:-outline-offset-2 {sqClass(dark, selected, lastMv && !selected, inCheck)}"
           on:click={() => handleClick(row, col)}
         >
           {#if piece}
-            <img class="pc" src={PIECE_IMAGES[piece]} alt={piece} draggable="false" />
+            <img
+              class="w-[85%] h-[85%] pointer-events-none select-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
+              src={PIECE_IMAGES[piece]}
+              alt={piece}
+              draggable="false"
+            />
           {/if}
 
           {#if target && !piece}
-            <span class="dot"></span>
+            <span class="w-[28%] h-[28%] rounded-full bg-black/[0.18] pointer-events-none"></span>
           {/if}
           {#if target && piece}
-            <span class="cap-ring"></span>
+            <span class="absolute inset-[4%] rounded-full border-[4.5px] border-black/[0.18] pointer-events-none"></span>
           {/if}
 
           {#if vc === 0}
-            <span class="coord rank" class:coord-dark={dark} class:coord-light={!dark}>
+            <span
+              class="absolute top-0.5 left-0.5 text-[0.65rem] font-bold pointer-events-none select-none"
+              style="color: {dark ? '#f0d9b5' : '#b58863'}"
+            >
               {8 - row}
             </span>
           {/if}
           {#if vr === 7}
-            <span class="coord file" class:coord-dark={dark} class:coord-light={!dark}>
+            <span
+              class="absolute bottom-0.5 right-0.5 text-[0.65rem] font-bold pointer-events-none select-none"
+              style="color: {dark ? '#f0d9b5' : '#b58863'}"
+            >
               {String.fromCharCode(97 + col)}
             </span>
           {/if}
@@ -174,7 +187,7 @@
   {#if bestMove}
     {@const from = sqToCoords(bestMove.from)}
     {@const to = sqToCoords(bestMove.to)}
-    <svg class="arrow-overlay" viewBox="0 0 100 100">
+    <svg class="absolute inset-0 w-full h-full pointer-events-none z-10" viewBox="0 0 100 100">
       <defs>
         <marker id="arrowhead" markerWidth="4" markerHeight="3" refX="3.5" refY="1.5" orient="auto">
           <polygon points="0 0, 4 1.5, 0 3" fill="rgba(129,182,76,0.8)" />
@@ -194,88 +207,3 @@
     />
   {/if}
 </div>
-
-<style>
-  .board-wrap {
-    position: relative;
-    width: min(560px, 88vw);
-    aspect-ratio: 1;
-  }
-  .board {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    width: 100%;
-    height: 100%;
-    border-radius: 4px;
-    overflow: hidden;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-  }
-
-  .sq {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    padding: 0;
-    margin: 0;
-    cursor: pointer;
-    outline: none;
-    aspect-ratio: 1;
-  }
-  .sq:focus-visible {
-    outline: 2px solid #fff;
-    outline-offset: -2px;
-  }
-  .light            { background: #f0d9b5; }
-  .dark             { background: #b58863; }
-  .light.last-mv    { background: #f7f769; }
-  .dark.last-mv     { background: #baca2b; }
-  .light.selected   { background: #b4d98c; }
-  .dark.selected    { background: #829769; }
-  .in-check         { background: radial-gradient(ellipse at center,
-                        rgba(255,0,0,.75) 0%, rgba(200,0,0,.35) 60%, transparent 100%) !important; }
-
-  .pc {
-    width: 85%;
-    height: 85%;
-    pointer-events: none;
-    user-select: none;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
-  }
-  .arrow-overlay {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  .dot {
-    width: 28%;
-    height: 28%;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.18);
-    pointer-events: none;
-  }
-  .cap-ring {
-    position: absolute;
-    inset: 4%;
-    border-radius: 50%;
-    border: 4.5px solid rgba(0, 0, 0, 0.18);
-    pointer-events: none;
-  }
-
-  .coord {
-    position: absolute;
-    font-size: 0.65rem;
-    font-weight: 700;
-    pointer-events: none;
-    user-select: none;
-  }
-  .rank { top: 2px; left: 3px; }
-  .file { bottom: 1px; right: 3px; }
-  .coord-dark  { color: #f0d9b5; }
-  .coord-light { color: #b58863; }
-</style>

@@ -1,0 +1,47 @@
+hardware:
+  device: cuda
+  num_workers: 8
+
+engines:
+  stockfish:
+    path: /opt/homebrew/bin/stockfish
+    default_depth: 15
+    default_multipv: 4
+
+paths:
+  database: data/
+  checkpoints: training_results/
+
+model:
+  head: dual
+  
+  cnn:
+    num_blocks: 10
+    channels: 256
+  
+  transformer:
+    embed_dim: 256
+    num_heads: 8
+    num_layers: 6
+    dropout: 0.1
+  
+  gnn:
+    hidden_dim: 256
+    num_layers: 6
+    edge_type: hybrid
+    heads: 4
+
+training:
+  batch_size: 2048
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  epochs: 50
+  policy_loss_weight: 1.0
+  value_loss_weight: 1.0
+  gradient_accumulation_steps: 1
+  grad_clip_max_norm: 1.0
+  save_every: 5
+  lr_scheduler:
+    type: cosine
+    step_size: 10
+    gamma: 0.1

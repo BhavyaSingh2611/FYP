@@ -1,31 +1,24 @@
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+@import "tailwindcss";
 
-:root {
-  --bg-primary: #0f0f0f;
-  --bg-secondary: #1a1a1a;
-  --bg-card: #252525;
-  --bg-hover: #333;
-  --text-primary: #e0e0e0;
-  --text-secondary: #888;
-  --accent: #81b64c;
-  --accent-hover: #95c95e;
-  --danger: #c33;
-  --danger-hover: #e44;
-  --border: #333;
-  --radius: 6px;
+@theme {
+  --color-bg-primary: #161512;
+  --color-bg-secondary: #262421;
+  --color-bg-card: #302e2c;
+  --color-bg-hover: #3d3b38;
+  --color-text-primary: #dbd9d6;
+  --color-text-secondary: #9c9a97;
+  --color-accent: #5c8144;
+  --color-accent-hover: #6e9a51;
+  --color-danger: #ac4747;
+  --color-danger-hover: #cc5454;
+  --color-border: #403d39;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background-color: #161512;
+  color: #dbd9d6;
   min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 #app {
@@ -34,11 +27,69 @@ body {
   min-height: 100vh;
 }
 
-button {
+button, select, input {
   font-family: inherit;
-  cursor: pointer;
 }
 
-select {
-  font-family: inherit;
+.sq-light { background-color: #f0d9b5; }
+.sq-dark { background-color: #b58863; }
+.sq-light-last { background-color: #f7f769; }
+.sq-dark-last { background-color: #baca2b; }
+.sq-light-selected { background-color: #b4d98c; }
+.sq-dark-selected { background-color: #829769; }
+.sq-in-check {
+  background: radial-gradient(ellipse at center,
+    rgba(255,0,0,.75) 0%, rgba(200,0,0,.35) 60%, transparent 100%) !important;
+}
+
+.eval-good { color: #81b64c; }
+.eval-bad { color: #cc5454; }
+.eval-neutral { color: #888; }
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #161512;
+  transition: 0.3s;
+  border-radius: 20px;
+  border: 1px solid #403d39;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 2px;
+  bottom: 2px;
+  background-color: #9c9a97;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+input:checked + .slider {
+  background-color: #5c8144;
+  border-color: #5c8144;
+}
+input:checked + .slider:before {
+  transform: translateX(16px);
+  background-color: #fff;
+}
+
+@keyframes pulse {
+  from { opacity: 0.3; transform: scale(0.8); }
+  to   { opacity: 1;   transform: scale(1.2); }
+}
+.thinking-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #5c8144;
+  animation: pulse 1s infinite alternate;
 }

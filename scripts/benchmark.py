@@ -1,657 +1,505 @@
-#!/usr/bin/env python3
-"""
-Detailed benchmark with move-by-move analysis.
-
-Features:
-- Records all moves played in each game
-- Tracks centipawn evaluation (using Stockfish depth 18) for each position
-- Generates evaluation flow graphs for each game
-- Exports games in PGN format for chess software preview
-"""
 import argparse
 import json
-from pathlib import Path
+import logging
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-import time
+from pathlib import Path
+from typing import Any
 
 import chess
-import chess.pgn
 import chess.engine
+import chess.pgn
 import torch
-import matplotlib.pyplot as plt
-import numpy as np
-from tqdm import tqdm
+from chess.pgn import GameNode
 
-from src.config import load_config
-from src.models.factory import create_model, get_encoder_for_model
 from src.agents.learning_agent import LearningAgent
-from src.agents.mcts_agent import MCTSAgent
 from src.agents.uci_agent import UCIAgent
+from src.config import settings
 from src.device import get_device
+from src.models.factory import create_model, get_encoder_for_model
 
+LOGGER = logging.getLogger(__name__)
 
-# Models to benchmark
-TRAINED_MODELS = ["convnet", "resnet", "square_transformer", "piece_transformer", "gcn", "gat"]
-
-# Evaluation depth for centipawn tracking
 EVAL_DEPTH = 18
 
+DIFFICULTY_LEVELS = [
+    {"name": "Novice-1320", "elo": 1320},
+    {"name": "Club-1800", "elo": 1800},
+    {"name": "Expert-2300", "elo": 2300},
+    {"name": "IM-2800", "elo": 2800},
+    {"name": "Full-3200", "elo": 3200},
+]
 
-def load_model_agent(
-    model_name: str, 
-    checkpoint_dir: Path, 
+MATE_SCORE_BASE = 10000
+MATE_SCORE_STEP = 10
+
+_log_lock = threading.Lock()
+
+
+def get_outcome(result: str, model_is_white: bool) -> str:
+    """Return win/loss/draw from the model's perspective."""
+    if result == "1-0":
+        return "win" if model_is_white else "loss"
+
+    if result == "0-1":
+        return "loss" if model_is_white else "win"
+
+    return "draw"
+
+
+def load_agent(
+    model_name: str,
+    checkpoint_path: Path,
     device: torch.device,
-    checkpoint_path: Path = None,
-    use_mcts: bool = False,
-    mcts_sims: int = 200,
-) -> LearningAgent | MCTSAgent:
-    """Load a trained model and create a LearningAgent or MCTSAgent."""
-    config = load_config("config/default.yaml")
-    config.model.backbone = model_name
-    config.model.head = "dual"
-    
-    model = create_model(config.model)
-    
-    if checkpoint_path is None:
-        checkpoint_path = checkpoint_dir / model_name / "final.pt"
-    
+) -> LearningAgent:
+    """Load model checkpoint and return a deterministic learning agent."""
+    model_config = settings.model.model_copy(update={"head": "dual"})
+    model = create_model(model_name, model_config)
+
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
-    
-    checkpoint = torch.load(checkpoint_path, map_location=device)
-    state_dict = checkpoint['model_state_dict']
-    state_dict = {k.removeprefix('_orig_mod.'): v for k, v in state_dict.items()}
-    model.load_state_dict(state_dict)
+
+    checkpoint = torch.load(
+        checkpoint_path,
+        map_location=device,
+        weights_only=False,
+    )  # nosec: checkpoint may contain non-tensor objects
+    state_dict = checkpoint.get("model_state_dict", checkpoint)
+    clean_state = {key.removeprefix("_orig_mod."): value for key, value in state_dict.items()}
+
+    model.load_state_dict(clean_state)
     model = model.to(device)
     model.eval()
-    
-    encoder_factory = get_encoder_for_model(model_name)
-    encoder = encoder_factory() if callable(encoder_factory) else encoder_factory()
-    
-    if use_mcts:
-        agent = MCTSAgent(
-            model=model,
-            encoder=encoder,
-            device=device,
-            num_simulations=mcts_sims,
-            c_puct=1.4,
-            temperature=0.0,
-        )
-    else:
-        agent = LearningAgent(
-            model=model,
-            encoder=encoder,
-            device=device,
-            temperature=0.0,
-        )
-    
-    return agent
+
+    encoder = get_encoder_for_model(model_name)()
+
+    return LearningAgent(
+        model=model,
+        encoder=encoder,
+        device=device,
+        temperature=0.0,
+    )  # type: ignore[arg-type]
 
 
-def evaluate_position(engine: chess.engine.SimpleEngine, board: chess.Board, depth: int = EVAL_DEPTH) -> int:
-    """
-    Evaluate a position using Stockfish.
-    
-    Returns centipawn score from white's perspective.
-    Mate scores are converted to large values (±10000).
-    """
+def get_eval_cp(
+    engine: chess.engine.SimpleEngine,
+    board: chess.Board,
+    depth: int = EVAL_DEPTH,
+) -> int:
+    """Return centipawn-style evaluation from White's perspective."""
     try:
         info = engine.analyse(board, chess.engine.Limit(depth=depth))
-        score = info['score'].white()
-        
+        score = info["score"].white()  # type: ignore[assignment]
+
         if score.is_mate():
             mate_in = score.mate()
-            if mate_in > 0:
-                return 10000 - mate_in * 10  # Mate in N moves
-            else:
-                return -10000 - mate_in * 10  # Getting mated
-        else:
-            return score.score()
-    except Exception as e:
+
+            if mate_in and mate_in > 0:
+                return MATE_SCORE_BASE - mate_in * MATE_SCORE_STEP
+
+            if mate_in:
+                return -MATE_SCORE_BASE - mate_in * MATE_SCORE_STEP
+
+            return 0
+
+        return score.score() or 0  # type: ignore[union-attr]
+
+    except Exception as exc:
+        LOGGER.debug("Engine eval failed: %s", exc)
         return 0
 
 
-def play_game_with_analysis(
-    white_agent,
-    black_agent,
-    evaluator: chess.engine.SimpleEngine,
-    max_moves: int = 200,
-    eval_depth: int = EVAL_DEPTH,
-) -> dict:
-    """
-    Play a game with full move and evaluation tracking.
-    
-    Returns:
-        Dict with moves, evaluations, result, and metadata.
-    """
-    board = chess.Board()
-    game_data = {
-        'moves': [],           # UCI moves
-        'san_moves': [],       # Standard algebraic notation
-        'evaluations': [],     # Centipawn after each move
-        'move_times': [],      # Time taken for each move
-        'white_move_times': [],
-        'black_move_times': [],
-        'white_agent': getattr(white_agent, 'name', str(white_agent)),
-        'black_agent': getattr(black_agent, 'name', str(black_agent)),
-    }
-    
-    # Initial evaluation
-    initial_eval = evaluate_position(evaluator, board, eval_depth)
-    game_data['evaluations'].append(initial_eval)
-    
-    while not board.is_game_over() and len(game_data['moves']) < max_moves:
-        start_time = time.time()
-        
-        # Get move from current player
-        if board.turn == chess.WHITE:
-            move = white_agent.get_move(board)
-        else:
-            move = black_agent.get_move(board)
-        
-        move_time = time.time() - start_time
-        
-        # Record move in both formats
-        san = board.san(move)
-        game_data['moves'].append(move.uci())
-        game_data['san_moves'].append(san)
-        game_data['move_times'].append(move_time)
-        if board.turn == chess.WHITE:
-            game_data['white_move_times'].append(move_time)
-        else:
-            game_data['black_move_times'].append(move_time)
-        
-        # Make the move
-        board.push(move)
-        
-        # Evaluate new position
-        eval_score = evaluate_position(evaluator, board, eval_depth)
-        game_data['evaluations'].append(eval_score)
-    
-    # Determine result
+def get_game_result(
+    board: chess.Board,
+    move_count: int,
+    max_moves: int,
+) -> tuple[str, str]:
+    """Return game result and termination reason."""
     if board.is_checkmate():
-        if board.turn == chess.WHITE:
-            game_data['result'] = '0-1'
-            game_data['termination'] = 'checkmate'
-        else:
-            game_data['result'] = '1-0'
-            game_data['termination'] = 'checkmate'
-    elif board.is_stalemate():
-        game_data['result'] = '1/2-1/2'
-        game_data['termination'] = 'stalemate'
-    elif board.is_insufficient_material():
-        game_data['result'] = '1/2-1/2'
-        game_data['termination'] = 'insufficient_material'
-    elif board.is_fifty_moves():
-        game_data['result'] = '1/2-1/2'
-        game_data['termination'] = 'fifty_moves'
-    elif board.is_repetition():
-        game_data['result'] = '1/2-1/2'
-        game_data['termination'] = 'repetition'
-    elif len(game_data['moves']) >= max_moves:
-        game_data['result'] = '1/2-1/2'
-        game_data['termination'] = 'max_moves'
-    else:
-        game_data['result'] = '*'
-        game_data['termination'] = 'unknown'
-    
-    game_data['final_fen'] = board.fen()
-    game_data['total_moves'] = len(game_data['moves'])
-    
-    return game_data
+        return ("0-1", "checkmate") if board.turn == chess.WHITE else ("1-0", "checkmate")
+
+    if board.is_stalemate():
+        return "1/2-1/2", "stalemate"
+
+    if board.is_insufficient_material():
+        return "1/2-1/2", "insufficient_material"
+
+    if board.is_fifty_moves():
+        return "1/2-1/2", "fifty_moves"
+
+    if board.is_repetition():
+        return "1/2-1/2", "repetition"
+
+    if move_count >= max_moves:
+        return "1/2-1/2", "max_moves"
+
+    return "*", "unknown"
 
 
-def create_pgn(game_data: dict, event: str = "Model Benchmark") -> chess.pgn.Game:
-    """Create a PGN game from game data."""
-    game = chess.pgn.Game()
-    
-    # Set headers
-    game.headers["Event"] = event
-    game.headers["Date"] = datetime.now().strftime("%Y.%m.%d")
-    game.headers["White"] = game_data['white_agent']
-    game.headers["Black"] = game_data['black_agent']
-    game.headers["Result"] = game_data['result']
-    game.headers["Termination"] = game_data.get('termination', 'unknown')
-    
-    # Add moves
-    node = game
+def run_game(
+    white_agent: Any,
+    black_agent: Any,
+    engine: chess.engine.SimpleEngine,
+    max_moves: int = 200,
+) -> dict[str, Any]:
+    """Play one game and return move-by-move metadata."""
     board = chess.Board()
-    
-    for i, uci_move in enumerate(game_data['moves']):
-        move = chess.Move.from_uci(uci_move)
-        node = node.add_variation(move)
-        
-        # Add evaluation as comment
-        if i + 1 < len(game_data['evaluations']):
-            eval_cp = game_data['evaluations'][i + 1]
-            if abs(eval_cp) >= 10000:
-                mate_in = (10000 - abs(eval_cp)) // 10
-                if eval_cp > 0:
-                    node.comment = f"[%eval #{mate_in}]"
-                else:
-                    node.comment = f"[%eval #-{mate_in}]"
-            else:
-                node.comment = f"[%eval {eval_cp / 100:.2f}]"
-        
+    game: dict[str, Any] = {
+        "moves": [],
+        "san_moves": [],
+        "evaluations": [get_eval_cp(engine, board)],
+        "white_agent": getattr(white_agent, "name", str(white_agent)),
+        "black_agent": getattr(black_agent, "name", str(black_agent)),
+    }
+
+    while not board.is_game_over() and len(game["moves"]) < max_moves:
+        active = white_agent if board.turn == chess.WHITE else black_agent
+        move = active.get_move(board)
+
+        game["san_moves"].append(board.san(move))
+        game["moves"].append(move.uci())
+
         board.push(move)
-    
+        game["evaluations"].append(get_eval_cp(engine, board))
+
+    result, termination = get_game_result(board, len(game["moves"]), max_moves)
+    game.update(
+        {
+            "result": result,
+            "termination": termination,
+            "total_moves": len(game["moves"]),
+            "final_fen": board.fen(),
+        }
+    )
     return game
 
 
-def plot_evaluation_flow(game_data: dict, output_path: Path, title: str = None):
-    """Create evaluation flow chart for a single game."""
-    evals = game_data['evaluations']
-    moves = list(range(len(evals)))
-    
-    fig, ax = plt.subplots(figsize=(14, 5))
-    
-    # Convert to pawns for readability
-    evals_pawns = [e / 100 for e in evals]
-    
-    # Clip extreme values for better visualization
-    evals_clipped = np.clip(evals_pawns, -10, 10)
-    
-    # Fill areas
-    ax.fill_between(moves, 0, evals_clipped, where=np.array(evals_clipped) > 0, 
-                    color='white', alpha=0.8, label='White advantage')
-    ax.fill_between(moves, 0, evals_clipped, where=np.array(evals_clipped) <= 0, 
-                    color='black', alpha=0.6, label='Black advantage')
-    
-    # Plot line
-    ax.plot(moves, evals_clipped, 'b-', linewidth=1.5, alpha=0.7)
-    
-    # Reference line
-    ax.axhline(y=0, color='gray', linestyle='-', linewidth=0.5)
-    
-    # Styling
-    ax.set_xlabel('Move Number', fontsize=11)
-    ax.set_ylabel('Evaluation (pawns)', fontsize=11)
-    if title:
-        ax.set_title(title, fontsize=12, fontweight='bold')
-    else:
-        ax.set_title(f"{game_data['white_agent']} vs {game_data['black_agent']} - {game_data['result']}", 
-                    fontsize=12, fontweight='bold')
-    
-    ax.set_ylim(-10, 10)
-    ax.grid(True, alpha=0.3)
-    ax.legend(loc='upper right')
-    
-    # Add result annotation
-    result_color = 'green' if game_data['result'] == '1-0' else 'red' if game_data['result'] == '0-1' else 'gray'
-    ax.annotate(f"Result: {game_data['result']}\n({game_data['termination']})", 
-                xy=(0.98, 0.02), xycoords='axes fraction',
-                ha='right', va='bottom', fontsize=10,
-                bbox=dict(boxstyle='round', facecolor=result_color, alpha=0.3))
-    
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150, bbox_inches='tight')
-    plt.close()
+def calc_acpl(game: dict[str, Any], model_color: str) -> float:
+    """Return average centipawn loss on model moves."""
+    evals = game["evaluations"]
+    losses: list[int] = []
+
+    for i in range(len(evals) - 1):
+        is_white_move = i % 2 == 0
+        model_to_move = (model_color == "white" and is_white_move) or (model_color == "black" and not is_white_move)
+
+        if not model_to_move:
+            continue
+
+        eval_before = evals[i]
+        eval_after = evals[i + 1]
+        cp_loss = eval_before - eval_after if model_color == "white" else eval_after - eval_before
+        losses.append(max(cp_loss, 0))
+
+    return sum(losses) / len(losses) if losses else 0.0
 
 
-def plot_all_games_comparison(all_games: dict, output_dir: Path):
-    """Create comparison plots for all models."""
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    axes = axes.flatten()
-    
-    colors = plt.cm.tab10(np.linspace(0, 1, 10))
-    
-    for ax_idx, (model_name, games) in enumerate(all_games.items()):
-        if ax_idx >= 4:
-            break
-        
-        ax = axes[ax_idx]
-        
-        for i, game in enumerate(games):
-            evals = [e / 100 for e in game['evaluations']]
-            evals_clipped = np.clip(evals, -10, 10)
-            
-            # Determine line style based on model's color
-            if model_name in game['white_agent']:
-                linestyle = '-'
-                label = f"Game {i+1} (as White)" if i < 3 else None
-            else:
-                linestyle = '--'
-                label = f"Game {i+1} (as Black)" if i < 3 else None
-            
-            ax.plot(evals_clipped, linestyle=linestyle, alpha=0.7, linewidth=1.5, label=label)
-        
-        ax.axhline(y=0, color='gray', linestyle='-', linewidth=0.5)
-        ax.set_xlabel('Move Number')
-        ax.set_ylabel('Evaluation (pawns)')
-        ax.set_title(f'{model_name}', fontsize=12, fontweight='bold')
-        ax.set_ylim(-10, 10)
-        ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=8)
-    
-    plt.suptitle('Evaluation Flow by Model', fontsize=14, fontweight='bold')
-    plt.tight_layout()
-    plt.savefig(output_dir / 'all_games_comparison.png', dpi=150)
-    plt.close()
+def build_pgn(game: dict[str, Any], event_name: str) -> chess.pgn.Game:
+    """Create PGN with engine evaluations in comments."""
+    pgn = chess.pgn.Game()
+    pgn.headers.update(
+        {
+            "Event": event_name,
+            "Date": datetime.now().strftime("%Y.%m.%d"),
+            "White": game["white_agent"],
+            "Black": game["black_agent"],
+            "Result": game["result"],
+            "Termination": game.get("termination", "unknown"),
+        }
+    )
+
+    node: GameNode = pgn
+
+    for move_index, uci_move in enumerate(game["moves"]):
+        move = chess.Move.from_uci(uci_move)
+        node = node.add_variation(move)
+
+        eval_index = move_index + 1
+        if eval_index >= len(game["evaluations"]):
+            continue
+
+        evaluation = game["evaluations"][eval_index]
+        if abs(evaluation) >= MATE_SCORE_BASE:
+            mate_in = (MATE_SCORE_BASE - abs(evaluation)) // MATE_SCORE_STEP
+            node.comment = f"[%eval #{mate_in if evaluation > 0 else -mate_in}]"
+        else:
+            node.comment = f"[%eval {evaluation / 100:.2f}]"
+
+    return pgn
 
 
-def run_detailed_benchmark(
-    checkpoint_dir: Path,
+def _run_level(
+    agent: LearningAgent,
+    model_name: str,
+    level: dict[str, Any],
+    games_per_level: int,
     stockfish_path: str,
-    opponent_depth: int,
-    num_games: int,
+) -> tuple[str, dict[str, Any]]:
+    level_name = level["name"]
+    engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
+    opponent = UCIAgent(stockfish_path, uci_elo=level["elo"])
+
+    wins = draws = losses = 0
+    acpl_values: list[float] = []
+    game_lengths: list[int] = []
+    game_records: list[dict[str, Any]] = []
+
+    try:
+        for game_index in range(games_per_level):
+            model_color = "white" if game_index % 2 == 0 else "black"
+
+            game = run_game(agent, opponent, engine) if model_color == "white" else run_game(opponent, agent, engine)
+
+            game["model_color"] = model_color
+            outcome = get_outcome(game["result"], model_color == "white")
+
+            if outcome == "win":
+                wins += 1
+            elif outcome == "loss":
+                losses += 1
+            else:
+                draws += 1
+
+            acpl_values.append(calc_acpl(game, model_color))
+            game_lengths.append(game["total_moves"])
+
+            with _log_lock:
+                LOGGER.info(
+                    "[%s] vs %s  Game %d/%d: %s (%s, %d moves, %s)",
+                    model_name,
+                    level_name,
+                    game_index + 1,
+                    games_per_level,
+                    game["result"],
+                    outcome[0].upper(),
+                    game["total_moves"],
+                    game["termination"],
+                )
+
+            pgn = build_pgn(game, f"{model_name} vs SF {level_name}")
+            game_records.append(
+                {
+                    "pgn": str(pgn),
+                    "result": game["result"],
+                    "termination": game["termination"],
+                    "total_moves": game["total_moves"],
+                    "evaluations": game["evaluations"],
+                    "model_color": model_color,
+                    "outcome": outcome,
+                    "white": game["white_agent"],
+                    "black": game["black_agent"],
+                }
+            )
+    finally:
+        opponent.close()
+        engine.quit()
+
+    total_games = wins + draws + losses
+    score_pct = (wins + 0.5 * draws) / total_games * 100 if total_games else 0
+    avg_acpl = sum(acpl_values) / len(acpl_values) if acpl_values else 0
+    avg_game_length = sum(game_lengths) / len(game_lengths) if game_lengths else 0
+
+    level_data = {
+        "elo": level["elo"],
+        "summary": {
+            "wins": wins,
+            "draws": draws,
+            "losses": losses,
+            "score_pct": score_pct,
+            "avg_acpl": avg_acpl,
+            "avg_game_length": avg_game_length,
+            "acpl_list": acpl_values,
+            "game_lengths": game_lengths,
+        },
+        "games": game_records,
+    }
+
+    with _log_lock:
+        LOGGER.info(
+            "[%s] vs %s  => %dW / %dD / %dL  |  Score: %.0f%%  |  Avg ACPL: %.0f",
+            model_name,
+            level_name,
+            wins,
+            draws,
+            losses,
+            score_pct,
+            avg_acpl,
+        )
+
+    return level_name, level_data
+
+
+def order_levels(data: dict[str, Any], levels: list[dict[str, Any]]) -> dict[str, Any]:
+    """Return level-ordered dict based on configured difficulty order."""
+    return {str(level["name"]): data[level["name"]] for level in levels if level["name"] in data}
+
+
+def run_benchmark(
+    backbone: str,
+    checkpoint_path: Path,
+    stockfish_path: str,
+    games_per_level: int,
     output_dir: Path,
-    single_model: str = None,
-    single_checkpoint: Path = None,
-    skill_level: int = None,
-    max_time: float | None = None,
-    use_mcts: bool = False,
-    mcts_sims: int = 200,
-):
-    """Run detailed benchmark with full analysis."""
+    levels: list[dict[str, Any]] | None = None,
+    workers: int = 4,
+) -> dict[str, Any]:
+    """Run model-vs-Stockfish benchmark and write artifacts + a single JSON file."""
     device = get_device()
     output_dir.mkdir(parents=True, exist_ok=True)
-    figures_dir = output_dir / "figures"
-    figures_dir.mkdir(exist_ok=True)
-    pgn_dir = output_dir / "pgn"
-    pgn_dir.mkdir(exist_ok=True)
-    
-    # Create evaluator engine (high depth for accurate analysis)
-    print(f"Starting Stockfish evaluator (depth {EVAL_DEPTH})...")
-    evaluator = chess.engine.SimpleEngine.popen_uci(stockfish_path)
-    
-    all_games = {}
-    all_results = {}
-    
-    # If single model specified, only benchmark that one
-    models_to_benchmark = [single_model] if single_model else TRAINED_MODELS
-    
-    try:
-        for model_name in models_to_benchmark:
-            print(f"\n{'='*60}")
-            print(f"Benchmarking: {model_name.upper()}")
-            print(f"{'='*60}")
-            
-            try:
-                ckpt_path = single_checkpoint if single_model else None
-                agent = load_model_agent(model_name, checkpoint_dir, device, ckpt_path, use_mcts, mcts_sims)
-            except FileNotFoundError as e:
-                print(f"Skipping {model_name}: {e}")
-                continue
-            
-            # Create opponent Stockfish
-            opponent = UCIAgent(stockfish_path, depth=opponent_depth, time_limit=max_time, skill_level=skill_level)
-            
-            model_games = []
-            wins, draws, losses = 0, 0, 0
-            
-            try:
-                for game_num in range(num_games):
-                    print(f"\nGame {game_num + 1}/{num_games}...", end=" ")
-                    
-                    # Alternate colors
-                    if game_num % 2 == 0:
-                        game_data = play_game_with_analysis(
-                            white_agent=agent,
-                            black_agent=opponent,
-                            evaluator=evaluator,
-                            eval_depth=EVAL_DEPTH,
-                        )
-                        model_color = 'white'
-                    else:
-                        game_data = play_game_with_analysis(
-                            white_agent=opponent,
-                            black_agent=agent,
-                            evaluator=evaluator,
-                            eval_depth=EVAL_DEPTH,
-                        )
-                        model_color = 'black'
-                    
-                    game_data['model_color'] = model_color
-                    game_data['game_number'] = game_num + 1
-                    
-                    # Track results
-                    if game_data['result'] == '1-0':
-                        if model_color == 'white':
-                            wins += 1
-                        else:
-                            losses += 1
-                    elif game_data['result'] == '0-1':
-                        if model_color == 'black':
-                            wins += 1
-                        else:
-                            losses += 1
-                    else:
-                        draws += 1
-                    
-                    print(f"{game_data['result']} ({game_data['total_moves']} moves, {game_data['termination']})")
-                    
-                    model_games.append(game_data)
-                    
-                    # Create PGN
-                    pgn = create_pgn(game_data, f"Benchmark: {model_name} vs Stockfish D{opponent_depth}")
-                    pgn_path = pgn_dir / f"{model_name}_game_{game_num + 1}.pgn"
-                    with open(pgn_path, 'w') as f:
-                        f.write(str(pgn))
-                    
-                    # Create evaluation plot
-                    plot_path = figures_dir / f"{model_name}_game_{game_num + 1}_eval.png"
-                    plot_evaluation_flow(
-                        game_data, 
-                        plot_path,
-                        f"{model_name} Game {game_num + 1}: {game_data['result']}"
-                    )
-                
-            finally:
-                opponent.close()
-            
-            all_games[model_name] = model_games
-            
-            def _time_stats(times: list[float]) -> dict:
-                if not times:
-                    return {'avg': 0, 'median': 0, 'min': 0, 'max': 0, 'count': 0}
-                return {
-                    'avg': sum(times) / len(times),
-                    'median': float(np.median(times)),
-                    'min': min(times),
-                    'max': max(times),
-                    'count': len(times),
-                }
-            
-            model_times = []
-            opponent_times = []
-            for g in model_games:
-                color_key = g['model_color'] + '_move_times'
-                opp_key = ('black' if g['model_color'] == 'white' else 'white') + '_move_times'
-                model_times.extend(g[color_key])
-                opponent_times.extend(g[opp_key])
-            
-            model_stats = _time_stats(model_times)
-            opponent_stats = _time_stats(opponent_times)
-            
-            all_results[model_name] = {
-                'wins': wins,
-                'draws': draws,
-                'losses': losses,
-                'games': len(model_games),
-                'model_move_time': model_stats,
-                'opponent_move_time': opponent_stats,
-            }
-            
-            print(f"\nResults: {wins}W - {draws}D - {losses}L")
-            print(f"Model move time:    avg={model_stats['avg']:.3f}s, median={model_stats['median']:.3f}s, min={model_stats['min']:.3f}s, max={model_stats['max']:.3f}s ({model_stats['count']} moves)")
-            print(f"Opponent move time: avg={opponent_stats['avg']:.3f}s, median={opponent_stats['median']:.3f}s, min={opponent_stats['min']:.3f}s, max={opponent_stats['max']:.3f}s ({opponent_stats['count']} moves)")
-        
-        # Create combined PGN file
-        combined_pgn_path = output_dir / "all_games.pgn"
-        with open(combined_pgn_path, 'w') as f:
-            for model_name, games in all_games.items():
-                for game_data in games:
-                    pgn = create_pgn(game_data)
-                    f.write(str(pgn))
-                    f.write("\n\n")
-        print(f"\nAll games saved to: {combined_pgn_path}")
-        
-        # Create comparison plot
-        plot_all_games_comparison(all_games, figures_dir)
-        
-        # Save JSON data
-        json_data = {
-            'metadata': {
-                'date': datetime.now().isoformat(),
-                'opponent_depth': opponent_depth,
-                'eval_depth': EVAL_DEPTH,
-                'games_per_model': num_games,
-            },
-            'results': all_results,
-            'games': {
-                model: [
-                    {
-                        'game_number': g['game_number'],
-                        'model_color': g['model_color'],
-                        'result': g['result'],
-                        'termination': g['termination'],
-                        'total_moves': g['total_moves'],
-                        'moves': g['san_moves'],
-                        'evaluations': g['evaluations'],
-                        'move_times': g['move_times'],
-                    }
-                    for g in games
-                ]
-                for model, games in all_games.items()
-            }
-        }
-        
-        with open(output_dir / "detailed_results.json", 'w') as f:
-            json.dump(json_data, f, indent=2)
-        
-        # Generate report
-        generate_detailed_report(all_results, all_games, output_dir, opponent_depth)
-        
-    finally:
-        evaluator.quit()
-    
-    return all_games, all_results
 
+    selected_levels = levels or DIFFICULTY_LEVELS
+    model_names = [backbone]
+    total_games = len(model_names) * len(selected_levels) * games_per_level
 
-def generate_detailed_report(results: dict, games: dict, output_dir: Path, opponent_depth: int):
-    """Generate detailed markdown report."""
-    report_path = output_dir / "detailed_benchmark_report.md"
-    
-    with open(report_path, 'w') as f:
-        f.write("# Detailed Chess Model Benchmark\n\n")
-        f.write(f"**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
-        f.write(f"**Opponent:** Stockfish depth {opponent_depth}\n")
-        f.write(f"**Evaluation Depth:** {EVAL_DEPTH}\n\n")
-        
-        f.write("## Results Summary\n\n")
-        f.write("| Model | W | D | L | Score |\n")
-        f.write("|-------|---|---|---|-------|\n")
-        
-        for model, res in results.items():
-            total = res['wins'] + res['draws'] + res['losses']
-            score = res['wins'] + 0.5 * res['draws']
-            f.write(f"| {model} | {res['wins']} | {res['draws']} | {res['losses']} | {score}/{total} |\n")
-        
-        f.write("\n## Move Timing — Model\n\n")
-        f.write("| Model | Avg (s) | Median (s) | Min (s) | Max (s) | Moves |\n")
-        f.write("|-------|---------|------------|---------|---------|-------|\n")
-        for model, res in results.items():
-            s = res.get('model_move_time', {})
-            f.write(f"| {model} | {s.get('avg', 0):.3f} | {s.get('median', 0):.3f} | {s.get('min', 0):.3f} | {s.get('max', 0):.3f} | {s.get('count', 0)} |\n")
-        
-        f.write("\n## Move Timing — Opponent (Stockfish)\n\n")
-        f.write("| Model | Avg (s) | Median (s) | Min (s) | Max (s) | Moves |\n")
-        f.write("|-------|---------|------------|---------|---------|-------|\n")
-        for model, res in results.items():
-            s = res.get('opponent_move_time', {})
-            f.write(f"| {model} | {s.get('avg', 0):.3f} | {s.get('median', 0):.3f} | {s.get('min', 0):.3f} | {s.get('max', 0):.3f} | {s.get('count', 0)} |\n")
-        
-        f.write("\n## Game Files\n\n")
-        f.write("- **Combined PGN:** [all_games.pgn](all_games.pgn) - Open in Lichess, Chess.com, or any chess software\n")
-        f.write("- **Individual PGNs:** `pgn/` directory\n\n")
-        
-        f.write("## Evaluation Charts\n\n")
-        f.write("![All Games Comparison](figures/all_games_comparison.png)\n\n")
-        
-        f.write("### Individual Game Charts\n\n")
-        for model in games.keys():
-            f.write(f"#### {model}\n\n")
-            for i in range(len(games[model])):
-                f.write(f"![Game {i+1}](figures/{model}_game_{i+1}_eval.png)\n\n")
-        
-        f.write("## How to View Games\n\n")
-        f.write("1. **Lichess:** Go to lichess.org/paste and paste the PGN content\n")
-        f.write("2. **Chess.com:** Use chess.com/analysis and import PGN\n")
-        f.write("3. **Desktop Apps:** Open with ChessBase, Arena, SCID, or Lucas Chess\n")
-        f.write("4. **Command Line:** Use `python-chess` to parse the PGN files\n")
-    
-    print(f"\nReport saved: {report_path}")
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Detailed benchmark with move analysis")
-    parser.add_argument("--checkpoint-dir", type=str, default="training_results")
-    parser.add_argument("--checkpoint", type=str, default=None, help="Specific checkpoint file path")
-    parser.add_argument("--model", type=str, default=None, 
-                       choices=TRAINED_MODELS,
-                       help="Single model to benchmark (required with --checkpoint)")
-    parser.add_argument("--stockfish", type=str, default="/opt/homebrew/bin/stockfish")
-    parser.add_argument("--opponent-depth", type=int, default=5, help="Stockfish opponent depth")
-    parser.add_argument("--skill-level", type=int, default=None, help="Stockfish skill level (0-20, None for full strength)")
-    parser.add_argument("--max-time", type=float, default=None, help="Max time per move in seconds for Stockfish opponent (overrides --opponent-depth)")
-    parser.add_argument("--games", type=int, default=4, help="Games per model (even number)")
-    parser.add_argument("--mcts", action="store_true", help="Use MCTS agent instead of raw policy")
-    parser.add_argument("--sims", type=int, default=200, help="MCTS simulations per move (default: 200)")
-    parser.add_argument("--output-dir", type=str, default="detailed_benchmark")
-    parser.add_argument("--name", type=str, default=None, help="Run name (saves to runs/<name>/benchmark/)")
-    
-    args = parser.parse_args()
-    
-    if args.name:
-        args.output_dir = f"runs/{args.name}/benchmark"
-        args.checkpoint_dir = f"runs/{args.name}/training"
-    
-    if args.checkpoint and not args.model:
-        parser.error("--model is required when using --checkpoint")
-    
-    print("=" * 60)
-    print("DETAILED CHESS MODEL BENCHMARK")
-    if args.name:
-        print(f"Run: {args.name}")
-    print("=" * 60)
-    opponent_info = f"Opponent: Stockfish"
-    if args.max_time is not None:
-        opponent_info += f" max {args.max_time}s/move"
-    else:
-        opponent_info += f" depth {args.opponent_depth}"
-    if args.skill_level is not None:
-        opponent_info += f", skill level {args.skill_level}"
-    print(opponent_info)
-    print(f"Evaluation: Stockfish depth {EVAL_DEPTH}")
-    if args.mcts:
-        print(f"Agent: MCTS ({args.sims} simulations)")
-    else:
-        print(f"Agent: Raw policy (greedy)")
-    if args.model:
-        print(f"Model: {args.model}")
-        print(f"Checkpoint: {args.checkpoint}")
-    else:
-        print(f"Models: All")
-    print(f"Games per model: {args.games}")
-    print("=" * 60)
-    
-    run_detailed_benchmark(
-        checkpoint_dir=Path(args.checkpoint_dir),
-        stockfish_path=args.stockfish,
-        opponent_depth=args.opponent_depth,
-        num_games=args.games,
-        output_dir=Path(args.output_dir),
-        single_model=args.model,
-        single_checkpoint=Path(args.checkpoint) if args.checkpoint else None,
-        skill_level=args.skill_level,
-        max_time=args.max_time,
-        use_mcts=args.mcts,
-        mcts_sims=args.sims,
+    LOGGER.info(
+        """
+Models: %s
+Difficulty levels: %d
+Games per model per level: %d
+Total games: %d
+Worker threads: %d
+    """,
+        ", ".join(model_names),
+        len(selected_levels),
+        games_per_level,
+        total_games,
+        workers,
     )
-    
-    print("\n" + "=" * 60)
-    print("BENCHMARK COMPLETE!")
-    print("=" * 60)
+
+    results: dict[str, Any] = {
+        "meta": {
+            "generated_at": datetime.now().isoformat(timespec="seconds"),
+            "backbone": backbone,
+            "checkpoint": str(checkpoint_path),
+            "stockfish": stockfish_path,
+            "games_per_level": games_per_level,
+            "workers": workers,
+            "levels": selected_levels,
+            "device": str(device),
+        },
+        "models": {},
+    }
+
+    for model_name in model_names:
+        LOGGER.info(
+            "Model: %s  (%d levels in parallel)",
+            model_name,
+            workers,
+        )
+
+        try:
+            agent = load_agent(model_name, checkpoint_path, device)
+        except FileNotFoundError as exc:
+            LOGGER.warning("SKIP - %s", exc)
+            continue
+
+        results["models"][model_name] = {"levels": {}}
+
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            future_by_level = {
+                pool.submit(
+                    _run_level,
+                    agent,
+                    model_name,
+                    level,
+                    games_per_level,
+                    stockfish_path,
+                ): level
+                for level in selected_levels
+            }
+
+            for future in as_completed(future_by_level):
+                level_name, level_data = future.result()
+                results["models"][model_name]["levels"][level_name] = level_data
+
+        ordered_levels = order_levels(results["models"][model_name]["levels"], selected_levels)
+        results["models"][model_name]["levels"] = ordered_levels
+
+    json_output_path = output_dir / "benchmark_results.json"
+    with open(json_output_path, "w", encoding="utf-8") as output_file:
+        json.dump(results, output_file, indent=2)
+
+    LOGGER.info("All outputs saved to: %s", output_dir)
+    return results
+
+
+def parse_selected_levels(level_argument: str | None) -> list[dict[str, Any]]:
+    """Return selected difficulty levels from a comma-separated index string."""
+    if not level_argument:
+        return DIFFICULTY_LEVELS
+
+    indices = [int(part.strip()) for part in level_argument.split(",")]
+    return [DIFFICULTY_LEVELS[index] for index in indices]
+
+
+def main() -> None:
+    """Parse CLI arguments and run the benchmark pipeline."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s  %(levelname)-8s  %(message)s",
+        datefmt="%H:%M:%S",
+    )
+
+    parser = argparse.ArgumentParser(
+        description="Run comprehensive Elo benchmark pipeline for a chess model.",
+    )
+    parser.add_argument(
+        "--backbone",
+        type=str,
+        default="resnet",
+        help="Network backbone architecture",
+    )
+    parser.add_argument(
+        "--weights",
+        type=str,
+        required=True,
+        help="Path to model weights (.pt)",
+    )
+    parser.add_argument(
+        "--stockfish",
+        type=str,
+        default="/opt/homebrew/bin/stockfish",
+    )
+    parser.add_argument(
+        "--games",
+        type=int,
+        default=4,
+        help="Games per difficulty level (use even number)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="runs/evaluation",
+    )
+    parser.add_argument(
+        "--levels",
+        type=str,
+        default=None,
+        help="Comma-separated level indices (0-9)",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="Parallel threads (each spawns its own Stockfish)",
+    )
+
+    args = parser.parse_args()
+    selected_levels = parse_selected_levels(args.levels)
+    output_dir = Path(args.output_dir)
+
+    run_benchmark(
+        backbone=args.backbone,
+        checkpoint_path=Path(args.weights),
+        stockfish_path=args.stockfish,
+        games_per_level=args.games,
+        output_dir=output_dir,
+        levels=selected_levels,
+        workers=args.workers,
+    )
+
+    LOGGER.info("Final artifacts in: %s", output_dir)
 
 
 if __name__ == "__main__":

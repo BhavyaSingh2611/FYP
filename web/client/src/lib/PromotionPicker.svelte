@@ -25,69 +25,27 @@
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<div class="overlay" on:click={() => dispatch("cancel")}>
+<div
+  class="absolute inset-0 bg-black/60 flex items-center justify-center z-20 rounded-sm"
+  on:click={() => dispatch("cancel")}
+>
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <!-- svelte-ignore a11y-no-static-element-interactions -->
-  <div class="picker" on:click|stopPropagation>
-    <p>Promote to</p>
-    <div class="options">
+  <div
+    class="bg-bg-card rounded-lg px-5 py-4 text-center shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+    on:click|stopPropagation
+  >
+    <p class="mb-3 text-[0.9rem] text-[#bababa]">Promote to</p>
+    <div class="flex gap-2">
       {#each pieces as { piece, img, name }}
-        <button on:click={() => dispatch("select", piece)} title={name}>
-          <img src={img} alt={name} draggable="false" class="promo-img" />
+        <button
+          class="w-14 h-14 bg-bg-secondary border-2 border-border rounded-md cursor-pointer flex items-center justify-center transition-colors duration-150 hover:border-accent hover:bg-bg-hover"
+          on:click={() => dispatch("select", piece)}
+          title={name}
+        >
+          <img src={img} alt={name} draggable="false" class="w-4/5 h-4/5 pointer-events-none" />
         </button>
       {/each}
     </div>
   </div>
 </div>
-
-<style>
-  .overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 20;
-    border-radius: 4px;
-  }
-  .promo-img {
-    width: 80%;
-    height: 80%;
-    pointer-events: none;
-  }
-  .picker {
-    background: var(--bg-card, #252525);
-    border-radius: 8px;
-    padding: 16px 20px;
-    text-align: center;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  }
-  .picker p {
-    margin-bottom: 12px;
-    font-size: 0.9rem;
-    color: #bababa;
-  }
-  .options {
-    display: flex;
-    gap: 8px;
-  }
-  .options button {
-    width: 56px;
-    height: 56px;
-    font-size: 2.2rem;
-    background: var(--bg-secondary, #1a1a1a);
-    border: 2px solid var(--border, #333);
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: border-color 0.15s, background 0.15s;
-    line-height: 1;
-  }
-  .options button:hover {
-    border-color: var(--accent, #81b64c);
-    background: var(--bg-hover, #333);
-  }
-</style>

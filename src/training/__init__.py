@@ -1,3 +1,5 @@
 # Training Module
-from .trainer import Trainer
-from .losses import PolicyLoss, ValueLoss, DualLoss
+from .losses import DualLoss as DualLoss
+from .losses import PolicyLoss as PolicyLoss
+from .losses import ValueLoss as ValueLoss
+from .trainer import Trainer as Trainer
